@@ -1,0 +1,18 @@
+[project]
+name = "tools"
+requires-python = ">= 3.11"
+version = "0.1.0"
+dependencies = ["transformer-lens>=2.16.1,<3", "ipykernel>=6.30.1,<7", "torch>=2.8.0,<3", "numpy>=2.3.2,<3", "pandas>=2.3.1,<3", "transformers>=4.55.2,<5", "jupyterlab>=4.4.6,<5", "pixi-kernel>=0.6.6,<0.7", "rich>=14.1.0,<15", "huggingface-hub[cli]>=0.34.4,<0.35"]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+tools = { path = ".", editable = true }
+
+[tool.pixi.tasks]
