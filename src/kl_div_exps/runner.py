@@ -1,6 +1,6 @@
 # cot_jointprob_exp/runner.py
 import os, math, argparse, random, json, hashlib
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Dict, Any, Tuple, List
 import numpy as np
 
@@ -10,13 +10,14 @@ from torch.utils.tensorboard import SummaryWriter
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from cox.store import Store
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from .tasks import make_taskset, Task
 from .prompts import nl_instruction, code_instruction, STOP_STR
 from .metrics import summarize_pairwise_kl, dist_over_sequences_from_scores
 from .plotting import save_summary_plot
+
+# NEW: tqdm
+from tqdm.auto import tqdm
 
 # ----------------------------- config -----------------------------
 @dataclass
@@ -60,30 +61,19 @@ def to_chat_ids(tokenizer, user_text: str) -> Tuple[str, torch.Tensor]:
 
 @torch.no_grad()
 def per_token_logprobs(model, input_ids: torch.Tensor) -> torch.Tensor:
-    """
-    Returns per-token log p(next_token | prefix) aligned to labels position.
-    For sequence ids s = [t0, t1, ..., tN], returns logprobs for tokens t1..tN.
-    """
     out = model(input_ids=input_ids)
     logits = out.logits  # [1, T, V]
-    logp = F.log_softmax(logits[:, :-1, :], dim=-1)   # [1, T-1, V]
-    tgt = input_ids[:, 1:]                            # [1, T-1]
+    logp = torch.log_softmax(logits[:, :-1, :], dim=-1)   # [1, T-1, V]
+    tgt = input_ids[:, 1:]                                # [1, T-1]
     token_logp = logp.gather(-1, tgt.unsqueeze(-1)).squeeze(-1)  # [1, T-1]
     return token_logp[0]  # [T-1]
 
 def teacher_forced_logp(model, tokenizer, device, prompt_ids: torch.Tensor, target_text: str,
                         include_prompt_ll: bool) -> Dict[str, Any]:
-    """
-    Exact per-token logprobs for prompt (optional) + target continuation.
-    Returns: dict with arrays and sums.
-    """
-    # tokenize target (no specials)
     tgt_ids = tokenizer(target_text, add_special_tokens=False, return_tensors="pt").input_ids.to(device)
     prompt_ids = prompt_ids.to(device)
     full_ids = torch.cat([prompt_ids, tgt_ids], dim=1)  # [1, P+K]
 
-    # (A) prompt part log p(x) under LM (approx joint). We compute logp of prompt tokens
-    # as if model generated them from BOS.
     logp_prompt_sum = 0.0
     n_prompt_tokens = 0
     if include_prompt_ll:
@@ -91,14 +81,12 @@ def teacher_forced_logp(model, tokenizer, device, prompt_ids: torch.Tensor, targ
         logp_prompt_sum = float(lp_prompt.sum().item())
         n_prompt_tokens = int(lp_prompt.numel())
 
-    # (B) continuation part log p(z | prompt)
     lp_full = per_token_logprobs(model, full_ids)           # length P+K-1
     K = tgt_ids.shape[1]
-    cont_logps = lp_full[-K:]                                # last K positions correspond to target
+    cont_logps = lp_full[-K:]                               # last K positions correspond to target
     logp_cont_sum = float(cont_logps.sum().item())
     n_cont = int(cont_logps.numel())
 
-    # combined
     total_sum = logp_prompt_sum + logp_cont_sum
     total_tok = n_prompt_tokens + n_cont
     avg = total_sum / max(1, total_tok)
@@ -114,7 +102,6 @@ def build_instruction(task: Task, representation: str) -> str:
     return code_instruction(task) if representation == "code" else nl_instruction(task)
 
 def seq_fingerprint(text: str) -> str:
-    # Stable id for a z sequence across seeds/models (on same task+rep)
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:16]
 
 @torch.no_grad()
@@ -151,6 +138,53 @@ def shard_indices(n: int, rank: int, world: int):
     idx = list(range(n))
     return idx[rank::world]
 
+# NEW: tqdm with global ETA under DDP ---------------------------------
+class GlobalTQDM:
+    def __init__(self, total_global: int, distributed: bool, rank: int, world: int, sync_every: int = 64):
+        self.distributed = distributed
+        self.rank = rank
+        self.world = world
+        self.sync_every = max(1, sync_every)
+        self.local_count = 0
+        self.last_shown = 0
+        self.total_global = total_global
+        self.bar = tqdm(total=total_global, dynamic_ncols=True, leave=True) if rank == 0 else None
+        if distributed:
+            import torch.distributed as dist
+            assert dist.is_initialized()
+            self.buf = torch.tensor([0], dtype=torch.long, device="cuda" if torch.cuda.is_available() else "cpu")
+
+    def update_local(self, n: int = 1):
+        self.local_count += n
+        if not self.distributed:
+            if self.bar is not None:
+                self.bar.update(n)
+            return
+        if self.local_count % self.sync_every == 0:
+            import torch.distributed as dist
+            self.buf.fill_(self.local_count)
+            dist.all_reduce(self.buf, op=dist.ReduceOp.SUM)
+            global_done = int(self.buf.item())
+            if self.rank == 0 and self.bar is not None:
+                delta = max(0, global_done - self.last_shown)
+                if delta:
+                    self.bar.update(delta)
+                    self.last_shown = global_done
+
+    def finalize(self):
+        if self.distributed:
+            import torch.distributed as dist
+            self.buf.fill_(self.local_count)
+            dist.all_reduce(self.buf, op=dist.ReduceOp.SUM)
+            global_done = int(self.buf.item())
+            if self.rank == 0 and self.bar is not None:
+                delta = max(0, global_done - self.last_shown)
+                if delta:
+                    self.bar.update(delta)
+                    self.last_shown = global_done
+        if self.bar is not None:
+            self.bar.close()
+
 # ----------------------------- main -----------------------------
 def main():
     ap = argparse.ArgumentParser()
@@ -159,7 +193,7 @@ def main():
 
     # models / reps
     ap.add_argument("--models", type=str, default="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
-    ap.add_argument("--representations", type=str, default="nl,code")  # compare both
+    ap.add_argument("--representations", type=str, default="nl,code")
 
     # generation
     ap.add_argument("--max_new_tokens", type=int, default=192)
@@ -184,12 +218,21 @@ def main():
     ap.add_argument("--distributed", action="store_true",
                     help="Use torch.distributed with torchrun.")
 
+    # NEW: control preview sizes (HDF5-safe) and TB text sizes
+    ap.add_argument("--preview_chars", type=int, default=128,
+                    help="Store at most this many chars per text field in Cox (previews only).")
+    ap.add_argument("--tb_text_chars", type=int, default=4000,
+                    help="Log at most this many chars per text block to TensorBoard Text.")
+
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
-    console = Console()
 
     # DDP init
     rank, world = setup_ddp_if_needed(args.distributed)
+    if rank == 0:
+        print(f"[runner] world={world}  device={args.device}  dtype={args.dtype}")
+        print(f"[runner] models={args.models}  reps={args.representations}  thetas={args.thetas}")
+        print(f"[runner] seeds={args.num_seeds}  n_per_theta={args.n_per_theta}  include_prompt_ll={args.include_prompt_ll}")
 
     # Store + TB
     store = Store(args.out_dir, exp_id=args.exp_id)
@@ -209,22 +252,29 @@ def main():
         store.add_table("config", {
             "models": str, "representations": str, "max_new_tokens": int, "temperature": float,
             "top_p": float, "top_k": int, "repetition_penalty": float, "num_seeds": int,
-            "n_per_theta": int, "thetas": str, "include_prompt_ll": bool, "distributed_world": int
+            "n_per_theta": int, "thetas": str, "include_prompt_ll": bool, "distributed_world": int,
+            "preview_chars": int, "tb_text_chars": int
         })
     store["config"].append_row({
         "models": ",".join(models), "representations": ",".join(reps),
         "max_new_tokens": args.max_new_tokens, "temperature": args.temperature,
         "top_p": args.top_p, "top_k": args.top_k, "repetition_penalty": args.repetition_penalty,
         "num_seeds": args.num_seeds, "n_per_theta": args.n_per_theta, "thetas": ",".join(thetas),
-        "include_prompt_ll": include_prompt, "distributed_world": world
+        "include_prompt_ll": include_prompt, "distributed_world": world,
+        "preview_chars": args.preview_chars, "tb_text_chars": args.tb_text_chars
     })
 
+    # HDF5-safe previews only (short strings), plus lengths
     if "samples" not in store.tables:
-        
         store.add_table("samples", {
             "rank": int, "model_name": str, "rep": str, "seed": int,
             "theta": str, "a": int, "b": int,
-            "prompt_text": str, "cot_text": str, "answer_text": str, "full_text": str,
+
+            "prompt_preview": str, "prompt_len": int,
+            "cot_preview": str,    "cot_len": int,
+            "answer_preview": str, "answer_len": int,
+            "full_preview": str,   "full_len": int,
+
             "seq_id": str,
             "sum_logp_joint": float, "n_tokens_joint": int, "avg_logp_joint": float, "ppl_joint": float,
             "sum_logp_prompt": float, "n_tokens_prompt": int,
@@ -240,158 +290,165 @@ def main():
     device = pick_device(args.device)
     dtype = pick_dtype(args.dtype)
 
-    with Progress(
-        SpinnerColumn(), TextColumn("[bold cyan]{task.description}"),
-        TimeElapsedColumn(), transient=False, console=console
-    ) as progress:
+    # --- tqdm global ETA setup ---
+    total_global = len(tasks) * args.num_seeds * len(models) * len(reps)
+    tracker = GlobalTQDM(total_global=total_global, distributed=args.distributed, rank=rank, world=world, sync_every=64)
 
-        # main loop per (model, rep)
-        for model_name in models:
-            # Load once per (rank, model)
-            tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-            if tokenizer.pad_token_id is None: tokenizer.pad_token_id = tokenizer.eos_token_id
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                torch_dtype=dtype if device != "cpu" else torch.float32,
-                device_map="auto" if device == "cuda" else None
-            )
-            if device == "cpu": model.to("cpu")
+    def clip(s: str, n: int) -> str:
+        if s is None: return ""
+        return s if len(s) <= n else (s[:max(0, n-3)] + "...")
 
-            for rep in reps:
-                desc = f"[rank {rank}] {model_name} / {rep}"
-                t_id = progress.add_task(desc, total=len(task_indices) * args.num_seeds)
+    # main loop per (model, rep)
+    for model_name in models:
+        if rank == 0:
+            print(f"[runner] Loading model: {model_name}")
+        tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        if tokenizer.pad_token_id is None: tokenizer.pad_token_id = tokenizer.eos_token_id
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=dtype if device != "cpu" else torch.float32,
+            device_map="auto" if device == "cuda" else None
+        )
+        if device == "cpu": model.to("cpu")
 
-                # These hold, per theta, the map: seq_id -> sum_logp_joint (aggregated over seeds)
-                # We will convert to distributions over the *union* of sequences for KL.
-                per_theta_seq2lp: Dict[str, Dict[str, float]] = {}  # theta -> {seq_id: logp}
-                per_theta_support: Dict[str, set] = {}              # theta -> set(seq_id)
+        for rep in reps:
+            if rank == 0:
+                print(f"[runner] Start pass: model={model_name} rep={rep}")
 
-                for ti in task_indices:
-                    task = tasks[ti]
-                    instr = build_instruction(task, rep)
-                    prompt_str, prompt_ids = to_chat_ids(tokenizer, instr)
+            per_theta_seq2lp: Dict[str, Dict[str, float]] = {}
+            per_theta_support: Dict[str, set] = {}
 
-                    for seed in range(args.num_seeds):
-                        text = sample_text(
-                            model, tokenizer, device, prompt_ids,
-                            args.max_new_tokens, args.temperature, args.top_p,
-                            args.top_k, args.repetition_penalty, seed=(seed + 1337*rank)
-                        )
-                        # split CoT and final answer
-                        idx = text.find(STOP_STR)
-                        if idx == -1:
-                            cot_text, ans_text = text.strip(), ""
-                        else:
-                            cot_text = text[:idx].strip()
-                            ans_text = text[idx+len(STOP_STR):].strip()
+            for ti in task_indices:
+                task = tasks[ti]
+                instr = build_instruction(task, rep)
+                prompt_str, prompt_ids = to_chat_ids(tokenizer, instr)
 
-                        # joint logprob (optionally including prompt)
-                        tf = teacher_forced_logp(model, tokenizer, device, prompt_ids, text, include_prompt)
-                        seq_id = seq_fingerprint(text)
+                for seed in range(args.num_seeds):
+                    text = sample_text(
+                        model, tokenizer, device, prompt_ids,
+                        args.max_new_tokens, args.temperature, args.top_p,
+                        args.top_k, args.repetition_penalty, seed=(seed + 1337*rank)
+                    )
+                    idx = text.find(STOP_STR)
+                    if idx == -1:
+                        cot_text, ans_text = text.strip(), ""
+                    else:
+                        cot_text = text[:idx].strip()
+                        ans_text = text[idx+len(STOP_STR):].strip()
 
-                        # record
-                        CAPS = {
-                            "prompt_text": 580,
-                            "cot_text":    580,
-                            "answer_text": 580,
-                            "full_text":   580,
-                        }
+                    tf = teacher_forced_logp(model, tokenizer, device, prompt_ids, text, include_prompt)
+                    seq_id = seq_fingerprint(text)
 
-                        def _clip(s: str, limit: int) -> str:
-                            if s is None: return ""
-                            return s if len(s) <= limit else (s[:limit-3] + "...")
+                    # Cox: store only previews (short strings) + lengths
+                    store["samples"].append_row({
+                        "rank": rank, "model_name": model_name, "rep": rep, "seed": seed,
+                        "theta": task.theta, "a": task.a, "b": task.b,
 
-                
-                        store["samples"].append_row({
-                            "rank": rank, "model_name": model_name, "rep": rep, "seed": seed,
-                            "theta": task.theta, "a": task.a, "b": task.b,
-                            "prompt_text": _clip(prompt_str, CAPS["prompt_text"]),
-                            "cot_text":    _clip(cot_text, CAPS["cot_text"]),
-                            "answer_text": _clip(ans_text, CAPS["answer_text"]),
-                            "full_text":   _clip(text, CAPS["full_text"]), "seq_id": seq_id,
-                            "sum_logp_joint": tf["sum_logp_joint"], "n_tokens_joint": tf["n_tokens_joint"],
-                            "avg_logp_joint": tf["avg_logp_joint"], "ppl_joint": tf["ppl_joint"],
-                            "sum_logp_prompt": tf["sum_logp_prompt"], "n_tokens_prompt": tf["n_tokens_prompt"],
-                            "sum_logp_cont": tf["sum_logp_cont"], "n_tokens_cont": tf["n_tokens_cont"],
-                        })
+                        "prompt_preview": clip(instr, args.preview_chars), "prompt_len": len(instr),
+                        "cot_preview":    clip(cot_text, args.preview_chars), "cot_len": len(cot_text),
+                        "answer_preview": clip(ans_text, args.preview_chars), "answer_len": len(ans_text),
+                        "full_preview":   clip(text, args.preview_chars), "full_len": len(text),
 
-                        # aggregate for sequence distribution (take max over duplicates for stability)
-                        d = per_theta_seq2lp.setdefault(task.theta, {})
-                        s = d.get(seq_id, -float("inf"))
-                        d[seq_id] = max(s, tf["sum_logp_joint"])
-                        per_theta_support.setdefault(task.theta, set()).add(seq_id)
-
-                        progress.update(t_id, advance=1)
-
-                # Compute KL across seeds via *empirical distribution over sequences*
-                # For each seed, build a distribution over the union support using that seed's sequences.
-                import pandas as pd
-                df = store["samples"].df
-                df = df[(df["rank"] == rank) & (df["model_name"] == model_name) & (df["rep"] == rep)]
-
-                for theta in thetas:
-                    df_t = df[df["theta"] == theta]
-
-                    # support = union of sequences for (model,rep,theta) across *all seeds on this rank*
-                    support = sorted(list(per_theta_support.get(theta, set())))
-
-                    # Build one logprob vector per seed by mapping seq_id->sum_logp_joint
-                    seed_vecs: List[np.ndarray] = []
-                    for sd in sorted(df_t["seed"].unique()):
-                        rows = df_t[df_t["seed"] == sd]
-                        m = {r.seq_id: r.sum_logp_joint for r in rows.itertuples()}
-                        seed_vecs.append(dist_over_sequences_from_scores(m, support))
-
-                    stats = summarize_pairwise_kl(seed_vecs)
-                    store["kl_stats"].append_row({
-                        "model_name": model_name, "rep": rep, "theta": theta,
-                        **stats
+                        "seq_id": seq_id,
+                        "sum_logp_joint": tf["sum_logp_joint"], "n_tokens_joint": tf["n_tokens_joint"],
+                        "avg_logp_joint": tf["avg_logp_joint"], "ppl_joint": tf["ppl_joint"],
+                        "sum_logp_prompt": tf["sum_logp_prompt"], "n_tokens_prompt": tf["n_tokens_prompt"],
+                        "sum_logp_cont": tf["sum_logp_cont"], "n_tokens_cont": tf["n_tokens_cont"],
                     })
 
-                    # TB scalars (average across seeds)
-                    avg_logps = [float(x) for x in df_t["avg_logp_joint"].values.tolist()]
-                    if len(avg_logps) > 0:
-                        tb.add_scalar(f"{model_name}/{rep}/{theta}/mean_avg_logp_joint", float(np.mean(avg_logps)), rank)
-                    if stats["num_pairs"] > 0:
-                        tb.add_scalar(f"{model_name}/{rep}/{theta}/kl_avg", stats["avg_kl"], rank)
-                        tb.add_scalar(f"{model_name}/{rep}/{theta}/kl_max", stats["max_kl"], rank)
+                    # TensorBoard Text: log full texts (with TB truncation)
+                    # Tag format: model/rep/theta/seed_X/aA_bB/(prompt|cot|answer|full)
+                    task_id = f"a{task.a}_b{task.b}"
+                    base = f"{model_name}/{rep}/{task.theta}/seed_{seed}/{task_id}"
 
-                # quick console line
-                console.log(f"[rank {rank}] Finished KL for {model_name} / {rep}")
+                    def tb_block(title, body):
+                        if args.tb_text_chars and len(body) > args.tb_text_chars:
+                            body_show = body[:args.tb_text_chars - 3] + "..."
+                        else:
+                            body_show = body
+                        return f"**{title}**\n\n```\n{body_show}\n```"
 
-        # After loops (rank 0): make a small summary plot comparing NL vs Code.
-        if rank == 0:
+                    step = seed  # stable step per-seed; change to idx if preferred
+                    tb.add_text(f"{base}/prompt", tb_block("Prompt", instr), global_step=step)
+                    tb.add_text(f"{base}/cot", tb_block("Chain of Thought", cot_text), global_step=step)
+                    tb.add_text(f"{base}/answer", tb_block("Final Answer", ans_text), global_step=step)
+                    tb.add_text(f"{base}/full", tb_block("Full Raw Output", text), global_step=step)
+
+                    # aggregate for sequence distribution (take max over duplicates for stability)
+                    d = per_theta_seq2lp.setdefault(task.theta, {})
+                    s = d.get(seq_id, -float("inf"))
+                    d[seq_id] = max(s, tf["sum_logp_joint"])
+                    per_theta_support.setdefault(task.theta, set()).add(seq_id)
+
+                    tracker.update_local(1)
+
+                if (ti % max(1, len(task_indices)//5) == 0) and rank == 0:
+                    print(f"[runner] …model={model_name} rep={rep} progress task_index={ti}/{len(task_indices)}")
+
+            # Compute KL across seeds via empirical distribution over sequences
+            import pandas as pd
             df = store["samples"].df
-            kl = store["kl_stats"].df
+            df = df[(df["rank"] == rank) & (df["model_name"] == model_name) & (df["rep"] == rep)]
 
-            def collect(rep):
-                avg = df[df["rep"] == rep]["avg_logp_joint"].values.tolist()
-                d = kl[kl["rep"] == rep]
-                # average the KL stats across thetas and models for the picture
-                if len(d) == 0:
-                    return avg, dict(max_kl=np.nan, avg_kl=np.nan, var_kl=np.nan)
-                return avg, dict(
-                    max_kl=float(d["max_kl"].mean()),
-                    avg_kl=float(d["avg_kl"].mean()),
-                    var_kl=float(d["var_kl"].mean()),
-                )
+            for theta in thetas:
+                df_t = df[df["theta"] == theta]
+                support = sorted(list(per_theta_support.get(theta, set())))
+                seed_vecs: List[np.ndarray] = []
+                for sd in sorted(df_t["seed"].unique()):
+                    rows = df_t[df_t["seed"] == sd]
+                    m = {r.seq_id: r.sum_logp_joint for r in rows.itertuples()}
+                    seed_vecs.append(dist_over_sequences_from_scores(m, support))
+                stats = summarize_pairwise_kl(seed_vecs)
+                store["kl_stats"].append_row({
+                    "model_name": model_name, "rep": rep, "theta": theta, **stats
+                })
 
-            avg_code, kl_code = collect("code")
-            avg_nl, kl_nl     = collect("nl")
-            tag = "rank0"
-            png = save_summary_plot(args.out_dir, tag, avg_code, avg_nl, kl_code, kl_nl)
-            console.log(f"Saved plot to {png}")
+                # TB scalars (average across seeds)
+                avg_logps = [float(x) for x in df_t["avg_logp_joint"].values.tolist()]
+                if len(avg_logps) > 0:
+                    tb.add_scalar(f"{model_name}/{rep}/{theta}/mean_avg_logp_joint", float(np.mean(avg_logps)), rank)
+                if stats["num_pairs"] > 0:
+                    tb.add_scalar(f"{model_name}/{rep}/{theta}/kl_avg", stats["avg_kl"], rank)
+                    tb.add_scalar(f"{model_name}/{rep}/{theta}/kl_max", stats["max_kl"], rank)
 
-            # Also dump a JSON summary for quick grep
-            with open(os.path.join(args.out_dir, "summary.json"), "w") as f:
-                json.dump({
-                    "avg_logp_joint": {"code": float(np.mean(avg_code) if len(avg_code)>0 else np.nan),
-                                       "nl": float(np.mean(avg_nl) if len(avg_nl)>0 else np.nan)},
-                    "kl": {"code": kl_code, "nl": kl_nl},
-                }, f, indent=2)
+            if rank == 0:
+                print(f"[runner] Finished KL: model={model_name} rep={rep}")
+
+    tracker.finalize()
+
+    # After loops (rank 0): small summary plot comparing NL vs Code.
+    if rank == 0:
+        df = store["samples"].df
+        kl = store["kl_stats"].df
+
+        def collect(rep):
+            avg = df[df["rep"] == rep]["avg_logp_joint"].values.tolist()
+            d = kl[kl["rep"] == rep]
+            if len(d) == 0:
+                return avg, dict(max_kl=np.nan, avg_kl=np.nan, var_kl=np.nan)
+            return avg, dict(
+                max_kl=float(d["max_kl"].mean()),
+                avg_kl=float(d["avg_kl"].mean()),
+                var_kl=float(d["var_kl"].mean()),
+            )
+
+        avg_code, kl_code = collect("code")
+        avg_nl, kl_nl     = collect("nl")
+        tag = "rank0"
+        png = save_summary_plot(args.out_dir, tag, avg_code, avg_nl, kl_code, kl_nl)
+        print(f"[runner] Saved plot to {png}")
+
+        with open(os.path.join(args.out_dir, "summary.json"), "w") as f:
+            json.dump({
+                "avg_logp_joint": {"code": float(np.mean(avg_code) if len(avg_code)>0 else np.nan),
+                                   "nl": float(np.mean(avg_nl) if len(avg_nl)>0 else np.nan)},
+                "kl": {"code": kl_code, "nl": kl_nl},
+            }, f, indent=2)
+        print("[runner] Wrote JSON summary")
 
     tb.close()
-    console.rule("[bold green]Done")
+    if rank == 0:
+        print("[runner] Done.")
 
 if __name__ == "__main__":
     main()
