@@ -4,5 +4,8 @@ pixi run python cot.py \
   --model google/gemma-2-9b-it \
   --hf_dtype auto \
   --hf_device_map auto \
-  --n 10 --digits 2 4 --kinds add sub mul \
-  --outdir out_hf
+  --n 6 --digits 8 10 12 --kinds 'lcs' 'knap' 'rod' 'ilp_assign' 'ilp_prod' 'ilp_partition' \
+  --outdir out_hf --exec_code 
+  
+
+# pixi run tensorboard --logdir out_hf/tb
