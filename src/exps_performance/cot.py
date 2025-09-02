@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse, os, json, re, math, random, time, sys
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any, Optional
+from tqdm import tqdm
 
 # ------------------------------- Dataset ------------------------------------
 
@@ -108,10 +109,10 @@ NL_PROMPT = (
 
 CODE_PROMPT = (
     "You are a precise Python programmer. Write a single, minimal Python expression that computes the answer. "
-    "Place the expression inside one fenced block using triple backticks. No imports, no functions, no variables.\n"
-    + JSON_SCHEMA + "\n"
-    "Problem: {problem}\n"
-    "Output format example: {{\"rationale\": \"```\\n2+3\\n```\", \"answer\": 5}}"
+    "Place the expression inside one fenced block using triple backticks. No imports, no functions, no variables."
+    + JSON_SCHEMA + ""
+    "Problem: {problem}"
+    "Output format example: {{\"rationale\": \"```\n2+3\n```\", \"answer\": 5}}"
 )
 
 # ------------------------------- LLM Clients --------------------------------
@@ -119,40 +120,35 @@ CODE_PROMPT = (
 class LLMClient:
     def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int, temperature: float, top_p: float, stop: Optional[List[str]]=None) -> str:
         raise NotImplementedError
+
 class DummyClient(LLMClient):
-    """Deterministic stub for dry runs: always returns JSON with 'rationale' and 'answer'."""
-    def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int,
-             temperature: float, top_p: float, stop: Optional[List[str]] = None) -> str:
-        last = messages[-1]["content"]
-
-        # Parse simple arithmetic forms
-        ans = 0
-        m = re.search(r"Compute:\s*(\d+)\s*([+\-*])\s*(\d+)", last)
-        if m:
+    """Deterministic stub for dry runs: echoes a trivial correct answer."""
+    def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int, temperature: float, top_p: float, stop: Optional[List[str]]=None) -> str:
+        # Extract last problem numbers to compute trivially
+        last = messages[-1]['content']
+        m = re.search(r"Compute:\s*([0-9]+)\s*([+\-*])\s*([0-9]+)", last)
+        if not m:
+            m = re.search(r"Compute:\s*\((\d+)\s*\+\s*(\d+)\)\s*\*\s*(\d+)", last)
+            if m:
+                a, b, c = map(int, m.groups())
+                ans = (a+b)*c
+            else:
+                ans = 0
+                rationale = {"rationale":"could not parse","answer":ans}
+                return json.dumps(rationale)
+        else:
             a, op, b = m.groups()
-            a, b = int(a), int(b)
-            ans = a + b if op == '+' else (a - b if op == '-' else a * b)
+            a = int(a); b = int(b)
+            ans = a+b if op=='+' else (a-b if op=='-' else a*b)
+        # Decide mode by presence of "math tutor" vs "Python programmer"
+        if "math tutor" in messages[-1]['content']:
+            rat = f"First, identify the operation. Then compute the result deterministically."
+            out = {"rationale": rat, "answer": ans}
         else:
-            m2 = re.search(r"Compute:\s*\((\d+)\s*\+\s*(\d+)\)\s*\*\s*(\d+)", last)
-            if m2:
-                a, b, c = map(int, m2.groups())
-                ans = (a + b) * c
-
-        is_math_tutor = "math tutor" in last
-        is_code_prompt = "Python programmer" in last
-
-        if is_math_tutor and "Scratchpad code:" in last:
-            out = {"rationale": "Read code, compute mentally.", "answer": ans}
-        elif is_math_tutor:
-            out = {"rationale": "Perform arithmetic deterministically.", "answer": ans}
-        elif is_code_prompt:
-            expr = re.sub(r"(?s).*Problem:\s*", "", last).strip().splitlines()[-1].strip()
-            out = {"rationale": f"```\n{expr}\n```", "answer": ans}
-        else:
-            out = {"rationale": "could not parse", "answer": ans}
-
+            rat = "```\n" + re.sub(r"Compute:\s*", "", last).strip() + "\n```"
+            rat = rat.replace("Compute:", "").strip()
+            out = {"rationale": rat, "answer": ans}
         return json.dumps(out)
-
 
 class OpenAIChatClient(LLMClient):
     def __init__(self):
@@ -172,7 +168,6 @@ class OpenAIChatClient(LLMClient):
             stop=stop,
         )
         return resp.choices[0].message.content
-
 class HFLocalClient(LLMClient):
     """Vanilla Hugging Face transformers inference (no NCCL/vLLM)."""
     def __init__(self, model_name: str, dtype: str = "auto", device_map: str = "auto", trust_remote_code: bool = False):
@@ -181,11 +176,13 @@ class HFLocalClient(LLMClient):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
         _map = {"auto": None, "float16": torch.float16, "bfloat16": torch.bfloat16, "float32": torch.float32}
         torch_dtype = _map.get(dtype, None)
+        cache_dir = "../models"
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch_dtype,
             device_map=device_map,
             trust_remote_code=trust_remote_code,
+            cache_dir=cache_dir
         )
         self.has_template = hasattr(self.tokenizer, "apply_chat_template") and (self.tokenizer.chat_template is not None)
     def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int, temperature: float, top_p: float, stop: Optional[List[str]] = None) -> str:
@@ -378,13 +375,13 @@ def run(args):
             trust_remote_code=args.hf_trust_remote_code,
         )
     else:
-        raise ValueError("backend must be one of {dummy, openai, vllm}")
+        raise ValueError("backend must be one of {dummy, openai, hf}")
 
     problems = make_dataset(args.n, args.digits, args.kinds, seed=args.seed)
 
     records: List[Record] = []
 
-    for i, pb in enumerate(problems):
+    for i, pb in enumerate(tqdm(problems, total=len(problems), desc='eval')):
         problem_text = pb.text()
         truth = pb.ground_truth()
 
@@ -507,9 +504,9 @@ def parse_args():
     p.add_argument('--n', type=int, default=300, help='total problems (split across digits)')
     p.add_argument('--digits', type=int, nargs='+', default=[2,4,8])
     p.add_argument('--kinds', type=str, nargs='+', default=['add','sub','mul'], choices=['add','sub','mul','mix'])
-    p.add_argument('--seed', type=int, default=1)
     p.add_argument('--backend', type=str, default='dummy', choices=['dummy','openai','hf'])
     p.add_argument('--model', type=str, default='gpt-4o', help='OpenAI model name or HF repo/path when --backend=hf')
+    p.add_argument('--seed', type=int, default=1)
     p.add_argument('--hf_dtype', type=str, default='auto', choices=['auto','float16','bfloat16','float32'])
     p.add_argument('--hf_device_map', type=str, default='auto')
     p.add_argument('--hf_trust_remote_code', action='store_true')

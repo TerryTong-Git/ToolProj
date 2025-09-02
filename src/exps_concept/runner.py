@@ -605,7 +605,7 @@ def main():
             eos_id, pad_id = pick_eos_pad_ids(tokenizer)
             tokenizer.pad_token_id = pad_id
 
-            cache_dir = "./models"
+            cache_dir = "../models"
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 torch_dtype=dtype if device != "cpu" else torch.float32,

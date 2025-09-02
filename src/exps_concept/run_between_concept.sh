@@ -1,5 +1,5 @@
-pixi run python -m between_concept.runner \
-  --out_dir ./runs/paired_kl/ \
+pixi run python -m runner \
+  --out_dir ../runs/paired_kl/ \
   --models google/gemma-2-9b-it  \
   --representations nl,code \
   --num_seeds 8 \
