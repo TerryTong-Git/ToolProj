@@ -11,21 +11,198 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from cox.store import Store
 
-from .tasks import make_taskset, make_paired_taskset, Task
-from .prompts import nl_instruction, code_instruction, STOP_STR
-from .metrics import (
-    summarize_pairwise_kl,
-    dist_over_sequences_from_scores,
-    build_pooled_dist,
-    symmetric_kl,
-    js_divergence,
-    kl_divergence,
-)
-from .plotting import save_summary_plot
-
 from tqdm.auto import tqdm
 
 warnings.filterwarnings("ignore", category=UserWarning)
+
+from typing import Dict, List
+import numpy as np
+from scipy.special import logsumexp
+
+from dataclasses import dataclass
+from typing import List, Tuple
+import random
+import os
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+
+def save_summary_plot(out_dir: str, tag: str,
+                      avg_logps_code: list, avg_logps_nl: list,
+                      kl_code: dict, kl_nl: dict):
+    os.makedirs(out_dir, exist_ok=True)
+    fig = plt.figure(figsize=(8,4.5))
+    ax1 = fig.add_subplot(1,2,1)
+    ax1.boxplot([avg_logps_code, avg_logps_nl], labels=["code z", "NL z"])
+    ax1.set_title("Avg log-prob of (z,x|θ,r)")
+    ax1.set_ylabel("avg log p per token")
+    ax2 = fig.add_subplot(1,2,2)
+    x = np.arange(3)
+    ax2.bar(x - 0.15, [kl_code["max_kl"], kl_code["avg_kl"], kl_code["var_kl"]], width=0.3, label="code z")
+    ax2.bar(x + 0.15, [kl_nl["max_kl"], kl_nl["avg_kl"], kl_nl["var_kl"]], width=0.3, label="NL z")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(["max KL", "avg KL", "var KL"])
+    ax2.legend()
+    fig.suptitle(f"NL vs Code intermediaries — {tag}")
+    out_png = os.path.join(out_dir, f"summary_{tag}.png")
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=160)
+    return out_png
+
+@dataclass
+class Task:
+    theta: str     # "add" | "sub" | "mul"
+    a: int
+    b: int
+
+    @property
+    def x_nl(self) -> str:
+        if self.theta == "add":
+            return f"Add {self.a} and {self.b}."
+        if self.theta == "sub":
+            return f"Subtract {self.b} from {self.a}."
+        if self.theta == "mul":
+            return f"Multiply {self.a} by {self.b}."
+        raise ValueError(self.theta)
+
+    @property
+    def y(self) -> int:
+        if self.theta == "add":
+            return self.a + self.b
+        if self.theta == "sub":
+            return self.a - self.b
+        if self.theta == "mul":
+            return self.a * self.b
+        raise ValueError(self.theta)
+
+def make_taskset(n_per_theta: int, seed: int = 0,
+                 thetas=("add","sub","mul"),
+                 a_range=(2,99), b_range=(2,99)) -> List[Task]:
+    rng = random.Random(seed)
+    tasks: List[Task] = []
+    for theta in thetas:
+        for _ in range(n_per_theta):
+            a = rng.randint(*a_range)
+            b = rng.randint(*b_range)
+            if theta == "sub" and b > a:
+                a, b = b, a
+            tasks.append(Task(theta, a, b))
+    return tasks
+
+# Paired inputs: all thetas see the same (a,b) pairs.
+def make_paired_taskset(n_pairs: int,
+                        seed: int = 0,
+                        thetas=("add","sub","mul"),
+                        a_range=(2,99), b_range=(2,99)) -> List[Task]:
+    rng = random.Random(seed)
+    pairs: List[Tuple[int,int]] = []
+    for _ in range(n_pairs):
+        a = rng.randint(*a_range)
+        b = rng.randint(*b_range)
+        pairs.append((a,b))
+    tasks: List[Task] = []
+    for a,b in pairs:
+        for theta in thetas:
+            aa, bb = a, b
+            if theta == "sub" and bb > aa:
+                aa, bb = bb, aa
+            tasks.append(Task(theta, aa, bb))
+    return tasks
+
+
+SYSTEM = "You are a helpful math tutor. Always show detailed reasoning before the final answer."
+STOP_STR = "Final answer:"
+
+def nl_instruction(task) -> str:
+    return (
+        f"{SYSTEM}\n"
+        f"Task: {task.x_nl}\n"
+        f"Answer the question. Show your step-by-step reasoning, "
+        f"then put \"{STOP_STR}\" on its own line followed by the final number."
+    )
+
+def code_instruction(task) -> str:
+    # minimal, explicit pseudo-code first to stabilize seeds
+    return (
+        f"{SYSTEM}\n"
+        f"Task (first write a short Python-like plan, then compute):\n"
+        f"a = {task.a}\n"
+        f"b = {task.b}\n"
+        f"operation = \"{task.theta}\"\n"
+        f"# compute r deterministically using operation\n"
+        f"Then show the computation lines explicitly, and finally put "
+        f"\"{STOP_STR}\" on its own line followed by the final number."
+    )
+
+def kl_divergence(p_log: np.ndarray, q_log: np.ndarray, eps: float = 1e-12) -> float:
+    """
+    KL(p||q) for two log-prob vectors over the same support.
+    """
+    p = np.exp(p_log - logsumexp(p_log))
+    q = np.exp(q_log - logsumexp(q_log))
+    return float(np.sum(p * (np.log(p + eps) - np.log(q + eps))))
+
+def summarize_pairwise_kl(logprob_vectors: List[np.ndarray]) -> Dict[str, float]:
+    """
+    Given a list of log-prob vectors (same length, same support), compute pairwise KL stats.
+    """
+    if len(logprob_vectors) < 2:
+        return dict(num_pairs=0, max_kl=np.nan, avg_kl=np.nan, var_kl=np.nan)
+    vals = []
+    for i in range(len(logprob_vectors)):
+        for j in range(len(logprob_vectors)):
+            if i != j:
+                vals.append(kl_divergence(logprob_vectors[i], logprob_vectors[j]))
+    vals = np.array(vals, dtype=float)
+    return dict(num_pairs=int(vals.size), max_kl=float(vals.max()),
+                avg_kl=float(vals.mean()), var_kl=float(vals.var()))
+
+def dist_over_sequences_from_scores(seq_id_to_logp: Dict[str, float], support: List[str]) -> np.ndarray:
+    """
+    Convert a dict of {sequence_id: logprob} to a logprob vector over a fixed 'support' list.
+    Missing sequences get logprob = -inf (handled via small epsilon in KL).
+    """
+    vec = np.full(len(support), -np.inf, dtype=float)
+    for idx, sid in enumerate(support):
+        lp = seq_id_to_logp.get(sid, None)
+        if lp is not None:
+            vec[idx] = lp
+    return vec
+
+# --------- NEW: concept-pair helpers ---------
+
+def symmetric_kl(p_log: np.ndarray, q_log: np.ndarray, eps: float = 1e-12) -> float:
+    """0.5*(KL(p||q)+KL(q||p)) on log-prob vectors."""
+    return 0.5 * (kl_divergence(p_log, q_log, eps) + kl_divergence(q_log, p_log, eps))
+
+def js_divergence(p_log: np.ndarray, q_log: np.ndarray, eps: float = 1e-12) -> float:
+    """Jensen–Shannon divergence on log-prob vectors."""
+    p = np.exp(p_log - logsumexp(p_log))
+    q = np.exp(q_log - logsumexp(q_log))
+    m = 0.5 * (p + q)
+    def _kl(a, b):
+        return float(np.sum(a * (np.log(a + eps) - np.log(b + eps))))
+    return 0.5 * _kl(p, m) + 0.5 * _kl(q, m)
+
+def logmeanexp_pool(logps: List[float]) -> float:
+    """
+    Pool multiple log-probs for the same sequence (e.g., across seeds)
+    by log-mean-exp: log( (1/S) * sum_s exp(logp_s) ).
+    """
+    if not logps:
+        return -np.inf
+    return float(logsumexp(np.array(logps, dtype=float)) - np.log(len(logps)))
+
+def build_pooled_dist(rows, support: List[str]) -> np.ndarray:
+    """
+    rows: iterable of records with .seq_id and .sum_logp_joint
+    Pools duplicates by log-mean-exp, then projects onto support as a log-prob vector.
+    """
+    bucket: Dict[str, List[float]] = {}
+    for r in rows:
+        bucket.setdefault(r.seq_id, []).append(float(r.sum_logp_joint))
+    pooled = {sid: logmeanexp_pool(lps) for sid, lps in bucket.items()}
+    return dist_over_sequences_from_scores(pooled, support)
 
 # ----------------------------- config -----------------------------
 @dataclass

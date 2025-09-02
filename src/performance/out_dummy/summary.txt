@@ -1,0 +1,7 @@
+N=20
+Accuracy NL-CoT:   1.0000
+Accuracy Code-CoT: 1.0000
+Discordant pairs b=code>nl: 0, c=nl>code: 0, McNemar exact p=1
+
+Per-digit bins:
+  digits=2: N=20 NL=1.0000 Code=1.0000 McNemar p=1

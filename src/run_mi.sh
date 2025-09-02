@@ -10,3 +10,5 @@ pixi run python -m mi_exps.vis_kl \
   --use_weighted \
   --per_input \
   --metric jsd --exp_id a49bce82-c727-48a2-9bc3-97d47c14827a
+
+pixi run tensorboard --logdir ./runs/jointprob_demo/tb
