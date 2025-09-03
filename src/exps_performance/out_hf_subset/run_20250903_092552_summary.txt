@@ -1,0 +1,7 @@
+N=5  exp_id=run_20250903_092552
+Accuracy NL-CoT (overall):   0.0000
+Accuracy Code-CoT (overall): 0.0000
+Discordant pairs b=code>nl: 0, c=nl>code: 0, McNemar exact p=1
+Per-kind bins:
+  kind=ilp_prod    : N=  2  NL=0.0000  Code=0.0000  Exec=nan
+  kind=lcs         : N=  3  NL=0.0000  Code=0.0000  Exec=nan

@@ -1,0 +1,20 @@
+idx,kind,digits,truth,answer_nl,correct_nl,answer_code,correct_code,answer_code_exec,correct_code_exec,problem
+0,lcs,0,7,6,0,5,0,,0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acdbbbabbdcc""
+T = ""cadbbdadcbdd"""
+1,lcs,0,5,4,0,4,0,,0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acadddd""
+T = ""adaddadc"""
+2,lcs,0,3,4,0,4,0,,0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acaaaadb""
+T = ""abddbcbbdca"""
+3,ilp_prod,0,78,42,0,42,0,,0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [20, 12, 17, 18]
+consumption (rows=resources) = [[3, 6, 6, 2], [8, 2, 3, 7]]
+capacity = [21, 25]
+upper_bounds = [3, 3, 3, 3]"
+4,ilp_prod,0,48,42,0,42,0,,0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [10, 14, 8]
+consumption (rows=resources) = [[6, 7, 4], [5, 5, 8]]
+capacity = [26, 22]
+upper_bounds = [4, 3, 3]"
