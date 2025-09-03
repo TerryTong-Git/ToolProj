@@ -1,0 +1,17 @@
+N=450  exp_id=run_20250902_183101
+Accuracy NL-CoT (overall):   0.1978
+Accuracy Code-CoT (overall): 0.2267
+Discordant pairs b=code>nl: 40, c=nl>code: 27, McNemar exact p=0.1421
+
+Per-kind bins:
+  kind=add         : N= 50  NL=0.6800  Code=0.8600
+  kind=ilp_assign  : N= 50  NL=0.0000  Code=0.0000
+  kind=ilp_partition: N= 50  NL=0.0000  Code=0.4400
+  kind=ilp_prod    : N= 50  NL=0.0000  Code=0.0400
+  kind=knap        : N= 50  NL=0.0000  Code=0.0000
+  kind=lcs         : N= 50  NL=0.4200  Code=0.0200
+  kind=mul         : N= 50  NL=0.0000  Code=0.0000
+  kind=rod         : N= 50  NL=0.0000  Code=0.0000
+  kind=sub         : N= 50  NL=0.6800  Code=0.6800
+
+Execution condition (subprocess): acc=0.9600

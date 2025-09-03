@@ -20,3 +20,6 @@ tools = { path = ".", editable = true }
 [tool.pixi.dependencies]
 huggingface_hub = ">=0.34.4,<0.35"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+

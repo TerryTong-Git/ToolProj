@@ -1,33 +1,45 @@
 #!/usr/bin/env python3
 """
-Compare Natural-Language CoT vs Code CoT on arithmetic, dynamic programming, and ILP tasks.
-- DP: LCS (length), 0/1 Knapsack (max value), Rod Cutting (max revenue)
-- ILP: Assignment (min cost), Production Planning (max profit), Balanced Partition (min diff)
-Code-CoT executes in a sandboxed subprocess that ALLOWS imports (e.g., PuLP).
+NL-CoT vs Code-CoT on arithmetic, DP (LCS/Knapsack/Rod Cutting), and ILP tasks.
 
-Examples:
-  # Arithmetic only (unchanged)
-  python cot_tb_ext.py --backend hf --model google/gemma-2-9b-it \
-    --n 50 --digits 8 9 10 --kinds add sub mul --exec_code --outdir out_hf
+New kinds:
+- lcs           : LCS length of two strings
+- knap          : 0/1 knapsack max value
+- rod           : rod-cutting max revenue
+- ilp_assign    : assignment min cost (n x n)
+- ilp_prod      : production planning (max profit with resource caps)
+- ilp_partition : 2-way partition minimal difference
 
-  # Mix arithmetic + DP + ILP (use --kinds to pick)
-  python cot_tb_ext.py --backend hf --model google/gemma-2-9b-it \
-    --n 60 --digits 6 8 --kinds add lcs knap rod ilp_assign ilp_prod ilp_partition \
-    --exec_code --outdir out_mix
+ILPs use PuLP if available; otherwise safe brute-force fallbacks (small sizes).
+Code-CoT subprocess is constrained but allows imports.
 
-TensorBoard:
-  tensorboard --logdir <outdir>/tb
+Usage examples:
+  python cot_general.py --backend hf --model google/gemma-2-9b-it \
+    --n 60 --digits 8 9 10 --kinds add sub mul lcs knap rod ilp_assign ilp_prod ilp_partition \
+    --exec_code --outdir out_hf
+  tensorboard --logdir out_hf/tb
 """
 
 from __future__ import annotations
 import argparse, os, json, re, math, random, time, sys, textwrap, tempfile, subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
-# ------------------------------- Helpers (safe ints) -------------------------------
+# ------------------------------- Utilities ----------------------------------
+
+INT_RE = re.compile(r"[-+]?[0-9]+")
+
+def _try_import_pulp():
+    try:
+        import pulp  # type: ignore
+        return pulp
+    except Exception:
+        return None
+
+# ------------------------------- Dataset ------------------------------------
 
 def sample_int(digits: int, rng: random.Random) -> int:
     if digits <= 0:
@@ -36,244 +48,250 @@ def sample_int(digits: int, rng: random.Random) -> int:
     hi = 10**digits - 1
     return rng.randint(lo, hi)
 
-def randint(rng: random.Random, a:int, b:int) -> int:
-    return rng.randint(a, b)
-
-def choice(rng: random.Random, xs: List[Any]) -> Any:
-    return xs[rng.randint(0, len(xs)-1)]
-
-# ------------------------------- Problem definitions -------------------------------
+def rand_string(rng: random.Random, alpha="abcd", lo=5, hi=12) -> str:
+    n = rng.randint(lo, hi)
+    return "".join(rng.choice(alpha) for _ in range(n))
 
 @dataclass
 class Problem:
-    """
-    kind:
-      Arithmetic: 'add' | 'sub' | 'mul' | 'mix'
-      DP:         'lcs' | 'knap' | 'rod'
-      ILP:        'ilp_assign' | 'ilp_prod' | 'ilp_partition'
-    digits: integer "size" bucket (kept for TB grouping / CSV)
-    a,b: used for arithmetic; ignored otherwise
-    payload: problem-specific data dict
-    """
     kind: str
-    digits: int
+    # arithmetic fields (optional)
+    digits: int = 0
     a: int = 0
     b: int = 0
-    payload: Dict[str, Any] = field(default_factory=dict)
+    # general payload for DP/ILP
+    data: Optional[Dict[str, Any]] = None
 
-    # ---------- human-readable statement for the LLM ----------
     def text(self) -> str:
         k = self.kind
-        if k == 'add':  return f"Compute: {self.a} + {self.b}"
-        if k == 'sub':  return f"Compute: {self.a} - {self.b}"
-        if k == 'mul':  return f"Compute: {self.a} * {self.b}"
-        if k == 'mix':  return f"Compute: ({self.a} + {self.b}) * {self.a}"
+        if k in ("add","sub","mul","mix"):
+            if k == 'add':
+                return f"Compute: {self.a} + {self.b}"
+            if k == 'sub':
+                return f"Compute: {self.a} - {self.b}"
+            if k == 'mul':
+                return f"Compute: {self.a} * {self.b}"
+            if k == 'mix':
+                return f"Compute: ({self.a} + {self.b}) * {self.a}"
+        elif k == "lcs":
+            s = self.data["s"]; t = self.data["t"]
+            return f"Compute the length of the Longest Common Subsequence (LCS) between strings:\nS = \"{s}\"\nT = \"{t}\""
+        elif k == "knap":
+            w = self.data["weights"]; v = self.data["values"]; C = self.data["capacity"]
+            return ("0/1 Knapsack: Given item weights W and values V and capacity C, "
+                    "compute the maximum total value.\n"
+                    f"W = {w}\nV = {v}\nC = {C}")
+        elif k == "rod":
+            prices = self.data["prices"]
+            N = len(prices)
+            return ("Rod cutting: Given a rod of length N and price list P[1..N], "
+                    "compute the maximum obtainable revenue.\n"
+                    f"N = {N}\nP = {prices}")
+        elif k == "ilp_assign":
+            C = self.data["cost"]
+            return ("Assignment problem: Given an n×n cost matrix C, assign each worker to one task "
+                    "minimizing the total cost. Return the minimum total cost as an integer.\n"
+                    f"C = {C}")
+        elif k == "ilp_prod":
+            prof = self.data["profit"]; cons = self.data["consumption"]; caps = self.data["capacity"]; ub = self.data["upper_bound"]
+            return ("Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, "
+                    "subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.\n"
+                    f"profit = {prof}\nconsumption (rows=resources) = {cons}\ncapacity = {caps}\nupper_bounds = {ub}")
+        elif k == "ilp_partition":
+            w = self.data["weights"]
+            return ("Partition: Split the items into two groups to minimize the absolute difference between the sums. "
+                    "Return the minimum difference as an integer.\n"
+                    f"weights = {w}")
+        raise ValueError("unknown kind")
 
-        if k == 'lcs':
-            s = self.payload["s"]; t = self.payload["t"]
-            return (f"LCS length problem: Given two strings s='{s}' and t='{t}', "
-                    f"return the integer length of their longest common subsequence.")
-        if k == 'knap':
-            w = self.payload["weights"]; v = self.payload["values"]; C = self.payload["capacity"]
-            return (f"0/1 Knapsack: weights={w}, values={v}, capacity={C}. "
-                    f"Return the integer maximum achievable value.")
-        if k == 'rod':
-            P = self.payload["prices"]; L = self.payload["length"]
-            return (f"Rod Cutting: rod length={L}, prices for lengths 1..{len(P)} are {P}. "
-                    f"Return the integer maximum revenue.")
-        if k == 'ilp_assign':
-            C = self.payload["costs"]
-            return (f"Assignment ILP (min cost): cost matrix={C}. "
-                    f"Assign each job to a unique machine to minimize total cost. "
-                    f"Return the integer minimum cost.")
-        if k == 'ilp_prod':
-            prof = self.payload["profits"]; R = self.payload["resources"]; cap = self.payload["capacity"]; ub = self.payload["ubound"]
-            return (f"Production Planning ILP (max profit): profits={prof}, resource_matrix={R}, capacity={cap}, upper_bounds={ub}. "
-                    f"Choose integer units per product to maximize profit subject to resource constraints. "
-                    f"Return the integer maximum profit.")
-        if k == 'ilp_partition':
-            pops = self.payload["values"]
-            return (f"Balanced Partition ILP: populations={pops}. Partition into two groups to minimize absolute difference "
-                    f"of group sums. Return the integer minimum difference.")
-        raise ValueError(f"unknown kind: {k}")
-
-    # ---------- exact ground-truth (small instances) ----------
+    # ---- Ground-truth evaluators ----
     def ground_truth(self) -> int:
         k = self.kind
-        if k == 'add':  return self.a + self.b
-        if k == 'sub':  return self.a - self.b
-        if k == 'mul':  return self.a * self.b
-        if k == 'mix':  return (self.a + self.b) * self.a
+        if k in ("add","sub","mul","mix"):
+            if k == 'add': return self.a + self.b
+            if k == 'sub': return self.a - self.b
+            if k == 'mul': return self.a * self.b
+            if k == 'mix': return (self.a + self.b) * self.a
+        elif k == "lcs":
+            return lcs_len(self.data["s"], self.data["t"])
+        elif k == "knap":
+            return knap_01_max_value(self.data["weights"], self.data["values"], self.data["capacity"])
+        elif k == "rod":
+            return rod_cut_max(self.data["prices"])
+        elif k == "ilp_assign":
+            return assignment_min_cost(self.data["cost"])
+        elif k == "ilp_prod":
+            return prodplan_max_profit(self.data)
+        elif k == "ilp_partition":
+            return partition_min_diff(self.data["weights"])
+        raise ValueError("unknown kind")
 
-        if k == 'lcs':
-            s = self.payload["s"]; t = self.payload["t"]
-            return lcs_len(s, t)
-        if k == 'knap':
-            w = self.payload["weights"]; v = self.payload["values"]; C = self.payload["capacity"]
-            return knapsack_01_max_value(w, v, C)
-        if k == 'rod':
-            P = self.payload["prices"]; L = self.payload["length"]
-            return rod_cut_max(P, L)
-        if k == 'ilp_assign':
-            C = self.payload["costs"]
-            return assignment_min_cost_bruteforce(C)
-        if k == 'ilp_prod':
-            prof = self.payload["profits"]; R = self.payload["resources"]; cap = self.payload["capacity"]; ub = self.payload["ubound"]
-            return prodplan_max_profit_bruteforce(prof, R, cap, ub)
-        if k == 'ilp_partition':
-            vals = self.payload["values"]
-            return balanced_partition_diff(vals)
-        raise ValueError(f"unknown kind: {k}")
-
-# ------------------------------- DP solvers (truth) -------------------------------
+# ---- DP helpers ----
 
 def lcs_len(s: str, t: str) -> int:
-    n, m = len(s), len(t)
-    dp = [[0]*(m+1) for _ in range(n+1)]
-    for i in range(n):
-        for j in range(m):
+    m, n = len(s), len(t)
+    dp = [[0]*(n+1) for _ in range(m+1)]
+    for i in range(m):
+        for j in range(n):
             if s[i] == t[j]:
                 dp[i+1][j+1] = dp[i][j] + 1
             else:
                 dp[i+1][j+1] = max(dp[i][j+1], dp[i+1][j])
-    return dp[n][m]
+    return dp[m][n]
 
-def knapsack_01_max_value(weights: List[int], values: List[int], capacity: int) -> int:
-    n = len(weights)
-    dp = [0]*(capacity+1)
+def knap_01_max_value(W: List[int], V: List[int], C: int) -> int:
+    n = len(W)
+    dp = [0]*(C+1)
     for i in range(n):
-        w, val = weights[i], values[i]
-        for c in range(capacity, w-1, -1):
+        w, val = W[i], V[i]
+        for c in range(C, w-1, -1):
             dp[c] = max(dp[c], dp[c-w] + val)
-    return dp[capacity]
+    return dp[C]
 
-def rod_cut_max(prices: List[int], L: int) -> int:
-    dp = [0]*(L+1)
-    for x in range(1, L+1):
-        best = 0
-        for cut in range(1, min(x, len(prices)) + 1):
-            best = max(best, prices[cut-1] + dp[x-cut])
-        dp[x] = best
-    return dp[L]
+def rod_cut_max(P: List[int]) -> int:
+    n = len(P)
+    dp = [0]*(n+1)
+    for L in range(1, n+1):
+        best = P[L-1]  # one piece of length L
+        for k in range(1, L):
+            best = max(best, dp[k] + dp[L-k])
+        dp[L] = best
+    return dp[n]
 
-# ------------------------------- ILP (truth via small brute force) -------------------------------
+# ---- ILP / combinatorial helpers ----
 
-def assignment_min_cost_bruteforce(C: List[List[int]]) -> int:
-    # Square or rectangular cost matrix; assign each job to a unique machine (min rows, cols <= 5).
+def assignment_min_cost(C: List[List[int]]) -> int:
+    n = len(C)
+    pulp = _try_import_pulp()
+    if pulp is not None:
+        prob = pulp.LpProblem("assign", pulp.LpMinimize)
+        x = [[pulp.LpVariable(f"x_{i}_{j}", 0, 1, cat="Binary") for j in range(n)] for i in range(n)]
+        prob += pulp.lpSum(C[i][j]*x[i][j] for i in range(n) for j in range(n))
+        for i in range(n):
+            prob += pulp.lpSum(x[i][j] for j in range(n)) == 1
+        for j in range(n):
+            prob += pulp.lpSum(x[i][j] for i in range(n)) == 1
+        prob.solve(pulp.PULP_CBC_CMD(msg=False))
+        val = int(round(pulp.value(prob.objective)))
+        return val
+    # brute-force permutations (n small, e.g., <=5)
     import itertools
-    m = len(C)       # jobs
-    n = len(C[0])    # machines
-    # If rectangular, we assign min(m,n) pairs; here keep m == n in generation to simplify.
-    best = math.inf
-    for perm in itertools.permutations(range(n), r=m):
-        cost = sum(C[i][perm[i]] for i in range(m))
-        if cost < best:
-            best = cost
+    best = None
+    for perm in itertools.permutations(range(n)):
+        cost = sum(C[i][perm[i]] for i in range(n))
+        best = cost if best is None else min(best, cost)
     return int(best)
 
-def prodplan_max_profit_bruteforce(profits: List[int], R: List[List[int]], cap: List[int], ub: List[int]) -> int:
-    # Small integer search on x_i in [0, ub_i]
-    best = -10**9
-    n = len(profits)
-    def ok(x):
-        # Resource constraints: for each resource r: sum_j R[r][j]*x[j] <= cap[r]
-        for r in range(len(R)):
-            s = sum(R[r][j] * x[j] for j in range(n))
-            if s > cap[r]: return False
-        return True
-    def value(x):
-        return sum(profits[j] * x[j] for j in range(n))
-    # naive nested loops (n <= 4; ub small)
-    def dfs(i, cur):
+def prodplan_max_profit(d: Dict[str, Any]) -> int:
+    profit: List[int] = d["profit"]
+    consumption: List[List[int]] = d["consumption"]  # R x P
+    capacity: List[int] = d["capacity"]              # R
+    upper: List[int] = d["upper_bound"]              # P
+    R = len(consumption)
+    P = len(profit)
+    pulp = _try_import_pulp()
+    if pulp is not None:
+        prob = pulp.LpProblem("prodplan", pulp.LpMaximize)
+        x = [pulp.LpVariable(f"x_{j}", lowBound=0, upBound=int(upper[j]), cat="Integer") for j in range(P)]
+        prob += pulp.lpSum(profit[j]*x[j] for j in range(P))
+        for i in range(R):
+            prob += pulp.lpSum(consumption[i][j]*x[j] for j in range(P)) <= capacity[i]
+        prob.solve(pulp.PULP_CBC_CMD(msg=False))
+        val = int(round(pulp.value(prob.objective)))
+        return val
+    # bounded brute force (P<=4, bounds small)
+    best = 0
+    def dfs(j, cur_prof, use):
         nonlocal best
-        if i == n:
-            if ok(cur):
-                best = max(best, value(cur))
-            return
-        for v in range(0, ub[i]+1):
-            cur.append(v)
-            dfs(i+1, cur)
-            cur.pop()
-    dfs(0, [])
-    return int(best if best != -10**9 else 0)
+        if j == P:
+            best = max(best, cur_prof); return
+        for q in range(0, upper[j]+1):
+            ok = True
+            for i in range(R):
+                if use[i] + consumption[i][j]*q > capacity[i]:
+                    ok = False; break
+            if not ok: break
+            for i in range(R): use[i] += consumption[i][j]*q
+            dfs(j+1, cur_prof + profit[j]*q, use)
+            for i in range(R): use[i] -= consumption[i][j]*q
+    dfs(0, 0, [0]*R)
+    return int(best)
 
-def balanced_partition_diff(vals: List[int]) -> int:
-    # Minimize |sum(S) - sum(~S)| == |total - 2*subset|
-    total = sum(vals)
-    target = total // 2
-    dp = [False]*(target+1)
-    dp[0] = True
-    for x in vals:
-        for s in range(target, x-1, -1):
-            dp[s] = dp[s] or dp[s-x]
+def partition_min_diff(weights: List[int]) -> int:
+    total = sum(weights)
+    target = total//2
+    possible = 1  # bitset; bit k means sum k achievable
+    for w in weights:
+        possible = possible | (possible << w)
+    # scan for achievable sum closest to target
+    best = None
     for s in range(target, -1, -1):
-        if dp[s]:
-            return int(abs(total - 2*s))
-    return int(total)
+        if (possible >> s) & 1:
+            best = s
+            break
+    if best is None:
+        return total
+    return int(total - 2*best)
 
-# ------------------------------- Dataset synthesis -------------------------------
+# ------------------------------- Generators ---------------------------------
 
-def rand_string(rng: random.Random, length: int, alphabet: str="abcdxyz") -> str:
-    return "".join(choice(rng, list(alphabet)) for _ in range(length))
+def make_problem(rng: random.Random, kind: str, digits: Optional[int]=None) -> Problem:
+    if kind in ("add","sub","mul","mix"):
+        d = digits if digits is not None else rng.choice([2,4,8])
+        a = sample_int(d, rng); b = sample_int(d, rng)
+        if kind == "sub" and b > a: a, b = b, a
+        return Problem(kind=kind, digits=d, a=a, b=b, data=None)
+    if kind == "lcs":
+        s = rand_string(rng, alpha="abcd", lo=5, hi=12)
+        t = rand_string(rng, alpha="abcd", lo=5, hi=12)
+        return Problem(kind="lcs", data={"s": s, "t": t})
+    if kind == "knap":
+        n = rng.randint(6, 10)
+        weights = [rng.randint(1, 18) for _ in range(n)]
+        values  = [rng.randint(1, 40) for _ in range(n)]
+        C = max(1, sum(weights)//2)
+        return Problem(kind="knap", data={"weights": weights, "values": values, "capacity": C})
+    if kind == "rod":
+        N = rng.randint(5, 10)
+        prices = [rng.randint(1, 25) for _ in range(N)]
+        return Problem(kind="rod", data={"prices": prices})
+    if kind == "ilp_assign":
+        n = rng.randint(3, 5)
+        C = [[rng.randint(1, 20) for _ in range(n)] for __ in range(n)]
+        return Problem(kind="ilp_assign", data={"cost": C})
+    if kind == "ilp_prod":
+        P = rng.randint(2, 4)
+        R = rng.randint(2, 3)
+        profit = [rng.randint(5, 20) for _ in range(P)]
+        consumption = [[rng.randint(1, 8) for _ in range(P)] for __ in range(R)]
+        # capacity sized so small bounds ~ 6-10
+        capacity = [rng.randint(10, 30) for _ in range(R)]
+        # conservative upper bounds to keep brute force OK if needed
+        upper = []
+        for j in range(P):
+            ub = min(8, min((capacity[i] // max(1, consumption[i][j]) for i in range(R)), default=8))
+            upper.append(int(max(3, ub)))
+        return Problem(kind="ilp_prod", data={"profit": profit, "consumption": consumption, "capacity": capacity, "upper_bound": upper})
+    if kind == "ilp_partition":
+        n = rng.randint(8, 14)
+        weights = [rng.randint(1, 20) for _ in range(n)]
+        return Problem(kind="ilp_partition", data={"weights": weights})
+    raise ValueError(f"unknown kind: {kind}")
 
 def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int=1) -> List[Problem]:
     rng = random.Random(seed)
     problems: List[Problem] = []
-    if not kinds:
-        return problems
-    per = max(1, n // len(digits_list))
-    for digits in digits_list:
+    # Simple balanced over kinds; for arithmetic kinds we vary digits per sample.
+    per = max(1, n // max(1, len(kinds)))
+    for k in kinds:
         for _ in range(per):
-            kind = choice(rng, kinds)
-
-            if kind in ('add','sub','mul','mix'):
-                a = sample_int(digits, rng)
-                b = sample_int(digits, rng)
-                problems.append(Problem(kind=kind, digits=digits, a=a, b=b))
-
-            elif kind == 'lcs':
-                L1 = max(2, min(20, digits))     # keep it small
-                L2 = max(2, min(20, digits-1 if digits>2 else digits))
-                s = rand_string(rng, L1)
-                t = rand_string(rng, L2)
-                problems.append(Problem(kind='lcs', digits=digits, payload=dict(s=s, t=t)))
-
-            elif kind == 'knap':
-                n_items = max(3, min(10, digits))
-                weights = [randint(rng, 1, 10) for _ in range(n_items)]
-                values  = [randint(rng, 1, 20) for _ in range(n_items)]
-                capacity = max(5, int(sum(weights) * 0.4))
-                problems.append(Problem(kind='knap', digits=digits, payload=dict(weights=weights, values=values, capacity=capacity)))
-
-            elif kind == 'rod':
-                L = max(3, min(20, digits))
-                prices = [randint(rng, 1, 15) for _ in range(L)]
-                problems.append(Problem(kind='rod', digits=digits, payload=dict(prices=prices, length=L)))
-
-            elif kind == 'ilp_assign':
-                n_jobs = max(2, min(5, digits % 6 or 4))  # 2..5
-                C = [[randint(rng, 1, 30) for _ in range(n_jobs)] for __ in range(n_jobs)]
-                problems.append(Problem(kind='ilp_assign', digits=n_jobs, payload=dict(costs=C)))
-
-            elif kind == 'ilp_prod':
-                # small < 5 products, 2 resources; bounds small
-                n_prod = max(2, min(4, digits % 5 or 3))
-                profits = [randint(rng, 2, 15) for _ in range(n_prod)]
-                R = [[randint(rng, 1, 6) for _ in range(n_prod)] for __ in range(2)]
-                cap = [randint(rng, 8, 20) for _ in range(2)]
-                ub = [randint(rng, 2, 6) for _ in range(n_prod)]
-                problems.append(Problem(kind='ilp_prod', digits=n_prod, payload=dict(profits=profits, resources=R, capacity=cap, ubound=ub)))
-
-            elif kind == 'ilp_partition':
-                m = max(4, min(14, digits))
-                vals = [randint(rng, 1, 40) for _ in range(m)]
-                problems.append(Problem(kind='ilp_partition', digits=m, payload=dict(values=vals)))
-
-            else:
-                # fallback: default to addition if unknown label sneaks in
-                a = sample_int(digits, rng); b = sample_int(digits, rng)
-                problems.append(Problem(kind='add', digits=digits, a=a, b=b))
-
+            d = rng.choice(digits_list) if k in ("add","sub","mul","mix") else None
+            problems.append(make_problem(rng, k, d))
+    # top up if needed
+    while len(problems) < n:
+        k = rng.choice(kinds)
+        d = rng.choice(digits_list) if k in ("add","sub","mul","mix") else None
+        problems.append(make_problem(rng, k, d))
     rng.shuffle(problems)
     return problems[:n]
 
@@ -284,23 +302,22 @@ JSON_SCHEMA = (
     "'answer' must be a single integer. No extra keys, no text outside JSON."
 )
 
+# IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = (
-    "You are a careful math tutor. Solve the given problem step by step "
-    "in clear natural language sentences. Do NOT include fenced code.\n"
+    "You are a careful problem solver. Solve the given problem step by step "
+    "in clear natural language sentences. Do not include any code or formulas in backticks.\n"
     + JSON_SCHEMA + "\n"
     "Problem: {problem}\n"
-    "Output format example: {\"rationale\": \"...reasoning...\", \"answer\": 42}"
+    "Output format example: {{\"rationale\": \"...natural language steps...\", \"answer\": 42}}"
 )
 
-# Code CoT: allow imports (including PuLP), helper functions, variables; require final print(int)
 CODE_PROMPT = (
     "You are a precise Python programmer. Put ALL your reasoning as executable Python in a single fenced block.\n"
-    "You may import standard libraries and third-party packages (e.g., pulp) and define helper functions.\n"
-    "The LAST line MUST be a print(...) of the final integer answer.\n"
+    "You may use imports and helper functions. The LAST line MUST be a print(...) of the final integer.\n"
     "Do not include prose outside the fenced block.\n"
     + JSON_SCHEMA + "\n"
     "Problem: {problem}\n"
-    "Output format example: {\"rationale\": \"```python\\nimport math\\nprint(2+3)\\n```\", \"answer\": 5}"
+    "Output format example: {{\"rationale\": \"```python\\n# your code here\\nprint(42)\\n```\", \"answer\": 42}}"
 )
 
 # ------------------------------- LLM Clients --------------------------------
@@ -310,26 +327,23 @@ class LLMClient:
         raise NotImplementedError
 
 class DummyClient(LLMClient):
-    """Deterministic stub for dry runs: arithmetic correct; other kinds return 0 (flow check)."""
-    INT_RE = re.compile(r"Compute:\s*(\d+)\s*([+\-*])\s*(\d+)")
-    MIX_RE = re.compile(r"Compute:\s*\((\d+)\s*\+\s*(\d+)\)\s*\*\s*(\d+)")
+    """Deterministic stub: returns correct integer for known templates; else 0."""
     def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int,
              temperature: float, top_p: float, stop: Optional[List[str]] = None) -> str:
         last = messages[-1]["content"]
         ans = 0
-        m = self.INT_RE.search(last)
+        # arithmetic quick parse
+        m = re.search(r"Compute:\s*(\d+)\s*([+\-*])\s*(\d+)", last)
         if m:
-            a, op, b = m.groups(); a,b = int(a), int(b)
+            a, op, b = m.groups(); a, b = int(a), int(b)
             ans = a + b if op == '+' else (a - b if op == '-' else a * b)
         else:
-            m2 = self.MIX_RE.search(last)
-            if m2:
-                a,b,c = map(int, m2.groups()); ans = (a+b)*c
-            else:
-                ans = 0
-        is_math_tutor = "math tutor" in last
-        if is_math_tutor:
-            out = {"rationale": "Compute deterministically in NL.", "answer": ans}
+            m2 = re.search(r"Compute:\s*\((\d+)\s*\+\s*(\d+)\)\s*\*\s*(\d+)", last)
+            if m2: a,b,c = map(int, m2.groups()); ans = (a+b)*c
+        # for other kinds, just 0 to keep it simple for dry-run
+        is_nl = "problem solver" in last.lower()
+        if is_nl:
+            out = {"rationale": "Solve deterministically.", "answer": ans}
         else:
             out = {"rationale": f"```python\nprint({ans})\n```", "answer": ans}
         return json.dumps(out)
@@ -401,8 +415,6 @@ def extract_json(s: str) -> Optional[Dict[str, Any]]:
     except Exception:
         return None
 
-INT_RE = re.compile(r"[-+]?[0-9]+")
-
 @dataclass
 class Parsed:
     raw: str
@@ -444,28 +456,24 @@ def extract_fenced_code(rationale: Optional[str]) -> Optional[str]:
     if not m: return None
     return m.group(1).strip()
 
-def run_code_subprocess(code: str, timeout_s: float = 4.0) -> Optional[int]:
-    """
-    Sandbox with resource limits. ALLOWS imports (including pulp).
-    We keep '-I' (isolated) for safety, but DO NOT use '-S' so site-packages remain discoverable.
-    """
+def run_code_subprocess(code: str, timeout_s: float = 3.0, allow_imports: bool = True) -> Optional[int]:
     code = textwrap.dedent(code).strip()
     with tempfile.TemporaryDirectory(prefix="cot_exec_") as td:
         pyfile = os.path.join(td, "main.py")
         with open(pyfile, "w") as f:
             f.write(code + "\n")
-        # NOTE: allow site-packages for pulp by not passing '-S'
-        cmd = [sys.executable, "-I", pyfile]
-        env = {"PYTHONHASHSEED": "0"}
+        # allow imports: do NOT pass -I/-S; keep resource limits
+        cmd = [sys.executable, pyfile] if allow_imports else [sys.executable, "-I", "-S", pyfile]
+        env = os.environ.copy()
+        env["PYTHONHASHSEED"] = "0"
         preexec = None
         try:
             import resource
             def _limit():
-                # ~2s CPU, 1GB address space, 2MB file writes
-                resource.setrlimit(resource.RLIMIT_CPU, (2, 2))
-                mem = 1024 * 1024 * 1024
+                resource.setrlimit(resource.RLIMIT_CPU, (2, 2))                # ~2s CPU
+                mem = 1_000 * 1024 * 1024                                     # 1GB address space
                 resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
-                resource.setrlimit(resource.RLIMIT_FSIZE, (2_000_000, 2_000_000))
+                resource.setrlimit(resource.RLIMIT_FSIZE, (2_000_000, 2_000_000))  # 2MB file writes
             preexec = _limit
         except Exception:
             preexec = None
@@ -478,26 +486,25 @@ def run_code_subprocess(code: str, timeout_s: float = 4.0) -> Optional[int]:
             return None
         out = (res.stdout or "").strip()
         nums = INT_RE.findall(out)
-        if not nums:
-            return None
+        if not nums: return None
         try:
             return int(nums[-1])
         except Exception:
             return None
 
-def exec_from_rationale(rationale: Optional[str]) -> Optional[int]:
+def exec_from_rationale(rationale: Optional[str], allow_imports: bool = True) -> Optional[int]:
     code = extract_fenced_code(rationale)
     if not code: return None
-    return run_code_subprocess(code, timeout_s=4.0)
+    return run_code_subprocess(code, timeout_s=3.0, allow_imports=allow_imports)
 
-# ------------------------------- Eval structs ---------------------------------
+# ------------------------------- Evaluation ---------------------------------
 
 @dataclass
 class Record:
     idx: int
     problem: str
-    digits: int
     kind: str
+    digits: int
     truth: int
     answer_nl: Optional[int]
     correct_nl: int
@@ -568,7 +575,7 @@ def run(args):
         ans_nl = nl_parsed.answer
         correct_nl = int(ans_nl == truth)
 
-        base_nl = f"{args.model}/nl/sz{pb.digits}/{pb.kind}/i{i}"
+        base_nl = f"{args.model}/nl/{pb.kind}/i{i}"
         tb_text(f"{base_nl}/prompt", "Prompt (NL-CoT)", nl_prompt)
         tb_text(f"{base_nl}/rationale", "NL Rationale", nl_parsed.rationale or "")
         tb_text(f"{base_nl}/raw_json", "Raw NL JSON", nl_parsed.raw)
@@ -585,20 +592,20 @@ def run(args):
         ans_code = code_parsed.answer
         correct_code = int(ans_code == truth)
 
-        base_code = f"{args.model}/code/sz{pb.digits}/{pb.kind}/i{i}"
+        base_code = f"{args.model}/code/{pb.kind}/i{i}"
         tb_text(f"{base_code}/prompt", "Prompt (Code-CoT)", code_prompt)
         tb_text(f"{base_code}/rationale", "Code Rationale (fenced)", code_parsed.rationale or "")
         tb_text(f"{base_code}/raw_json", "Raw Code JSON", code_parsed.raw)
         tb_text(f"{base_code}/answer", "Final Answer (Code)", "" if ans_code is None else str(ans_code))
 
-        # Optional execution via constrained subprocess (supports imports, incl. pulp)
-        ans_code_exec = exec_from_rationale(code_parsed.rationale) if args.exec_code else None
+        # Optional execution via constrained subprocess (imports allowed)
+        ans_code_exec = exec_from_rationale(code_parsed.rationale, allow_imports=True) if args.exec_code else None
         correct_code_exec = int(ans_code_exec == truth) if ans_code_exec is not None else 0
         if args.exec_code:
             tb_text(f"{base_code}/exec_answer", "Executed Answer (subprocess)", "" if ans_code_exec is None else str(ans_code_exec))
 
         records.append(Record(
-            idx=i, problem=problem_text, digits=pb.digits, kind=pb.kind, truth=truth,
+            idx=i, problem=problem_text, kind=pb.kind, digits=pb.digits, truth=truth,
             answer_nl=ans_nl, correct_nl=correct_nl,
             answer_code=ans_code, correct_code=correct_code,
             answer_code_exec=ans_code_exec, correct_code_exec=correct_code_exec,
@@ -610,17 +617,17 @@ def run(args):
     csv_path = os.path.join(args.outdir, f'{exp_id}_results.csv')
     with open(csv_path, 'w', newline='') as f:
         w = csv.writer(f)
-        w.writerow(["idx","problem","size","kind","truth",
+        w.writerow(["idx","kind","digits","truth",
                     "answer_nl","correct_nl",
                     "answer_code","correct_code",
-                    "answer_code_exec","correct_code_exec"])
+                    "answer_code_exec","correct_code_exec","problem"])
         for r in records:
-            w.writerow([r.idx, r.problem, r.digits, r.kind, r.truth,
+            w.writerow([r.idx, r.kind, r.digits, r.truth,
                         r.answer_nl, r.correct_nl,
                         r.answer_code, r.correct_code,
-                        r.answer_code_exec, r.correct_code_exec])
+                        r.answer_code_exec, r.correct_code_exec, r.problem])
 
-    # Summary
+    # Summary (overall + per kind)
     def acc(xs): return sum(xs)/max(1,len(xs))
     acc_nl = acc([r.correct_nl for r in records])
     acc_code = acc([r.correct_code for r in records])
@@ -631,25 +638,30 @@ def run(args):
     c = sum(1 for r in records if r.correct_code==0 and r.correct_nl==1)
     p_mc = mcnemar_exact_p(b, c)
 
-    # Per-kind summary (since tasks vary widely)
     by_kind: Dict[str, List[Record]] = {}
     for r in records: by_kind.setdefault(r.kind, []).append(r)
 
     lines: List[str] = []
     lines.append(f"N={len(records)}  exp_id={exp_id}")
-    lines.append(f"Accuracy NL-CoT:   {acc_nl:.4f}")
-    lines.append(f"Accuracy Code-CoT: {acc_code:.4f}")
+    lines.append(f"Accuracy NL-CoT (overall):   {acc_nl:.4f}")
+    lines.append(f"Accuracy Code-CoT (overall): {acc_code:.4f}")
     lines.append(f"Discordant pairs b=code>nl: {b}, c=nl>code: {c}, McNemar exact p={p_mc:.4g}")
-    lines.append("")
     lines.append("Per-kind bins:")
-    for k in sorted(by_kind.keys()):
+    for k in sorted(by_kind):
         recs = by_kind[k]
-        a_nl = acc([x.correct_nl for x in recs])
+        a_nl   = acc([x.correct_nl   for x in recs])
         a_code = acc([x.correct_code for x in recs])
-        b_k = sum(1 for x in recs if x.correct_code==1 and x.correct_nl==0)
-        c_k = sum(1 for x in recs if x.correct_code==0 and x.correct_nl==1)
-        p_k = mcnemar_exact_p(b_k, c_k)
-        lines.append(f"  kind={k:12s}: N={len(recs):3d}  NL={a_nl:.4f}  Code={a_code:.4f}  McNemar p={p_k:.4g}")
+        # Exec accuracy only over items that actually executed
+        exec_vals = [x.correct_code_exec for x in recs if x.answer_code_exec is not None]
+        a_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float('nan')
+
+        lines.append(f"  kind={k:12s}: N={len(recs):3d}  NL={a_nl:.4f}  Code={a_code:.4f}  Exec={a_exec:.4f}")
+        if tb is not None:
+            tb.add_scalar(f"{args.model}/acc_nl/{k}",   a_nl)
+            tb.add_scalar(f"{args.model}/acc_code/{k}", a_code)
+            if exec_vals:  # only log if anything executed
+                tb.add_scalar(f"{args.model}/acc_exec/{k}", a_exec)
+
     if has_exec:
         lines.append("")
         lines.append(f"Execution condition (subprocess): acc={acc_exec:.4f}")
@@ -667,13 +679,12 @@ def run(args):
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--n', type=int, default=100, help='total problems (split across sizes)')
-    p.add_argument('--digits', type=int, nargs='+', default=[6,8,10],
-                   help='For arithmetic: number of digits. For DP/ILP: used as size seed (len, items, etc.).')
+    p.add_argument('--n', type=int, default=100, help='total problems (balanced over kinds)')
+    p.add_argument('--digits', type=int, nargs='+', default=[2,4,8],
+                   help='used only for arithmetic kinds (add/sub/mul/mix)')
     p.add_argument('--kinds', type=str, nargs='+',
-                   default=['add','sub','mul'],
-                   choices=['add','sub','mul','mix','lcs','knap','rod','ilp_assign','ilp_prod','ilp_partition'],
-                   help='Which task types to sample from.')
+                   default=['add','sub','mul','lcs','knap','rod','ilp_assign','ilp_prod','ilp_partition'],
+                   choices=['add','sub','mul','mix','lcs','knap','rod','ilp_assign','ilp_prod','ilp_partition'])
     p.add_argument('--seed', type=int, default=1)
 
     p.add_argument('--backend', type=str, default='dummy', choices=['dummy','openai','hf'])
@@ -682,8 +693,8 @@ def parse_args():
     p.add_argument('--hf_device_map', type=str, default='auto')
     p.add_argument('--hf_trust_remote_code', action='store_true')
 
-    p.add_argument('--max_tokens', type=int, default=512)
-    p.add_argument('--exec_code', action='store_true', help='execute code-CoT in sandboxed subprocess (allows imports incl. pulp)')
+    p.add_argument('--max_tokens', type=int, default=384)
+    p.add_argument('--exec_code', action='store_true', help='execute code-CoT in sandboxed subprocess (imports allowed)')
     p.add_argument('--outdir', type=str, default='out')
     p.add_argument('--log_every', type=int, default=50)
 

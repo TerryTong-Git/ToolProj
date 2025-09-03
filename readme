@@ -7,11 +7,12 @@ pixi run .
 ### Run Exps
 
 ```
-bash run_between_concept.sh
+bash run_performance.sh
 ```
-Takes around 20 minutes on 8 Titan RTX GPUS. 
+Takes around 4hr 52 minutes on 8 Titan RTX GPUS. 
 
 ### Get MI + Analyse what Concepts Differ
 ```
 bash run_mi.sh
 ```
+Takes around 25 minutes
