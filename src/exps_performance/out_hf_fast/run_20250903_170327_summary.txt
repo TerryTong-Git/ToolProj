@@ -1,0 +1,32 @@
+N=100  exp_id=run_20250903_170327
+Accuracy NL-CoT (overall):   0.1200
+Accuracy Code-CoT (overall): 0.1300
+Execution condition (subprocess): acc=0.4100
+Discordant pairs b=code>nl: 5, c=nl>code: 4, McNemar exact p=1
+Per-kind bins:
+
+Per-kind × digit bins:
+  kind=ilp_assign
+    digits= 2: N=  6  NL=0.1667  Code=0.0000  Exec=0.0000
+    digits= 4: N=  5  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits= 6: N=  6  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=ilp_partition
+    digits= 2: N=  5  NL=0.2000  Code=0.4000  Exec=0.8000
+    digits= 4: N=  6  NL=0.1667  Code=0.1667  Exec=0.3333
+    digits= 6: N=  5  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=ilp_prod
+    digits= 2: N=  5  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits= 4: N=  5  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits= 6: N=  6  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=knap
+    digits= 2: N=  5  NL=0.2000  Code=0.2000  Exec=0.0000
+    digits= 4: N=  5  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits= 6: N=  5  NL=0.2000  Code=0.0000  Exec=0.0000
+  kind=lcs
+    digits= 2: N=  5  NL=0.6000  Code=0.8000  Exec=0.8000
+    digits= 4: N=  6  NL=0.1667  Code=0.1667  Exec=1.0000
+    digits= 6: N=  7  NL=0.2857  Code=0.2857  Exec=1.0000
+  kind=rod
+    digits= 2: N=  5  NL=0.2000  Code=0.4000  Exec=1.0000
+    digits= 4: N=  7  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits= 6: N=  6  NL=0.0000  Code=0.0000  Exec=1.0000

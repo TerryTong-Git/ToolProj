@@ -1,0 +1,38 @@
+N=1000  exp_id=run_20250903_171728
+Accuracy NL-CoT (overall):   0.0340
+Accuracy Code-CoT (overall): 0.0490
+Execution condition (subprocess): acc=0.3350
+Discordant pairs b=code>nl: 27, c=nl>code: 12, McNemar exact p=0.0237
+Per-kind bins:
+
+Per-kind × digit bins:
+  kind=ilp_assign
+    digits= 5: N= 41  NL=0.0000  Code=0.0000  Exec=0.0244
+    digits=10: N= 42  NL=0.0238  Code=0.0238  Exec=0.1429
+    digits=15: N= 42  NL=0.0476  Code=0.0476  Exec=0.0000
+    digits=20: N= 42  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=ilp_partition
+    digits= 5: N= 41  NL=0.0000  Code=0.0488  Exec=0.3902
+    digits=10: N= 41  NL=0.0000  Code=0.0000  Exec=0.0732
+    digits=15: N= 44  NL=0.0000  Code=0.0000  Exec=0.0682
+    digits=20: N= 42  NL=0.0000  Code=0.0000  Exec=0.0476
+  kind=ilp_prod
+    digits= 5: N= 41  NL=0.0000  Code=0.0244  Exec=0.0000
+    digits=10: N= 42  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits=15: N= 42  NL=0.0000  Code=0.0238  Exec=0.0000
+    digits=20: N= 44  NL=0.0227  Code=0.0000  Exec=0.0000
+  kind=knap
+    digits= 5: N= 42  NL=0.0714  Code=0.0476  Exec=0.0476
+    digits=10: N= 42  NL=0.0000  Code=0.0000  Exec=0.1667
+    digits=15: N= 41  NL=0.0000  Code=0.0000  Exec=0.2195
+    digits=20: N= 41  NL=0.0000  Code=0.0000  Exec=0.1220
+  kind=lcs
+    digits= 5: N= 41  NL=0.4390  Code=0.4878  Exec=1.0000
+    digits=10: N= 41  NL=0.1951  Code=0.2439  Exec=1.0000
+    digits=15: N= 42  NL=0.0238  Code=0.0952  Exec=1.0000
+    digits=20: N= 41  NL=0.0000  Code=0.1463  Exec=0.9756
+  kind=rod
+    digits= 5: N= 41  NL=0.0000  Code=0.0000  Exec=0.5122
+    digits=10: N= 42  NL=0.0000  Code=0.0000  Exec=0.3571
+    digits=15: N= 41  NL=0.0000  Code=0.0000  Exec=0.9756
+    digits=20: N= 41  NL=0.0000  Code=0.0000  Exec=1.0000

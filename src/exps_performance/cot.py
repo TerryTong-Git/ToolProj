@@ -27,7 +27,16 @@ from typing import List, Dict, Any, Optional, Tuple
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import torch
+from transformers import AutoTokenizer
+try:
+    from vllm import LLM as VLLMEngine, SamplingParams
+except Exception as _vllm_import_err:
+    VLLMEngine = None
+    SamplingParams = None
+
 torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.deterministic = True
+
 try:
     torch.set_float32_matmul_precision("high")
 except Exception:
@@ -344,16 +353,15 @@ JSON_SCHEMA = (
 
 # IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = (
-    "You are a careful and accurate problem solver. Solve the given problem step by step "
-    "in clear natural language sentences. Do not include any code or formulas in backticks.\n"
+    "You are a careful and accurate problem solver for algorithmic tasks. Solve the given problem step by step "
+    "in clear natural language sentences, showing every step of your work and reasoning through the process. Do not include any code or formulas in backticks.\n"
     + JSON_SCHEMA + "\n"
     "Problem: {problem}\n"
     "Output format example: {{\"rationale\": \"...natural language steps...\", \"answer\": 42}}"
 )
 
 CODE_PROMPT = (
-    "You are a precise and accurate Python programmer. Put ALL your reasoning as executable Python in a single fenced block.\n"
-    "You may use imports and helper functions: in the python environment, you have access to scipy, numpy, and PuLP. The LAST line MUST be a print(...) of the final integer.\n"
+    "You are a precise and accurate Python programmer. Put ALL your reasoning as executable Python within backticks: python``` #code ```. Make sure indentation/dedentation is correct in the rationale for Python. Ensure that you define your variables, and that the variable orderings are right. Ensure your syntax is correct, e.g. types, variable definitions, function indents. \n" "You may use imports and helper functions: in the python environment, you have access to pytorch, scipy, numpy, and PuLP. The LAST line MUST be a print(...) of the final integer.\n"
     "Do not include prose outside the fenced block.\n"
     + JSON_SCHEMA + "\n"
     "Problem: {problem}\n"
@@ -400,6 +408,78 @@ class OpenAIChatClient(LLMClient):
             model=model, messages=messages, temperature=temperature, top_p=top_p, max_tokens=max_tokens, stop=stop,
         )
         return resp.choices[0].message.content
+class VLLMClient(LLMClient):
+    """
+    vLLM-powered local inference with the same .chat(...) signature you use
+    everywhere else. Reuses a single engine; applies a chat template if the
+    model provides one; otherwise falls back to the last user message content.
+    """
+    def __init__(self, model_name: str,
+                 dtype: str = "auto",
+                 tensor_parallel_size: int = 1,
+                 gpu_memory_utilization: float = 0.9,
+                 max_model_len: Optional[int] = None,
+                 download_dir: Optional[str] = None,
+                 trust_remote_code: bool = False, 
+                 seed: int=0):
+        assert dtype == "float16", "Wrong dtype"
+        if VLLMEngine is None:
+            raise RuntimeError(
+                "vLLM is not installed. Install a CUDA-matching vLLM wheel "
+                "(e.g. vllm-cu121) or build from source."
+            )
+        # vLLM engine (persistent)
+        self.seed = seed
+        self.llm = VLLMEngine(
+            model=model_name,
+            dtype=dtype,                               # "auto" | "float16"
+            tensor_parallel_size=int(tensor_parallel_size),
+            gpu_memory_utilization=float(gpu_memory_utilization),
+            max_model_len=int(max_model_len) if max_model_len else None,
+            trust_remote_code=bool(trust_remote_code),
+            download_dir=download_dir,
+            seed=seed
+        )
+        # Use HF tokenizer to format chat prompts if available
+        self.tok = AutoTokenizer.from_pretrained(
+            model_name, trust_remote_code=trust_remote_code
+        )
+        self.has_template = hasattr(self.tok, "apply_chat_template") and (self.tok.chat_template is not None)
+
+    def _to_prompt(self, messages: List[Dict[str, str]]) -> str:
+        if self.has_template:
+            # Mirrors your HFLocalClient behavior
+            return self.tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+        # Fallback: use the last user content (same as HFLocalClient fallback)
+        return messages[-1]["content"]
+
+    def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int,
+             temperature: float, top_p: float, stop: Optional[List[str]] = None) -> str:
+        prompt = self._to_prompt(messages)
+        sp = SamplingParams(
+            max_tokens=int(max_tokens),                # new tokens
+            temperature=float(temperature) if temperature is not None else 0.0,
+            top_p=float(top_p) if top_p is not None else 1.0,
+            stop=stop or None,
+            seed=self.seed
+        )
+        # vLLM can batch; here we keep semantics identical (one request per call)
+        outs = self.llm.generate([prompt], sp)
+        # outs is a List[RequestOutput]; take first, first candidate
+        return outs[0].outputs[0].text
+    def chat_many(self, model: str, messages_list: List[List[Dict[str, str]]], max_tokens: int,
+                  temperature: float, top_p: float, stop: Optional[List[str]] = None) -> List[str]:
+        prompts = [self._to_prompt(msgs) for msgs in messages_list]
+        sp = SamplingParams(
+            max_tokens=int(max_tokens),
+            temperature=float(temperature) if temperature is not None else 0.0,
+            top_p=float(top_p) if top_p is not None else 1.0,
+            stop=stop or None,
+            seed=self.seed,
+        )
+        outs = self.llm.generate(prompts, sp)
+        # preserve order, one candidate per request
+        return [o.outputs[0].text for o in outs]
 
 class HFLocalClient(LLMClient):
     """Vanilla Hugging Face transformers inference (no vLLM)."""
@@ -610,6 +690,11 @@ def mcnemar_exact_p(b: int, c: int) -> float:
 
 def run(args):
     # backend
+    random.seed(args.seed)
+    import numpy as np
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
     if args.backend == 'dummy':
         client: LLMClient = DummyClient()
     elif args.backend == 'openai':
@@ -620,6 +705,18 @@ def run(args):
             dtype=args.hf_dtype,
             device_map=args.hf_device_map,
             trust_remote_code=args.hf_trust_remote_code,
+        )
+    elif args.backend == 'vllm':
+        print("Instantiating VLLM")
+        client = VLLMClient(
+            model_name=args.model,
+            dtype=args.vllm_dtype,
+            tensor_parallel_size=args.vllm_tensor_parallel,
+            gpu_memory_utilization=args.vllm_gpu_mem_util,
+            max_model_len=args.vllm_max_model_len,
+            download_dir=args.vllm_download_dir,
+            trust_remote_code=args.hf_trust_remote_code,  
+            seed=args.seed
         )
     else:
         raise ValueError("backend must be one of {dummy, openai, hf}")
@@ -637,56 +734,66 @@ def run(args):
         n = args.tb_text_chars
         body_show = body if len(body) <= n else (body[:max(0, n-3)] + "...")
         tb.add_text(tag, f"**{title}**\n\n```\n{body_show}\n```", global_step=step)
+        
+    nl_msgs = [[{"role": "user", "content": NL_PROMPT.format(problem=pb.text())}] for pb in problems]
+    code_msgs = [[{"role": "user", "content": CODE_PROMPT.format(problem=pb.text())}] for pb in problems]
 
+    def run_batch(messages_list):
+        if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
+            outs = []
+            for start in range(0, len(messages_list), args.batch_size):
+                chunk = messages_list[start:start+args.batch_size]
+                outs.extend(client.chat_many(args.model, chunk,
+                                             max_tokens=args.max_tokens,
+                                             temperature=args.temperature, top_p=args.top_p, stop=None))
+            return outs
+        else:
+            return [
+                client.chat(args.model, m, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None)
+                for m in messages_list
+            ]
+
+    # === Generate all NL outputs, then all Code outputs (order preserved) ===
+    nl_raw_all = run_batch(nl_msgs)
+    code_raw_all = run_batch(code_msgs)
+    
     records: List[Record] = []
-
     for i, pb in enumerate(tqdm(problems, total=len(problems), desc='eval')):
         problem_text = pb.text()
         truth = pb.ground_truth()
 
-        # NL
-        nl_prompt = NL_PROMPT.format(problem=problem_text)
-        nl_raw = client.chat(
-            model=args.model,
-            messages=[{"role":"user","content": nl_prompt}],
-            max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None,
-        )
+        nl_raw = nl_raw_all[i]
         nl_parsed = parse_response(nl_raw)
         ans_nl = nl_parsed.answer
         correct_nl = int(ans_nl == truth)
 
-        base_nl   = f"{args.model}/nl/d{pb.digits}/{pb.kind}/i{i}"
-        tb_text(f"{base_nl}/prompt", "Prompt (NL-CoT)", nl_prompt)
+        base_nl = f"{args.model}/nl/d{pb.digits}/{pb.kind}/i{i}"
+        tb_text(f"{base_nl}/prompt", "Prompt (NL-CoT)", NL_PROMPT.format(problem=problem_text))
         tb_text(f"{base_nl}/rationale", "NL Rationale", nl_parsed.rationale or "")
         tb_text(f"{base_nl}/raw_json", "Raw NL JSON", nl_parsed.raw)
         tb_text(f"{base_nl}/answer", "Final Answer (NL)", "" if ans_nl is None else str(ans_nl))
 
-        # Code
-        code_prompt = CODE_PROMPT.format(problem=problem_text)
-        code_raw = client.chat(
-            model=args.model,
-            messages=[{"role":"user","content": code_prompt}],
-            max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None,
-        )
+        code_raw = code_raw_all[i]
         code_parsed = parse_response(code_raw)
         ans_code = code_parsed.answer
         correct_code = int(ans_code == truth)
 
         base_code = f"{args.model}/code/d{pb.digits}/{pb.kind}/i{i}"
-        tb_text(f"{base_code}/prompt", "Prompt (Code-CoT)", code_prompt)
+        tb_text(f"{base_code}/prompt", "Prompt (Code-CoT)", CODE_PROMPT.format(problem=problem_text))
         tb_text(f"{base_code}/rationale", "Code Rationale (fenced)", code_parsed.rationale or "")
         tb_text(f"{base_code}/raw_json", "Raw Code JSON", code_parsed.raw)
         tb_text(f"{base_code}/answer", "Final Answer (Code)", "" if ans_code is None else str(ans_code))
 
-        # Optional execution via constrained subprocess (imports allowed)
         ans_code_exec = {"ok": False, "value": None, "stdout": "", "stderr": "", "retcode": None, "timeout": False}
         if args.exec_code:
-            ans_code_exec = exec_from_rationale(code_parsed.rationale, allow_imports=True) if args.exec_code else None
-        correct_code_exec = int(ans_code_exec == truth) if ans_code_exec is not None else 0
-        tb_text(f"{base_code}/exec_answer", "Executed Answer (subprocess)", "" if ans_code_exec is None else str(ans_code_exec))
-        tb_text(f"{base_code}/exec_stdout", "Executed STDOUT", ans_code_exec.get("stdout",""))
-        tb_text(f"{base_code}/exec_stderr", "Executed STDERR", ans_code_exec.get("stderr",""))
-        tb_text(f"{base_code}/exec_meta",   "Exec Meta", f"retcode={ans_code_exec.get('retcode')} timeout={ans_code_exec.get('timeout')} ok={ans_code_exec.get('ok')} value={ans_code_exec}")
+            ans_code_exec = exec_from_rationale(code_parsed.rationale, allow_imports=True)
+            tb_text(f"{base_code}/exec_answer", "Executed Answer (subprocess)", "" if ans_code_exec is None else str(ans_code_exec))
+            tb_text(f"{base_code}/exec_stdout", "Executed STDOUT", ans_code_exec.get("stdout",""))
+            tb_text(f"{base_code}/exec_stderr", "Executed STDERR", ans_code_exec.get("stderr",""))
+            tb_text(f"{base_code}/exec_meta", "Exec Meta",
+                    f"retcode={ans_code_exec.get('retcode')} timeout={ans_code_exec.get('timeout')} ok={ans_code_exec.get('ok')} value={ans_code_exec.get('value')}")
+        correct_code_exec = int(ans_code_exec.get("value") == truth) if ans_code_exec is not None else 0
+
         records.append(Record(
             idx=i, problem=problem_text, kind=pb.kind, digits=pb.digits, truth=truth,
             answer_nl=ans_nl, correct_nl=correct_nl,
@@ -694,6 +801,7 @@ def run(args):
             answer_code_exec=ans_code_exec, correct_code_exec=correct_code_exec,
             raw_nl=nl_raw, raw_code=code_raw,
         ))
+
 
     # CSV
     import csv
@@ -728,26 +836,64 @@ def run(args):
     lines.append(f"N={len(records)}  exp_id={exp_id}")
     lines.append(f"Accuracy NL-CoT (overall):   {acc_nl:.4f}")
     lines.append(f"Accuracy Code-CoT (overall): {acc_code:.4f}")
+    if has_exec:
+        lines.append(f"Execution condition (subprocess): acc={acc_exec:.4f}")
     lines.append(f"Discordant pairs b=code>nl: {b}, c=nl>code: {c}, McNemar exact p={p_mc:.4g}")
     lines.append("Per-kind bins:")
-    for k in sorted(by_kind):
-        recs = by_kind[k]
-        a_nl   = acc([x.correct_nl   for x in recs])
-        a_code = acc([x.correct_code for x in recs])
-        # Exec accuracy only over items that actually executed
-        exec_vals = [x.correct_code_exec for x in recs if x.answer_code_exec is not None]
-        a_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float('nan')
+    # --- Per-kind × digit breakdown (printed) ---
+    by_kd: Dict[Tuple[str, int], List[Record]] = {}
+    for r in records:
+        by_kd.setdefault((r.kind, r.digits), []).append(r)
 
-        lines.append(f"  kind={k:12s}: N={len(recs):3d}  NL={a_nl:.4f}  Code={a_code:.4f}  Exec={a_exec:.4f}")
-        if tb is not None:
-            tb.add_scalar(f"{args.model}/acc_nl/{k}",   a_nl)
-            tb.add_scalar(f"{args.model}/acc_code/{k}", a_code)
-            if exec_vals:  # only log if anything executed
-                tb.add_scalar(f"{args.model}/acc_exec/{k}", a_exec)
+    def _acc(lst): 
+        return sum(lst) / max(1, len(lst))
 
-    if has_exec:
-        lines.append("")
-        lines.append(f"Execution condition (subprocess): acc={acc_exec:.4f}")
+    lines.append("")
+    lines.append("Per-kind × digit bins:")
+    for kind in sorted({k for (k, _) in by_kd.keys()}):
+        lines.append(f"  kind={kind}")
+        for d in sorted({d for (k, d) in by_kd.keys() if k == kind}):
+            grp = by_kd[(kind, d)]
+            N = len(grp)
+            acc_nl   = _acc([x.correct_nl   for x in grp])
+            acc_code = _acc([x.correct_code for x in grp])
+
+            # Exec accuracy only for items that actually executed (and if exec requested)
+            if args.exec_code:
+                exec_vals = [x.correct_code_exec for x in grp if x.answer_code_exec is not None]
+                acc_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float('nan')
+            else:
+                acc_exec = float('nan')
+
+            lines.append(f"    digits={d:2d}: N={N:3d}  NL={acc_nl:.4f}  Code={acc_code:.4f}  Exec={acc_exec:.4f}")
+
+            # Optional: log to TensorBoard as kind/digit tags
+            if tb is not None:
+                tb.add_scalar(f"{args.model}/acc_nl/{kind}/d{d}",   acc_nl)
+                tb.add_scalar(f"{args.model}/acc_code/{kind}/d{d}", acc_code)
+                if args.exec_code and not math.isnan(acc_exec):
+                    tb.add_scalar(f"{args.model}/acc_exec/{kind}/d{d}", acc_exec)
+    csv_kd_path = os.path.join(args.outdir, f'{exp_id}_by_kind_digit.csv')
+    with open(csv_kd_path, 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(["kind", "digits", "N", "acc_nl", "acc_code", "acc_exec"])
+        for kind in sorted({k for (k, _) in by_kd.keys()}):
+            for d in sorted({d for (k, d) in by_kd.keys() if k == kind}):
+                grp = by_kd[(kind, d)]
+                N = len(grp)
+                acc_nl   = sum(x.correct_nl   for x in grp) / N if N else float('nan')
+                acc_code = sum(x.correct_code for x in grp) / N if N else float('nan')
+                if args.exec_code:
+                    exec_vals = [x.correct_code_exec for x in grp if x.answer_code_exec is not None]
+                    acc_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float('nan')
+                else:
+                    acc_exec = float('nan')
+                w.writerow([
+                    kind, d, N, f"{acc_nl:.6f}", f"{acc_code:.6f}",
+                    "" if math.isnan(acc_exec) else f"{acc_exec:.6f}"
+                ])
+
+    
 
     summary_path = os.path.join(args.outdir, f'{exp_id}_summary.txt')
     with open(summary_path, 'w') as f:
@@ -773,13 +919,17 @@ def parse_args():
                    choices=['add','sub','mul','mix','lcs','knap','rod','ilp_assign','ilp_prod','ilp_partition'])
     p.add_argument('--seed', type=int, default=1)
 
-    p.add_argument('--backend', type=str, default='dummy', choices=['dummy','openai','hf'])
+    p.add_argument('--backend', type=str, default='dummy', choices=['dummy','openai','hf', 'vllm'])
     p.add_argument('--model', type=str, default='gpt-4o', help='OpenAI model name or HF repo/path when --backend=hf')
-    p.add_argument('--hf_dtype', type=str, default='blfloat16', choices=['auto','float16','bfloat16','float32'])
+    p.add_argument('--hf_dtype', type=str, default='bfloat16', choices=['auto','float16','bfloat16','float32'])
     p.add_argument('--hf_device_map', type=str, default='auto')
     p.add_argument('--hf_trust_remote_code', action='store_true')
 
-    p.add_argument('--max_tokens', type=int, default=512)
+    p.add_argument('--max_tokens', type=int, default=1024)
+    p.add_argument('--temperature', type=int, default=0.7)
+    p.add_argument('--top_p', type=int, default=0.95)
+
+
     p.add_argument('--exec_code', action='store_true', help='execute code-CoT in sandboxed subprocess (imports allowed)')
     p.add_argument('--outdir', type=str, default='out')
     p.add_argument('--log_every', type=int, default=50)
@@ -787,6 +937,16 @@ def parse_args():
     # TensorBoard text limits
     p.add_argument('--tb_text_chars', type=int, default=6000)
     p.add_argument('--tb_disable', action='store_true')
+    
+
+    # vLLM options (kept minimal; defaults are conservative)
+    p.add_argument('--batch_size', type=int, default=8, help='Batch size for backends that support chat_many (vLLM).')
+    p.add_argument('--vllm_dtype', type=str, default='float16',
+                   choices=['auto','float16','bfloat16'])
+    p.add_argument('--vllm_tensor_parallel', type=int, default=8)
+    p.add_argument('--vllm_gpu_mem_util', type=float, default=0.90)
+    p.add_argument('--vllm_max_model_len', type=int, default=None)
+    p.add_argument('--vllm_download_dir', type=str, default='../models')
     return p.parse_args()
 
 if __name__ == '__main__':

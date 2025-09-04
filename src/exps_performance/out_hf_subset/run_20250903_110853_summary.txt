@@ -1,0 +1,9 @@
+N=2  exp_id=run_20250903_110853
+Accuracy NL-CoT (overall):   0.0000
+Accuracy Code-CoT (overall): 0.0000
+Discordant pairs b=code>nl: 0, c=nl>code: 0, McNemar exact p=1
+Per-kind bins:
+  kind=lcs         : N=  1  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=rod         : N=  1  NL=0.0000  Code=0.0000  Exec=0.0000
+
+Execution condition (subprocess): acc=0.0000
