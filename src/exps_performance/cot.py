@@ -353,19 +353,72 @@ JSON_SCHEMA = (
 
 # IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = (
-    "You are a careful and accurate problem solver for algorithmic tasks. Solve the given problem step by step "
-    "in clear natural language sentences, showing every step of your work and reasoning through the process. Do not include any code or formulas in backticks.\n"
-    + JSON_SCHEMA + "\n"
-    "Problem: {problem}\n"
-    "Output format example: {{\"rationale\": \"...natural language steps...\", \"answer\": 42}}"
+"""
+You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail without using any code or formal pseudocode. After fully reasoning through the problem in natural language, consolidate your final thoughts into a JSON dictionary containing two keys:
+
+- "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
+- "final_answer": your conclusive solution or result derived from your reasoning.
+
+Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output.
+
+Example:
+
+Problem: Find the maximum element of the array [3, -1, 7, 2, 5].
+
+Response:
+{{
+  "rationale": "I look at the numbers sequentially. Start with 3 as the current maximum. Compare with -1, it is smaller so keep 3. Compare with 7, it is larger so update the maximum to 7. Compare with 2, it is smaller so keep 7. Compare with 5, it is smaller so keep 7. Therefore, the largest value overall is 7.",
+  "final_answer": 7
+}}
+
+Here is the actual problem:
+{problem}
+
+Give the solution:
+"""
 )
 
+
+
 CODE_PROMPT = (
-    "You are a precise and accurate Python programmer. Put ALL your reasoning as executable Python within backticks: python``` #code ```. Make sure indentation/dedentation is correct in the rationale for Python. Ensure that you define your variables, and that the variable orderings are right. Ensure your syntax is correct, e.g. types, variable definitions, function indents. \n" "You may use imports and helper functions: in the python environment, you have access to pytorch, scipy, numpy, and PuLP. The LAST line MUST be a print(...) of the final integer.\n"
-    "Do not include prose outside the fenced block.\n"
-    + JSON_SCHEMA + "\n"
-    "Problem: {problem}\n"
-    "Output format example: {{\"rationale\": \"```python\\n# your code here\\nprint(42)\\n```\", \"answer\": 42}}"
+"""
+You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step.
+Write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. 
+Ensure proper syntax, indentation, and definitions. The last line of the program must print the final result. 
+After the code block, also produce a JSON dictionary with two keys:
+
+- "rationale": the complete Python code solution, enclosed in a code block.
+- "answer": the result from executing the code.
+
+Constraints:
+* Provide a fully executable solution.
+* Use comments to clarify reasoning.
+* End with a print(...) statement for the answer.
+
+Example:
+
+Problem: Compute the GCD of 48 and 18.
+
+Response:
+1. I am using GCD, so I'll use a while loop and modulus. 
+
+{{\"rationale\": \"```python
+# Euclid's algorithm for GCD
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
+
+res = gcd(48, 18)
+print(res)
+```\", \"answer\": 6}}
+
+Here is the actual problem:
+{problem}
+    
+Give the solution:
+    
+"""
 )
 
 # ------------------------------- LLM Clients --------------------------------
@@ -805,7 +858,7 @@ def run(args):
 
     # CSV
     import csv
-    csv_path = os.path.join(args.outdir, f'{exp_id}_results.csv')
+    csv_path = os.path.join(args.outdir, f'{exp_id}_results_seed_{args.seed}.csv')
     with open(csv_path, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(["idx","kind","digits","truth",

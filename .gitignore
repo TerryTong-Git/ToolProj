@@ -3,4 +3,5 @@
 !.pixi/config.toml
 *.json
 /src/models/
-/src/out_hf/
+/src/**/out*
+/data/*

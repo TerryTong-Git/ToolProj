@@ -1,0 +1,1 @@
+pixi run python analyze_results.py --csv-folder out_hf_scale_meta_llama --exec-code

@@ -1,7 +1,7 @@
 
 ### Install Dependencies
 ```
-pixi run .
+pixi install
 ```
 
 ### Run Exps
@@ -9,7 +9,7 @@ pixi run .
 ```
 bash run_performance.sh
 ```
-Takes around 4hr 52 minutes on 8 Titan RTX GPUS. 
+Takes around 1min to load and 1 min to run 100 examples on 8 Titan RTX GPUS. 
 
 ### Get MI + Analyse what Concepts Differ
 ```
