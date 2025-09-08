@@ -14,8 +14,8 @@ for seed in ${seeds[@]}; do
     --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
     --hf_dtype float16 \
     --hf_device_map auto \
-    --n 200 --digits 16 --kinds  lcs knap rod ilp_prod ilp_assign ilp_partition \
-    --outdir out_hf_scale_deepseek_code_seeded --exec_code --batch_size 64 --seed ${seed}
+    --n 2000 --digits 2,4,8,16 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+    --outdir out_hf_scale_deepseek_code_seeded_again --exec_code --batch_size 64 --seed ${seed}
 done
 
 

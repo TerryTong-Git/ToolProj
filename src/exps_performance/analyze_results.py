@@ -97,19 +97,39 @@ def main():
     
     # group csv_files by seed
     res = []
-    for csv in csv_files: 
-        accs = get_csv_stats(args, csv) #ordered by seed anyway
+    for file in csv_files: 
+        accs = get_csv_stats(args, file) #ordered by seed anyway
         res.append(accs)
     final = torch.stack(res, axis=0) #4D tensor Seed Kind Digit Res
     seed_dim = final.shape[0]
-    average_over_seeds = 1 / seed_dim * einsum(final, 'seed kind digit result -> kind digit result')    
-    print(average_over_seeds)
+    average_over_seeds = 1 / seed_dim * einsum(final, 'seed digit kind result -> digit kind result')  
+    diffs = (final - average_over_seeds)
+    std = torch.pow(torch.mean(torch.pow(diffs, 2), axis=0), 0.5)
     
-    #TODO: Compute Summary Statistics in different levels. 
-
-    # read rows
-    
-    #avg across 5 seeds, report the 
+    total_avg = 1/(average_over_seeds.shape[0] * average_over_seeds.shape[1]) * einsum(average_over_seeds, 'digit kind result -> result')
+    std_avg = 1/(std.shape[0] * std.shape[1]) * einsum(std, 'digit kind result -> result')
+    print(f"Accuracy NL-CoT (overall):   {total_avg[2]:.4f}     STD: {std_avg[2]:.4f}" )
+    print(f"Accuracy Code-CoT (overall): {total_avg[0]:.4f}     STD: {std_avg[0]:.4f}")
+    if args.exec_code:
+        print(f"Execution (overall):        {total_avg[1]:.4f}     STD: {std_avg[1]:.4f}")
+    rows = []
+    with open( csv_files[0], newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            rows.append(row)
+    by_kd = defaultdict(list)
+    for r in rows:
+        dig = int(r['digits'])
+        kind = r['kind']
+        by_kd[(dig,kind)].append(r)
+    kinds = sorted({k for (_,k) in by_kd})
+    digits = sorted({d for (d,_) in by_kd})
+    for i,k in enumerate(kinds):
+        print(f"Kind={k}")
+        print(f"{'Digits':>8} {'NL':>8} {'NL_std':>8} {'Code':>8} {'Code_std':>8} {'Exec':>8} {'Exec_std':>8}")
+        print("-"*70)
+        for j,d in enumerate(digits):
+            print(f"{d:>8} {average_over_seeds[i,j,2]:>8.4f} {std[i,j,2]:>8.4f} {average_over_seeds[i,j,0]:>8.4f} {std[i,j,0]:>8.4f} {average_over_seeds[i,j,1]:>8.4f} {std[i,j,0]:>8.4f}")    
 
 if __name__=="__main__":
     main()
