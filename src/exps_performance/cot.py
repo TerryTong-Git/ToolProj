@@ -44,7 +44,8 @@ except Exception:
 
 # ------------------------------- Utilities ----------------------------------
 
-INT_RE = re.compile(r"[-+]?[0-9]+")
+INT_RE  = re.compile(r'[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?')
+
 
 def _try_import_pulp():
     try:
@@ -354,10 +355,10 @@ JSON_SCHEMA = (
 # IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = (
 """
-You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail without using any code or formal pseudocode. After fully reasoning through the problem in natural language, consolidate your final thoughts into a JSON dictionary containing two keys:
+You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail. You are never allowed to use code. After fully reasoning through the problem in natural language, consolidate your final thoughts into a JSON dictionary containing two keys:
 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
-- "final_answer": your conclusive solution or result derived from your reasoning.
+- "answer": give the final requested answer as an integer.
 
 Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output.
 
@@ -368,7 +369,7 @@ Problem: Find the maximum element of the array [3, -1, 7, 2, 5].
 Response:
 {{
   "rationale": "I look at the numbers sequentially. Start with 3 as the current maximum. Compare with -1, it is smaller so keep 3. Compare with 7, it is larger so update the maximum to 7. Compare with 2, it is smaller so keep 7. Compare with 5, it is smaller so keep 7. Therefore, the largest value overall is 7.",
-  "final_answer": 7
+  "answer": 7
 }}
 
 Here is the actual problem:
@@ -378,17 +379,15 @@ Give the solution:
 """
 )
 
-
-
 CODE_PROMPT = (
 """
 You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step.
 Write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. 
-Ensure proper syntax, indentation, and definitions. The last line of the program must print the final result. 
+Ensure proper syntax, indentation, definitions, and variable instantiation. The last line of the program must print the final result. 
 After the code block, also produce a JSON dictionary with two keys:
 
 - "rationale": the complete Python code solution, enclosed in a code block.
-- "answer": the result from executing the code.
+- "answer": the result from executing the code, should be an integer.
 
 Constraints:
 * Provide a fully executable solution.
@@ -401,15 +400,17 @@ Problem: Compute the GCD of 48 and 18.
 
 Response:
 1. I am using GCD, so I'll use a while loop and modulus. 
+2. I will instantiate vars, algorithm and execute. 
 
 {{\"rationale\": \"```python
 # Euclid's algorithm for GCD
+num1 = 48
+num2 = 18
 def gcd(a, b):
     while b:
         a, b = b, a % b
     return a
-
-res = gcd(48, 18)
+res = gcd(num1, num2)
 print(res)
 ```\", \"answer\": 6}}
 
@@ -461,6 +462,7 @@ class OpenAIChatClient(LLMClient):
             model=model, messages=messages, temperature=temperature, top_p=top_p, max_tokens=max_tokens, stop=stop,
         )
         return resp.choices[0].message.content
+    
 class VLLMClient(LLMClient):
     """
     vLLM-powered local inference with the same .chat(...) signature you use
@@ -580,13 +582,46 @@ class HFLocalClient(LLMClient):
 
 # ------------------------------- Parsing ------------------------------------
 
+JSON_OBJ_RE = re.compile(r"\{[\s\S]*\}")
+
+def _repair_json_candidate(s: str) -> Optional[str]:
+    m = JSON_OBJ_RE.search(s)
+    if not m:
+        return None
+    frag = m.group(0)
+
+    # If rationale is a quoted string containing raw newlines, escape them.
+    # This targets the first "rationale": " ... " occurrence.
+    def _escape_newlines_in_rationale(mo: re.Match) -> str:
+        head, body, tail = mo.group(1), mo.group(2), mo.group(3)
+        body = body.replace('\\', '\\\\').replace('"', '\\"').replace('\r', '\\r').replace('\n', '\\n')
+        return head + body + tail
+
+    frag = re.sub(
+        r'("rationale"\s*:\s*")([\s\S]*?)(")',
+        _escape_newlines_in_rationale,
+        frag,
+        count=1,
+    )
+    return frag
+
 def extract_json(s: str) -> Optional[Dict[str, Any]]:
+    # Try clean parse
     try:
         start = s.index('{'); end = s.rindex('}')
         frag = s[start:end+1]
         return json.loads(frag)
     except Exception:
+        pass
+    # Try repaired parse
+    try:
+        repaired = _repair_json_candidate(s)
+        if repaired is not None:
+            return json.loads(repaired)
+    except Exception:
         return None
+    return None
+
 
 @dataclass
 class Parsed:
@@ -599,6 +634,21 @@ class Parsed:
 def parse_response(raw: str) -> Parsed:
     obj = extract_json(raw)
     if obj is None:
+        # salvage from fenced code
+        code = extract_fenced_code(raw)
+        if code:
+            # Try to recover the printed int from the raw text
+            nums = INT_RE.findall(raw)
+            ans = None
+            try:
+                ans = int(nums[-1])
+            except Exception:
+                if nums and float(nums[-1]) != float('inf'):
+                    ans = int(float(nums[-1]))
+            if ans is not None:
+                obj = {"rationale": f"```python\n{code}\n```", "answer": ans}
+                return Parsed(json.dumps(obj), True, ans, obj["rationale"], "salvaged")
+        # fallback: last int in whole text
         m = INT_RE.findall(raw)
         if not m:
             return Parsed(raw, False, None, None, "no-json-no-int")
@@ -614,7 +664,14 @@ def parse_response(raw: str) -> Parsed:
         ans = int(ans)
     except Exception:
         if isinstance(ans, str):
-            m = INT_RE.findall(ans); ans = int(m[-1]) if m else None
+            m = INT_RE.findall(ans); 
+            try:
+                ans = int(m[-1])
+            except Exception:
+                if m and float(m[-1]) != float('inf'):
+                    ans = int(float(m[-1]))
+                else:
+                    None
         else:
             ans = None
     return Parsed(raw, ans is not None, ans, obj.get('rationale'), None if ans is not None else "answer-not-int")
@@ -673,9 +730,13 @@ def run_code_subprocess(code: str, timeout_s: float = 3.0, allow_imports: bool =
             if nums:
                 try:
                     value = int(nums[-1])
-                    ok = True
+                    ok=True
                 except Exception:
-                    value = None
+                    try:
+                        value = int(float(nums[-1]))
+                        ok = True
+                    except Exception:
+                        value = None
         except subprocess.TimeoutExpired:
             timeout = True
             stderr = "TimeoutExpired"
@@ -979,8 +1040,8 @@ def parse_args():
     p.add_argument('--hf_trust_remote_code', action='store_true')
 
     p.add_argument('--max_tokens', type=int, default=1024)
-    p.add_argument('--temperature', type=int, default=0.7)
-    p.add_argument('--top_p', type=int, default=0.95)
+    p.add_argument('--temperature', type=int, default=0)
+    p.add_argument('--top_p', type=int, default=1)
 
 
     p.add_argument('--exec_code', action='store_true', help='execute code-CoT in sandboxed subprocess (imports allowed)')

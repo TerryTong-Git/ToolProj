@@ -1,7 +1,0 @@
-idx,kind,digits,truth,answer_nl,correct_nl,answer_code,correct_code,answer_code_exec,correct_code_exec,problem
-0,lcs,4,1,2,0,2,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_fh671b7g/main.py"", line 5\n    for i in range(1, n + 1):\nIndentationError: unexpected indent\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.22771000862121582}",0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
-S = ""baca""
-T = ""dddb"""
-1,rod,4,48,42,0,42,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_vn7cprao/main.py"", line 8, in <module>\n    print(rod_cutting(N, P))\n                      ^\nNameError: name \'N\' is not defined\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.18306803703308105}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
-N = 4
-P = [12, 4, 10, 2]"
