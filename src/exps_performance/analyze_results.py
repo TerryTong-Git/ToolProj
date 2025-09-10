@@ -101,13 +101,12 @@ def main():
         accs = get_csv_stats(args, file) #ordered by seed anyway
         res.append(accs)
     final = torch.stack(res, axis=0) #4D tensor Seed Kind Digit Res
-    seed_dim = final.shape[0]
-    average_over_seeds = 1 / seed_dim * einsum(final, 'seed digit kind result -> digit kind result')  
-    diffs = (final - average_over_seeds)
-    std = torch.pow(torch.mean(torch.pow(diffs, 2), axis=0), 0.5)
+    average_over_seeds = final.mean(dim=0)
+    std = final.std(dim=0, unbiased=True)
     
-    total_avg = 1/(average_over_seeds.shape[0] * average_over_seeds.shape[1]) * einsum(average_over_seeds, 'digit kind result -> result')
-    std_avg = 1/(std.shape[0] * std.shape[1]) * einsum(std, 'digit kind result -> result')
+    total_avg = final.mean(dim=(0,1,2))
+    std_avg = final.std(dim=(0,1,2), unbiased=True)
+    
     print(f"Accuracy NL-CoT (overall):   {total_avg[2]:.4f}     STD: {std_avg[2]:.4f}" )
     print(f"Accuracy Code-CoT (overall): {total_avg[0]:.4f}     STD: {std_avg[0]:.4f}")
     if args.exec_code:
@@ -130,6 +129,14 @@ def main():
         print("-"*70)
         for j,d in enumerate(digits):
             print(f"{d:>8} {average_over_seeds[i,j,2]:>8.4f} {std[i,j,2]:>8.4f} {average_over_seeds[i,j,0]:>8.4f} {std[i,j,0]:>8.4f} {average_over_seeds[i,j,1]:>8.4f} {std[i,j,0]:>8.4f}")    
+            
+    for i,k in enumerate(kinds):
+        print(f"Kind={k}")
+        print(f"{'NL':>8} {'NL_std':>8} {'Code':>8} {'Code_std':>8} {'Exec':>8} {'Exec_std':>8}")
+        print("-"*70)
+        average_over_digits = final.mean(dim=(0,2))
+        avg_std = final.std(dim=(0,2), unbiased=True)
+        print(f"{average_over_digits[i,2]:>8.4f} {avg_std[i,2]:>8.4f} {average_over_digits[i,0]:>8.4f} {avg_std[i,0]:>8.4f} {average_over_digits[i,1]:>8.4f} {avg_std[i,0]:>8.4f}")   
 
 if __name__=="__main__":
     main()
