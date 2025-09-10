@@ -16,6 +16,7 @@ Requires: datasets>=2.20, pyarrow>=15, fsspec>=2024.5, huggingface_hub.
 import os, sys, re, json, random, argparse
 from typing import List, Tuple
 from collections import defaultdict
+from tqdm import tqdm
 
 from datasets import load_dataset
 from huggingface_hub import list_repo_files
@@ -48,18 +49,19 @@ def _list_shards(repo_id: str, split: str):
     if not cand:
         raise RuntimeError(f"No shards found in {repo_id} for split='{split}'. First few files: {files[:20]}")
     return sorted(cand)
+
 def load_olmo_mix(repo_id: str, split: str):
     paths = _list_shards(repo_id, split)
     urls = [f"hf://datasets/{repo_id}/{p}" for p in paths]
     if paths[0].endswith(".parquet"):
         ds = load_dataset("parquet", data_files=urls, split="train", streaming=True, cache_dir="../../data/")
     else:
-        ds = load_dataset("json",    data_files=urls, split="train", streaming=True, cache_dir="../../data")
+        ds = load_dataset("json",    data_files=urls, split="train", streaming=True, cache_dir="../../data/")
 
     # Build a lightweight materialized list of dicts with just needed fields.
     # No caching, no schema merge.
     rows = []
-    for row in ds:
+    for row in tqdm(ds, desc = 'retrieving'):
         txt = row.get("text") or row.get("content") or ""
         if not isinstance(txt, str) or not txt.strip():
             continue
@@ -96,7 +98,7 @@ def main():
     per_source = defaultdict(int)
 
     # Reservoir-like fill until targets met
-    for row in ds:
+    for row in tqdm(ds, desc='inferring'):
         # row is a dict-like (Arrow batch row); fetch text
         txt = None
         if TEXT_COL in row and isinstance(row[TEXT_COL], str) and row[TEXT_COL].strip():

@@ -1,4 +1,4 @@
-python coupling_probe.py \
+pixi run python coupling_probe.py \
   --datasets data1.jsonl data2.csv \
   --subsample-rate 0.01 \
   --hf-model google/gemma-2-9b-it \
