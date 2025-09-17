@@ -1,1 +1,1 @@
-pixi run python analyze_results.py --csv-folder out_hf_scale_deepseek_working --exec-code
+pixi run python analyze_results.py --csv-folder out_hf_scale_gemma --exec-code

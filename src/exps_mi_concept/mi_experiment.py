@@ -146,7 +146,12 @@ def mi_for_bucket(df_b: pd.DataFrame, thetas_all: List[str], alpha=1e-3, prior="
     valid = [t for t in thetas_all if t in present]
     if len(valid) < 2:
         return float("nan"), float("nan"), float("nan"), len(support), len(valid)
-
+    seq_len = {}
+    for r in df_b.itertuples(index=False):
+        if r.seq_id not in seq_len and getattr(r, "n_tokens_cont", 0) and r.n_tokens_cont > 0:
+            seq_len[r.seq_id] = int(r.n_tokens_cont)
+    # Fallback length 1 to avoid divide-by-zero
+    L = np.array([max(1, seq_len.get(sid, 1)) for sid in support], dtype=np.float64)
     P = []
     counts = []
     for th in valid:
@@ -160,15 +165,22 @@ def mi_for_bucket(df_b: pd.DataFrame, thetas_all: List[str], alpha=1e-3, prior="
     else:
         pth = np.full(len(valid), 1.0 / len(valid), dtype=np.float64)
 
-    pz = _normalize((pth[:, None] * P).sum(axis=0))
+    # Standard MI (nats)
+    pz = _normalize((pth[:, None] * P).sum(axis=0))  # shape [Z]
     with np.errstate(divide="ignore", invalid="ignore"):
         ratio = np.divide(P, pz[None, :], out=np.ones_like(P), where=(pz[None, :] > 0))
         terms = pth[:, None] * P * np.log(np.clip(ratio, 1e-300, None), dtype=np.float64)
         mi_nats = float(terms.sum())
-    H_theta = -float((pth * np.log(np.clip(pth, 1e-300, None), dtype=np.float64)).sum())
-    H_c = H_theta - mi_nats
+
+        # MIR: divide each z-term by its length L[z]
+        invL = 1.0 / L[None, :]               # shape [1, Z]
+        terms_rate = pth[:, None] * P * np.log(np.clip(ratio, 1e-300, None)) * invL
+        mir_nats = float(terms_rate.sum())
+
     log2 = math.log(2.0)
-    return mi_nats/log2, H_theta/log2, H_c/log2, len(support), len(valid)
+    H_theta = -float((pth * np.log(np.clip(pth, 1e-300, None))).sum())
+    H_c = H_theta - mi_nats
+    return mi_nats/log2, H_theta/log2, H_c/log2, len(support), len(valid), mir_nats/log2
 
 # ----------------------------- Prompt encoding -----------------------------
 
@@ -516,12 +528,15 @@ def main():
     for (model_name, rep), df_mr in df.groupby(["model", "rep"]):
         thetas_all = sorted(df_mr["theta"].unique().tolist())
         for bucket, df_b in df_mr.groupby("bucket"):
-            mi_bits, H_bits, Hc_bits, supp, T = mi_for_bucket(
+            mi_bits, H_bits, Hc_bits, supp, T, mir_bits_per_tok = mi_for_bucket(
                 df_b, thetas_all, alpha=args.alpha, prior=args.theta_prior
             )
             rec = {
                 "model": model_name, "rep": rep, "bucket": bucket,
-                "MI_bits": float(mi_bits), "H_theta_bits": float(H_bits), "H_theta_given_Z_bits": float(Hc_bits),
+                "MI_bits": float(mi_bits),
+                "MIR_bits_per_token": float(mir_bits_per_tok),  # NEW
+                "H_theta_bits": float(H_bits),
+                "H_theta_given_Z_bits": float(Hc_bits),
                 "support_size": int(supp), "num_thetas_present": int(T),
                 "include_prompt_ll": bool(args.include_prompt_ll),
                 "bucket_kind": args.bucket_kind,
@@ -532,12 +547,21 @@ def main():
                 tb.add_scalar(f"{model_name}/{rep}/MI_bits/{bucket}", mi_bits)
                 tb.add_scalar(f"{model_name}/{rep}/H_theta_bits/{bucket}", H_bits)
                 tb.add_scalar(f"{model_name}/{rep}/H_theta_given_Z_bits/{bucket}", Hc_bits)
+                if np.isfinite(mir_bits_per_tok):  # NEW
+                    tb.add_scalar(f"{model_name}/{rep}/MIR_bits_per_token/{bucket}", mir_bits_per_tok)
 
-        df_rep = [r for r in out_records if r["model"]==model_name and r["rep"]==rep and np.isfinite(r["MI_bits"])]
+        df_rep = [r for r in out_records
+        if r["model"]==model_name and r["rep"]==rep and np.isfinite(r["MI_bits"])]
         avg_mi = float(np.mean([r["MI_bits"] for r in df_rep])) if df_rep else float("nan")
-        print(f"[mi] {model_name:>30s} | {rep:>4s} | avg I(Z;theta | {args.bucket_kind}) = {avg_mi:.4f} bits over {len(df_rep)} buckets")
-        if tb is not None and np.isfinite(avg_mi):
-            tb.add_scalar(f"{model_name}/{rep}/MI_bits/avg_over_buckets", avg_mi)
+        avg_mir = float(np.mean([r["MIR_bits_per_token"] for r in df_rep
+                                if np.isfinite(r["MIR_bits_per_token"])])) if df_rep else float("nan")
+        print(f"[mi] {model_name:>30s} | {rep:>4s} | avg I(Z;θ|{args.bucket_kind}) = {avg_mi:.4f} bits "
+            f"| avg MIR = {avg_mir:.4f} bits/token over {len(df_rep)} buckets")
+        if tb is not None:
+            if np.isfinite(avg_mi):
+                tb.add_scalar(f"{model_name}/{rep}/MI_bits/avg_over_buckets", avg_mi)
+            if np.isfinite(avg_mir):
+                tb.add_scalar(f"{model_name}/{rep}/MIR_bits_per_token/avg_over_buckets", avg_mir)
 
     out_json = os.path.join(args.out_dir, "mi_bucket_summary.json")
     with open(out_json, "w") as f:

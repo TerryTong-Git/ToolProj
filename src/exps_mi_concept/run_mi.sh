@@ -1,19 +1,30 @@
 pixi run python mi_experiment.py \
-    --tb_dir ../exps_performance/out_hf_scale/tb/run_20250904_113115 \
-    --out_dir ./out_hf_scale_mi \
-    --model google/gemma-2-9b-it \
-    --bucket_kind all --batch_size 1 --log_tb --engine vllm --vllm_dtype float16 --seed 0
+    --tb_dir ../exps_performance/out_hf_scale_deepseek_working/tb/run_20250909_105603 \
+    --out_dir ./deepseek_digits \
+    --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
+    --bucket_kind digits --batch_size 1 --log_tb --engine vllm --vllm_dtype float16 --seed 0
 
-#  python mi_bucket_experiment_single.py \
-#     --tb_dir ../out_hf/tb/run_20250902_122649 \
-#     --out_dir ../out_hf_mi_buckets \
-#     --model google/gemma-2-9b-it \
-#     --bucket_kind digits --batch_size 16 --include_prompt_ll --log_tb
+pixi run python mi_experiment.py \
+    --tb_dir ../exps_performance/out_hf_scale_deepseek_working/tb/run_20250909_113629 \
+    --out_dir ./deepseek1_digits \
+    --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
+    --bucket_kind digits --batch_size 1 --log_tb --engine vllm --vllm_dtype float16 --seed 0
 
-# pixi run python -m vis_kl \
-#   --out_dir ../runs/paired_kl \
-#   --use_weighted \
-#   --per_input \
-#   --metric jsd --exp_id a49bce82-c727-48a2-9bc3-97d47c14827a
+pixi run python mi_experiment.py \
+    --tb_dir ../exps_performance/out_hf_scale_deepseek_working/tb/run_20250909_121543 \
+    --out_dir ./deepseek2_digits \
+    --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
+    --bucket_kind digits --batch_size 1 --log_tb --engine vllm --vllm_dtype float16 --seed 0
 
-# pixi run tensorboard --logdir ../runs/jointprob_demo/tb
+pixi run python mi_experiment.py \
+    --tb_dir ../exps_performance/out_hf_scale_deepseek_working/tb/run_20250909_125525 \
+    --out_dir ./deepseek3_digits \
+    --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
+    --bucket_kind digits --batch_size 1 --log_tb --engine vllm --vllm_dtype float16 --seed 0
+
+pixi run python mi_experiment.py \
+    --tb_dir ../exps_performance/out_hf_scale_deepseek_working/tb/run_20250909_133339 \
+    --out_dir ./deepseek4_digits \
+    --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
+    --bucket_kind digits --batch_size 1 --log_tb --engine vllm --vllm_dtype float16 --seed 0
+
