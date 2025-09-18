@@ -547,7 +547,7 @@ def main():
                 tb.add_scalar(f"{model_name}/{rep}/MI_bits/{bucket}", mi_bits)
                 tb.add_scalar(f"{model_name}/{rep}/H_theta_bits/{bucket}", H_bits)
                 tb.add_scalar(f"{model_name}/{rep}/H_theta_given_Z_bits/{bucket}", Hc_bits)
-                if np.isfinite(mir_bits_per_tok):  # NEW
+                if np.isfinite(mir_bits_per_tok):  
                     tb.add_scalar(f"{model_name}/{rep}/MIR_bits_per_token/{bucket}", mir_bits_per_tok)
 
         df_rep = [r for r in out_records

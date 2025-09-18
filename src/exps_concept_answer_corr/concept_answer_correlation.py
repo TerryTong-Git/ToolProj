@@ -211,11 +211,31 @@ def concept_mc_prompt(inst: Instance) -> str:
     # Multiple-choice with letters A..I, used for scoring s_concept
     opts="\n".join([f"{L}) {name}" for L,name in LETTER_MAP.items()])
     return (
-        "Identify the single best concept for solving the task.\n"
-        f"{opts}\n"
-        "Task:\n"
-        f"{inst.text}\n"
-        "Answer only with one capital letter A..I (no punctuation):"
+        f"""
+        You are selecting the best underlying algorithmic concept for the task.
+
+        OPTIONS (exactly one is correct; order is arbitrary):
+        A) add
+        B) sub
+        C) mul
+        D) ilp_assign
+        E) ilp_partition
+        F) ilp_prod
+        G) lcs
+        H) knap
+        I) rod
+
+        TASK:
+        {inst.text}
+
+        INSTRUCTIONS:
+        - Read the task carefully.
+        - Consider all options before choosing.
+        - Reply with only a single capital letter A..I.
+
+        Answer:
+
+        """
     )
 
 def answer_prompt(inst: Instance) -> str:
