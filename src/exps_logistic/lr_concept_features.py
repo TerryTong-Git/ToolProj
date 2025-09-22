@@ -49,6 +49,58 @@ from sklearn.metrics import log_loss, accuracy_score, f1_score
 import torch
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
+# put this near your other utilities
+from collections import Counter
+from sklearn.model_selection import train_test_split
+
+def stratified_split_robust(df, y_col="label", test_size=0.2, seed=0, min_count=2, verbose=True):
+    y = df[y_col].astype(str).values
+    cnt = Counter(y)
+    # A) drop rare classes
+    keep_mask = df[y_col].map(cnt).ge(min_count)
+    dropped = int((~keep_mask).sum())
+    if dropped and verbose:
+        print(f"[split] Dropping {dropped} samples from classes with <{min_count} total examples.")
+    df = df[keep_mask].reset_index(drop=True)
+    if len(df) == 0:
+        raise ValueError("All samples dropped due to rare classes; try lowering bin granularity (--value-bins).")
+
+    # B) shrink test size if needed
+    ts = float(test_size)
+    for _ in range(6):  # try a few times
+        try:
+            tr, te = train_test_split(
+                df, test_size=ts, random_state=seed, stratify=df[y_col]
+            )
+            return tr, te
+        except ValueError as e:
+            ts *= 0.5
+            if verbose:
+                print(f"[split] Stratified split failed ({e}); retrying with test_size={ts:.4f}")
+            if ts < 0.02:
+                break
+
+    # C) fallback: non-stratified split
+    if verbose:
+        print("[split] Falling back to non-stratified split.")
+    return train_test_split(df, test_size=test_size, random_state=seed, shuffle=True)
+
+import re
+
+_PROBLEM_SLICE_RE = re.compile(
+    r"Here is the actual problem:\s*(.*?)\s*Give the solution:",
+    re.DOTALL | re.IGNORECASE,
+)
+
+def extract_problem_text(full_prompt: str) -> str:
+    if not full_prompt:
+        return ""
+    m = _PROBLEM_SLICE_RE.search(full_prompt)
+    if m:
+        return m.group(1).strip()
+    # fallback: if tag isn’t present (older logs), just return the input
+    return full_prompt.strip()
+
 # ---------------- TB parsing ----------------
 
 _TAG_RE = re.compile(
@@ -151,27 +203,15 @@ def load_from_tb(tbdir: str, prefer_tag_rationale: bool=False) -> pd.DataFrame:
 
 # ---------------- gamma construction ----------------
 
-def _ints_in_text(s: str):
-    return [int(x) for x in re.findall(r'\d+', s or "")]
-
-def _bin_equal_width(x: int, U: int, K: int) -> int:
-    base = 10 ** max(1, int(U))
-    x = max(0, min(base-1, int(x)))
-    return min(K-1, (x * K) // base)
-# ---------------- gamma construction (kind, digits, value-bin) ----------------
 import re
+from typing import List, Optional
+
+# ---------- shared helpers ----------
 
 _INT_RE = re.compile(r'[-+]?\d+')
 
-def _ints_in_text(s: str):
-    s = s or ""
-    return [int(x) for x in _INT_RE.findall(s)]
-
 def _ew_bin_lohi(x: int, lo: int, hi: int, K: int) -> int:
-    """
-    Equal-width binning for integer x over the CLOSED interval [lo, hi].
-    Returns an index in {0, ..., K-1}.
-    """
+    """Equal-width binning for CLOSED interval [lo, hi], returns in {0..K-1}."""
     if K <= 1:
         return 0
     lo = int(lo); hi = int(hi)
@@ -180,14 +220,117 @@ def _ew_bin_lohi(x: int, lo: int, hi: int, K: int) -> int:
     x = int(x)
     if x < lo: x = lo
     if x > hi: x = hi
-    span = (hi - lo + 1)
-    # floor( (x - lo) * K / span ), capped at K-1
-    idx = ( (x - lo) * K ) // span
-    return min(K-1, max(0, int(idx)))
+    span = hi - lo + 1
+    idx = ((x - lo) * K) // span
+    return max(0, min(K-1, int(idx)))
 
-def _safe_len(lst):
-    try: return len(lst)
+def _safe_len(x):
+    try: return len(x)
     except: return 0
+
+def _parse_list_of_ints(s: str) -> List[int]:
+    return [int(x) for x in _INT_RE.findall(s or "")]
+
+def _parse_list_of_list_ints(s: str) -> List[List[int]]:
+    # Very lightweight: split top-level rows by '],'
+    # then collect ints per row. Works for your printed matrices.
+    rows = []
+    for row in re.findall(r'\[([^\[\]]*)\]', s or ""):
+        vals = [int(x) for x in _INT_RE.findall(row)]
+        if vals:
+            rows.append(vals)
+    return rows
+
+# ---------- arithmetic parse according to Problem.text() ----------
+_INT_RE = re.compile(r'[-+]?\d+')
+_AR_ADD = re.compile(r'Compute:\s*(\d+)\s*\+\s*(\d+)', re.IGNORECASE)
+_AR_SUB = re.compile(r'Compute:\s*(\d+)\s*-\s*(\d+)', re.IGNORECASE)
+_AR_MUL = re.compile(r'Compute:\s*(\d+)\s*\*\s*(\d+)', re.IGNORECASE)
+_AR_MIX = re.compile(r'Compute:\s*\(\s*(\d+)\s*\+\s*(\d+)\s*\)\s*\*\s*(\d+)', re.IGNORECASE)
+
+def _parse_arithmetic_operands(kind: str, text: str, d: int):
+    # Prefer the line starting with 'Compute:'
+    mline = re.search(r'^[ \t]*Compute:[ \t]*(.+)$', text, re.MULTILINE | re.IGNORECASE)
+    line = mline.group(1) if mline else text
+    if kind == "add":
+        m = _AR_ADD.search(line);  return (int(m.group(1)), int(m.group(2))) if m else None
+    if kind == "sub":
+        m = _AR_SUB.search(line);  return (int(m.group(1)), int(m.group(2))) if m else None
+    if kind == "mul":
+        m = _AR_MUL.search(line);  return (int(m.group(1)), int(m.group(2))) if m else None
+    if kind == "mix":
+        m = _AR_MIX.search(line)
+        if m:
+            a, b, _a2 = map(int, m.groups())
+            return a, b
+    # final fallback: first two ints anywhere to avoid collapsing to a single bin
+    ints = [int(x) for x in _INT_RE.findall(line)]
+    return (ints[0], ints[1]) if len(ints) >= 2 else None
+
+
+def _parse_lcs_lengths(text: str, d: int) -> tuple:
+    Sm = re.search(r'S\s*=\s*"([^"]*)"', text)
+    Tm = re.search(r'T\s*=\s*"([^"]*)"', text)
+    Ls = len(Sm.group(1)) if Sm else max(2, d)
+    Lt = len(Tm.group(1)) if Tm else max(2, d)
+    return Ls, Lt
+
+def _parse_knap_stats(text: str, d: int) -> tuple:
+    Wm = re.search(r'W\s*=\s*\[([^\]]*)\]', text)
+    Vm = re.search(r'V\s*=\s*\[([^\]]*)\]', text)
+    Cm = re.search(r'C\s*=\s*([0-9]+)', text)
+    if Wm and Vm:
+        W = _parse_list_of_ints(Wm.group(1))
+        V = _parse_list_of_ints(Vm.group(1))
+        n_items = len(W)
+        C = int(Cm.group(1)) if Cm else max(1, int(0.5 * sum(W)))
+        cap_ratio = C / max(1, sum(W))
+    else:
+        n_items = max(3, d)
+        cap_ratio = 0.5
+    return n_items, cap_ratio
+
+def _parse_rod_N(text: str, d: int) -> int:
+    # Template prints N and P list
+    Nm = re.search(r'\bN\s*=\s*([0-9]+)', text)
+    if Nm:
+        return int(Nm.group(1))
+    # fallback: try to count prices list length
+    Pm = re.search(r'P\s*=\s*\[([^\]]*)\]', text)
+    if Pm:
+        return len(_parse_list_of_ints(Pm.group(1)))
+    return max(2, d)
+
+def _parse_ilp_assign_n(text: str, d: int) -> int:
+    # Try to parse C matrix
+    Cm = re.search(r'C\s*=\s*(\[[\s\S]*\])\s*$', text, re.MULTILINE)
+    if Cm:
+        mat = _parse_list_of_list_ints(Cm.group(1))
+        if _safe_len(mat) > 0:
+            return len(mat)
+    return min(max(2, d), 7)
+
+def _parse_ilp_prod_PR(text: str, d: int) -> tuple:
+    Pm = re.search(r'profit\s*=\s*\[([^\]]*)\]', text)
+    Cm = re.search(r'consumption\s*\(rows=resources\)\s*=\s*(\[[\s\S]*\])', text)
+    if Pm:
+        P = len(_parse_list_of_ints(Pm.group(1)))
+    else:
+        P = min(2 + d // 3, 6)
+    if Cm:
+        cons = _parse_list_of_list_ints(Cm.group(1))
+        R = len(cons) if _safe_len(cons) > 0 else min(2 + d // 4, 4)
+    else:
+        R = min(2 + d // 4, 4)
+    return int(P), int(R)
+
+def _parse_ilp_partition_n(text: str, d: int) -> int:
+    Wm = re.search(r'weights\s*=\s*\[([^\]]*)\]', text)
+    if Wm:
+        return len(_parse_list_of_ints(Wm.group(1)))
+    return min(max(4, d), 24)
+
+# ---------- main: make_gamma_label tied to the Problem.text() template ----------
 
 def make_gamma_label(kind: str,
                      digits: int,
@@ -195,104 +338,69 @@ def make_gamma_label(kind: str,
                      K_bins: int = 8,
                      use_joint_id: bool = True) -> str:
     """
-    γ = (kind, digits, value-bin). For arithmetic kinds we parse the first
-    two integers (operands A,B) from the problem text and bin them with
-    equal-width bins over the *correct* magnitude interval:
-        A,B ∈ [10^{d-1}, 10^d - 1]
-
-    For non-arithmetic kinds we construct simple bins from problem size/shape
-    stats so γ is always finer than (kind,digits) but not exploding.
-
-    Returns a string label "kind|d{digits}|b{bin_id}".
+    γ = (kind, digits, value-bin), where the value-bin is derived from fields
+    parsed *exactly* from Problem.text() for each kind.
     """
     k = str(kind)
     d = int(digits)
     t = problem_text or ""
 
-    # ---------- Arithmetic: bin A and B jointly ----------
+    # ----- Arithmetic (A,B in [10^(d-1), 10^d - 1]) -----
     if k in {"add","sub","mul","mix"}:
-        nums = _ints_in_text(t)
-        # We expect A and B to be the first two integers in the formatted prompt.
-        A = nums[0] if _safe_len(nums) >= 1 else 10**(d-1)
-        B = nums[1] if _safe_len(nums) >= 2 else 10**(d-1)
-        lo = 10**(d-1)
-        hi = 10**d - 1
+        parsed = _parse_arithmetic_operands(k, t, d)
+        lo = 10**(d-1); hi = 10**d - 1
+        if parsed is None:
+            # Safe fallback consistent with your generator
+            A, B = lo, lo
+        else:
+            A, B = parsed
         ba = _ew_bin_lohi(A, lo, hi, K_bins)
         bb = _ew_bin_lohi(B, lo, hi, K_bins)
-        if use_joint_id:
-            bin_id = ba * K_bins + bb           # K^2 total bins per (kind,d)
-        else:
-            bin_id = (ba, bb)                   # tuple if you prefer
+        bin_id = ba * K_bins + bb if use_joint_id else (ba, bb)
         return f"{k}|d{d}|b{bin_id}"
 
-    # ---------- LCS: bin by (|S|, |T|) ----------
+    # ----- LCS: (|S|, |T|) -----
     if k == "lcs":
-        # Problem text template puts strings on lines like S="..." T="..."
-        # Fallback: derive rough lengths from the prompt if exact parsing fails.
-        # Here we just extract quoted strings as S,T if possible:
-        # (works with your current prompt formatting)
-        S_match = re.search(r'S\s*=\s*"([^"]*)"', t)
-        T_match = re.search(r'T\s*=\s*"([^"]*)"', t)
-        Ls = len(S_match.group(1)) if S_match else max(2, d)
-        Lt = len(T_match.group(1)) if T_match else max(2, d)
+        Ls, Lt = _parse_lcs_lengths(t, d)
         bLs = _ew_bin_lohi(Ls, 1, max(2, 2*d), K_bins)
         bLt = _ew_bin_lohi(Lt, 1, max(2, 2*d), K_bins)
         return f"{k}|d{d}|b{bLs*K_bins + bLt}"
 
-    # ---------- Knapsack: bin by (#items, capacity-ratio) ----------
+    # ----- Knapsack: (#items, cap_ratio) -----
     if k == "knap":
-        # Extract W, V, C lists if present in the prompt (they are printed as Python lists)
-        # If parsing is brittle, you can log structured fields to TB and read them directly.
-        # Here we just count items and derive a rough cap_ratio from numbers.
-        # Better: store these in TB and read back.
-        # Try to parse "W = [...]", "V = [...]", "C = x"
-        Wm = re.search(r'W\s*=\s*\[([^\]]*)\]', t)
-        Cm = re.search(r'C\s*=\s*([0-9]+)', t)
-        if Wm:
-            W = [int(x) for x in _INT_RE.findall(Wm.group(1))]
-            n_items = len(W)
-            C = int(Cm.group(1)) if Cm else max(1, int(0.5 * sum(W)))
-            cap_ratio = C / max(1, sum(W))
-        else:
-            n_items = max(3, d)
-            cap_ratio = 0.5
+        n_items, cap_ratio = _parse_knap_stats(t, d)
         bN = _ew_bin_lohi(n_items, 1, max(3, 2*d), K_bins)
-        bR = _ew_bin_lohi(int(cap_ratio * 1000), 0, 1000, K_bins)  # 0..1 scaled to 0..1000
+        bR = _ew_bin_lohi(int(round(cap_ratio * 1000)), 0, 1000, K_bins)  # 0..1 -> 0..1000
         return f"{k}|d{d}|b{bN*K_bins + bR}"
 
-    # ---------- Rod cutting: bin by N (#prices) ----------
+    # ----- Rod cutting: N -----
     if k == "rod":
-        Nm = re.search(r'N\s*=\s*([0-9]+)', t)
-        N = int(Nm.group(1)) if Nm else max(2, d)
+        N = _parse_rod_N(t, d)
         bN = _ew_bin_lohi(N, 1, max(2, 2*d), K_bins)
         return f"{k}|d{d}|b{bN}"
 
-    # ---------- ILP assignment: bin by n (matrix size) ----------
+    # ----- ILP assignment: n -----
     if k == "ilp_assign":
-        # Prompt prints "C = [[...],[...],...]"; approximate n by counting '[' at top level
-        # but safer (and simple): estimate n from digits: n≈min(d,7)
-        n = min(max(2, d), 7)
+        n = _parse_ilp_assign_n(t, d)
         bN = _ew_bin_lohi(n, 2, 7, K_bins)
         return f"{k}|d{d}|b{bN}"
 
-    # ---------- ILP production: bin by (#products, #resources) ----------
+    # ----- ILP production: (P,R) -----
     if k == "ilp_prod":
-        # From make_problem: P≈min(2 + d//3, 6), R≈min(2 + d//4, 4)
-        P = min(2 + d // 3, 6)
-        R = min(2 + d // 4, 4)
+        P, R = _parse_ilp_prod_PR(t, d)
         bP = _ew_bin_lohi(P, 2, 6, K_bins)
         bR = _ew_bin_lohi(R, 2, 4, K_bins)
         return f"{k}|d{d}|b{bP*K_bins + bR}"
 
-    # ---------- ILP partition: bin by #items ----------
+    # ----- ILP partition: #items -----
     if k == "ilp_partition":
-        # From make_problem: n_items≈min(d,24)
-        n_items = min(max(4, d), 24)
+        n_items = _parse_ilp_partition_n(t, d)
         bN = _ew_bin_lohi(n_items, 4, 24, K_bins)
         return f"{k}|d{d}|b{bN}"
 
-    # Fallback
+    # Fallback (unknown kind)
     return f"{k}|d{d}|bNA"
+
 
 
 # ---------------- utilities ----------------
@@ -361,15 +469,37 @@ class HFCLSFeaturizer(Featurizer):
     def transform(self, texts: List[str]) -> np.ndarray:
         torch = self.torch
         OUT = []
-        bs = 32
+        bs = 16  # slightly smaller because we may do chunking
+        # robust max length for encoders with limited pos-embs (e.g., 512 for BERT)
+        model_max = getattr(self.tok, "model_max_length", 512)
+        if model_max is None or model_max > 512:
+            model_max = 512  # cap to 512 for safety on BERT-like models
+
         for i in range(0, len(texts), bs):
             chunk = texts[i:i+bs]
-            enc = self.tok(chunk, padding=True, truncation=True, max_length=1024, return_tensors="pt")
-            enc = {k: v.to(self.device) for k,v in enc.items()}
-            out = self.model(**enc)
-            hid = out.last_hidden_state
-            pooled = self._pool(hid, enc["attention_mask"])
-            OUT.append(pooled.cpu().numpy())
+            # encode without truncation to check lengths
+            enc_full = self.tok(chunk, padding=False, truncation=False, return_tensors=None)
+
+            pooled_batch = []
+            for ids in enc_full["input_ids"]:
+                # chunk into windows of size model_max
+                windows = [ids[j:j+model_max] for j in range(0, len(ids), model_max)] or [ids]
+                reps = []
+                for w in windows:
+                    enc = self.tok(
+                        w, is_split_into_words=False, padding="max_length",
+                        truncation=True, max_length=model_max, return_tensors="pt"
+                    )
+                    enc = {k: v.to(self.device) for k,v in enc.items()}
+                    out = self.model(**enc)
+                    hid = out.last_hidden_state  # [1, L, H]
+                    rep = self._pool(hid, enc["attention_mask"])  # [1, H]
+                    reps.append(rep.squeeze(0))
+                # mean over windows
+                pooled_batch.append(torch.stack(reps, dim=0).mean(dim=0))
+
+            OUT.append(torch.stack(pooled_batch, dim=0).cpu().numpy())
+
         return np.vstack(OUT)
 
 class SentenceTransformersFeaturizer(Featurizer):
@@ -449,12 +579,22 @@ def run(args):
     if "problem" in df.columns:
         src_text = np.where(src_text.str.len() > 0, src_text, df["problem"].astype(str))
 
+    # NEW: slice out the actual instance
+    src_text = pd.Series(src_text).map(extract_problem_text) 
+
     df["gamma"] = [
         make_gamma_label(k, int(d), t, K_bins=args.value_bins)
         for k, d, t in zip(df["kind"].astype(str), df["digits"].astype(int), src_text.astype(str))
     ]
     print("Created Columns")
-    
+    gb = (df.assign(kd=df["kind"].astype(str) + "|d" + df["digits"].astype(str))
+        .groupby("kd")["gamma"].nunique().sort_values())
+    print("[gamma sanity] distinct bins per (kind,d):")
+    print(gb.value_counts().sort_index())
+    print(gb.head(20))
+    # also check how many prompts are empty
+    n_empty = (df["prompt"].astype(str).str.len() == 0).sum()
+    print(f"[gamma sanity] empty prompt rows: {n_empty} / {len(df)}")
     # Choose label
     label_col = {"theta_new":"theta_new", "gamma":"gamma", "kind":"kind"}[args.label]
     df = df[df[label_col].astype(str).str.len() > 0].reset_index(drop=True)
@@ -463,8 +603,9 @@ def run(args):
     # Split
     df = df.copy()
     df["label"] = df[label_col].astype(str)
-    train_df, test_df = train_test_split_or_use_column(df, y_col="label", test_size=args.test_size, seed=args.seed)
-
+    train_df, test_df = stratified_split_robust(
+        df, y_col="label", test_size=args.test_size, seed=args.seed, min_count=2, verbose=True
+    )
     # Features
     texts_tr = train_df["rationale"].astype(str).tolist()
     texts_te = test_df["rationale"].astype(str).tolist()
@@ -485,9 +626,10 @@ def run(args):
     # Classifier
     clf = LogisticRegression(
         penalty="l2", C=args.C, solver="saga", multi_class="multinomial",
-        max_iter=args.max_iter, n_jobs=-1, verbose=0
+        max_iter=args.max_iter, n_jobs=-1, verbose=1
     )
     clf.fit(Xtr, ytr)
+    print("Finish Fit")
     P = clf.predict_proba(Xte)
     yhat = P.argmax(1)
     print("Finish Prediction")
