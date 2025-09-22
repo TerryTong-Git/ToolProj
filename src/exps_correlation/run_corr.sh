@@ -1,1 +1,1 @@
-pixi run python run_corr.py --models meta-llama/Llama-3.1-8B-Instruct,deepseek-ai/deepseek-coder-7b-instruct-v1.5 --engine vllm
+pixi run python run_corr.py --models meta-llama/Llama-3.1-8B-Instruct --engine vllm
