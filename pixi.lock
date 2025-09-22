@@ -5269,7 +5269,7 @@ packages:
 - pypi: ./
   name: tools
   version: 0.1.0
-  sha256: 42dbe7d08b4b2112eeee8fbf0cd15551bda9c9903e0608f89aa75b67ba7ce0a3
+  sha256: 32b89b856cebfddb645c02715920d2e93ea93607e36dcd7ae6b5994d197568f6
   requires_dist:
   - transformer-lens>=2.16.1,<3
   - ipykernel>=6.30.1,<7
@@ -5301,6 +5301,11 @@ packages:
   - pandas
   - datasets
   - scikit-learn>=1.7.2,<2
+  - pytest ; extra == 'dev'
+  - ruff ; extra == 'dev'
+  - mypy ; extra == 'dev'
+  - pre-commit ; extra == 'dev'
+  - pandas-stubs ; extra == 'dev'
   requires_python: ==3.10
   editable: true
 - pypi: https://files.pythonhosted.org/packages/37/81/aa9ab58ec10264c1abe62c8b73f5086c3c558885d6beecebf699f0dbeaeb/torch-2.6.0-cp310-cp310-manylinux1_x86_64.whl

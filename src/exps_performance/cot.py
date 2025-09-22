@@ -318,7 +318,7 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int]=None) -> P
             "profit": profit, "consumption": consumption, "capacity": capacity, "upper_bound": upper
         })
 
-    # perhap save this sometwhere
+    # perhap save this sometwhere, make bins more fine-grained. Submit PR and review it before merging. 
     if kind == "ilp_partition":
         n_items = max(4, min(int(d), 24))
         w_max   = max(6, 3*d)
@@ -361,7 +361,7 @@ You are tasked with solving an algorithmic problem by reasoning through it step 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
 - "answer": give the final requested answer as an integer.
 
-Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. Your entire chain of thought / rationale + answer should be <= 1024 tokens. 
+Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. 
 
 Example:
 
@@ -384,24 +384,24 @@ Give the solution:
 
 CODE_PROMPT = (
 """
-You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step to generate an code block before simulating execution.
+You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step to generate an code block before simulating execution and wrapping the simulated execution in [BEGIN] and [DONE], and writing out the line numbers and state, simular to how a single-cycle cpu does.
 Write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. 
 Ensure proper syntax, indentation, definitions, and variable instantiation. The last line of the program must print the final result. 
-After the code block and execution simulation, also produce a JSON dictionary with two keys:
+After the code block and execution simulation wrapped in [BEGIN] and [DONE], also produce a JSON dictionary with two keys:
 
 - "rationale": the complete Python code solution, enclosed in a code block.
 - "answer": the result from executing the code, should be an integer.
 
 Constraints:
-* Your entire chain of thought / rationale + answer should be <= 1024 tokens. 
+* Simulate the execution step by step. Break down the problem and solve each execution line step by step, giving the state and line. Wrap the lines in [BEGIN] and [DONE]. 
 * Provide a fully executable solution.
-* Simulate the execution step by step. Break down the problem and solve each execution line step by step, giving the state and line. Wrap the lines in [BEGIN] and [DONE].  
 * Use comments to clarify reasoning.
 * End with a print(...) statement for the answer.
 
 Example:
 
-Problem: Compute repeated doubling of the number 6.
+Problem: 
+Compute: repeated doubling of the number 6.
 
 Response:
 ```python
@@ -415,7 +415,7 @@ def f(v0):
 output = f(6)
 print(output)
 ```
-
+# Begin execution simulation
 [BEGIN]
 state: []
 line: def f(v0):
