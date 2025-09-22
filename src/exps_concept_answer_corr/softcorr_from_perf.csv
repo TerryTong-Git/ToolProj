@@ -1,0 +1,1198 @@
+idx,kind,digits,instance_text,correct_nl,correct_code,correct_code_exec,s_concept_true_given_nl,s_concept_true_given_code,concept_top1_correct_nl,concept_top1_correct_code,pred_letter_nl,pred_letter_code,has_code_fence
+0,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [8, 11, 9, 6]
+consumption (rows=resources) = [[5, 7, 7, 6], [8, 2, 2, 4], [3, 8, 4, 6], [5, 1, 3, 1]]
+capacity = [27, 30, 25, 25]
+upper_bounds = [3, 3, 3, 4]",0,0,1,0.008523603061740803,0.3453254413012533,0,1,G,F,1
+1,mul,8,Compute: 58089775 * 67240995,0,0,1,0.27227494345476755,0.11959377555413485,1,0,C,A,1
+2,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cbbbbaad""
+T = ""bdbbacbc""",1,1,1,0.08410350516747152,0.03019788199003515,0,0,C,H,1
+3,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [9, 3, 9]
+consumption (rows=resources) = [[2, 3, 2], [1, 3, 4], [1, 2, 4]]
+capacity = [14, 15, 15]
+upper_bounds = [7, 4, 3]",0,0,0,0.14067048488668737,0.16047652891441208,0,0,B,E,1
+4,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [22, 10, 19, 19, 20, 8, 11, 9]",0,0,1,0.3269818486184392,0.044669040212714235,1,0,I,B,1
+5,mul,4,Compute: 7146 * 4410,0,0,1,0.14251779288500438,0.058446772779209184,0,0,H,G,1
+6,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [5, 1]",0,0,0,0.07550851967854105,0.0964198324526964,0,0,F,F,1
+7,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [33, 6, 24, 7, 34, 8]
+consumption (rows=resources) = [[13, 4, 8, 4, 12, 10], [14, 10, 9, 5, 2, 14], [11, 4, 11, 11, 13, 7], [3, 6, 12, 6, 2, 11]]
+capacity = [36, 58, 32, 57]
+upper_bounds = [3, 5, 3, 3, 3, 3]",0,0,0,0.07978393270457995,0.04437522274213977,0,0,H,D,1
+8,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [2, 5, 10, 3]",0,0,0,0.04974952849025372,0.2586225719416847,0,0,D,B,1
+9,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [15, 12, 22, 3]
+consumption (rows=resources) = [[4, 6, 6, 6], [3, 7, 4, 7], [1, 1, 5, 4], [5, 3, 1, 7]]
+capacity = [24, 23, 16, 17]
+upper_bounds = [3, 3, 3, 3]",0,0,1,0.0486616890164854,0.04856598792136065,0,0,D,A,1
+10,add,16,Compute: 3778805958221640 + 5611892501042810,0,1,1,0.141971463020308,0.17900520820455892,0,0,E,I,1
+11,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[12, 1, 7, 3], [4, 2, 10, 11], [3, 6, 5, 5], [8, 6, 9, 7]]",0,0,1,0.06233489006742577,0.1392887160072482,0,0,C,H,1
+12,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [42, 40, 20, 14, 15, 4]
+consumption (rows=resources) = [[11, 7, 15, 12, 3, 16], [15, 12, 2, 7, 3, 7], [16, 6, 4, 15, 1, 1], [4, 7, 3, 13, 1, 5]]
+capacity = [55, 50, 47, 34]
+upper_bounds = [3, 4, 3, 3, 10, 3]",0,0,0,0.1078566956517909,0.18554437606323906,0,1,D,F,1
+13,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [20, 29, 19, 5, 24, 17]
+consumption (rows=resources) = [[15, 3, 15, 4, 11, 7], [5, 3, 11, 2, 9, 2], [3, 1, 7, 7, 4, 5], [3, 2, 16, 1, 4, 14]]
+capacity = [61, 60, 37, 57]
+upper_bounds = [4, 10, 3, 5, 5, 4]",0,0,0,0.17859500185893673,0.10977858174881942,0,0,B,C,1
+14,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [19, 34, 45, 43, 32, 10]
+consumption (rows=resources) = [[13, 6, 11, 13, 7, 12], [12, 2, 16, 7, 9, 2], [4, 2, 9, 3, 10, 14], [13, 4, 1, 1, 16, 1]]
+capacity = [57, 42, 45, 34]
+upper_bounds = [3, 8, 3, 4, 3, 3]",0,0,0,0.0646622654407833,0.1974821816186896,0,0,I,H,1
+15,sub,32,Compute: 89862074012826272524083907496869 - 25944923006089945414865247122669,0,0,1,0.0605619323369246,0.11822569460007129,0,0,G,A,1
+16,add,8,Compute: 36840588 + 55405032,0,1,1,0.33843878818299,0.03247427388346785,1,0,A,C,1
+17,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dabaadabbdccdccb""
+T = ""ccbabccdbbaabdd""",0,0,1,0.10865990410402185,0.09278984085849744,0,0,H,A,1
+18,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[33, 64, 91, 46, 25, 81, 39], [40, 90, 20, 14, 55, 40, 96], [64, 89, 96, 63, 91, 6, 46], [28, 21, 60, 43, 83, 40, 86], [87, 88, 85, 16, 37, 17, 87], [90, 50, 85, 11, 88, 54, 53], [40, 27, 12, 51, 83, 8, 12]]",0,0,1,0.05868840545148389,0.1178203924038257,0,0,H,I,1
+19,mul,16,Compute: 9400698895052305 * 7171510070325926,0,0,1,0.15038448610413518,0.06668459798198667,0,0,G,F,1
+20,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[17, 20, 20, 3, 14, 19, 17], [8, 17, 23, 11, 9, 17, 13], [15, 4, 19, 1, 21, 14, 3], [12, 10, 18, 24, 2, 2, 12], [6, 4, 8, 12, 17, 2, 11], [18, 8, 19, 8, 11, 3, 22], [3, 2, 4, 11, 16, 13, 21]]",0,0,1,0.050466624442637685,0.018437599680184984,0,0,G,H,1
+21,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[2, 5], [5, 1]]",0,1,1,0.1518197171019037,0.32209156225923,0,1,A,D,1
+22,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[17, 28, 35, 38, 43, 31, 21], [35, 31, 21, 32, 36, 42, 3], [24, 42, 34, 24, 29, 8, 35], [44, 47, 10, 40, 26, 33, 7], [15, 34, 26, 34, 17, 37, 30], [40, 42, 21, 7, 48, 14, 32], [7, 34, 17, 14, 19, 11, 8]]",0,0,1,0.0843272048753605,0.022843826609392923,0,0,H,G,1
+23,mul,2,Compute: 93 * 55,0,0,1,0.009548840516885556,0.08347112985927946,0,0,A,I,1
+24,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [5, 23, 1, 9, 29, 21, 1, 6, 4, 18, 25, 29, 25, 29, 10, 8]
+V = [2, 54, 44, 27, 35, 47, 42, 57, 24, 7, 59, 39, 29, 42, 27, 62]
+C = 121",0,0,1,0.11292701092641416,0.19808942177680433,0,0,B,G,1
+25,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [9, 8, 24, 17, 19, 22, 13, 22]",0,0,0,0.05722845614857388,0.13131600774838467,0,0,H,G,1
+26,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""babbbdadadaacdba""
+T = ""dbbddcacdcbccdd""",0,0,1,0.03459248247363991,0.029864788378829877,0,0,E,A,1
+27,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[54, 9, 23, 67, 29, 43, 42], [53, 66, 70, 13, 69, 22, 70], [21, 64, 84, 77, 27, 43, 65], [19, 7, 30, 55, 70, 23, 6], [47, 21, 4, 93, 83, 55, 96], [41, 41, 64, 79, 86, 13, 95], [87, 22, 33, 4, 3, 37, 33]]",0,0,1,0.061012261761667845,0.06862893213633492,0,0,F,H,1
+28,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""aacd""
+T = ""cdb""",1,1,1,0.1368901411026261,0.06627236344468461,0,0,D,F,1
+29,add,8,Compute: 22199414 + 27094478,1,1,1,0.30989508447127856,0.06226777887751391,0,0,B,C,1
+30,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [20, 1, 22, 2, 4, 19, 20, 16]",0,0,1,0.17825996973095418,0.1864700377898924,0,0,A,G,1
+31,add,32,Compute: 48986831406196261102788635840186 + 71128770586266161209350032322266,0,0,1,0.4559239040648725,0.2415691731550419,1,0,A,D,1
+32,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [18, 17, 23, 17, 4, 23, 23, 32, 20, 33, 18, 43, 16, 31, 10, 5]",0,1,1,0.11167194141429893,0.023686451659515297,0,0,C,A,1
+33,mul,2,Compute: 32 * 11,1,1,1,0.005533453262149236,0.08915344930306139,0,0,A,A,1
+34,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [3, 6, 6, 4]",0,1,1,0.10921624214205726,0.08302735072682331,0,0,C,A,1
+35,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[6, 1], [4, 3]]",0,1,1,0.05062725977532443,0.08578525066092012,0,0,F,B,1
+36,add,4,Compute: 3230 + 6191,1,1,1,0.07170373095774632,0.6550824801189332,0,1,I,A,1
+37,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [22, 18, 24, 10, 4, 20, 12, 2]",0,0,1,0.09429891543181433,0.10745906049387496,0,0,F,D,1
+38,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bdaacdcbadbbbcca""
+T = ""dbabbdbdadbbadaa""",0,0,1,0.18554236855410852,0.06667149313362215,0,0,H,E,1
+39,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [1, 7, 10, 1, 8, 19, 22, 21]",1,1,0,0.09512200676331053,0.21635153074935395,0,1,G,E,1
+40,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [3, 22, 14, 11]
+consumption (rows=resources) = [[2, 1, 1, 8], [1, 3, 2, 1], [5, 5, 2, 2], [2, 4, 1, 6]]
+capacity = [26, 30, 16, 31]
+upper_bounds = [3, 3, 8, 3]",0,0,1,0.015942334467888546,0.010041522467913167,0,0,A,B,1
+41,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [15, 47, 23, 24, 34, 19]
+consumption (rows=resources) = [[7, 8, 6, 14, 10, 2], [3, 1, 8, 12, 14, 7], [3, 13, 6, 5, 7, 9], [14, 16, 14, 7, 3, 2]]
+capacity = [52, 52, 32, 62]
+upper_bounds = [4, 3, 4, 3, 3, 3]",0,0,0,0.07332641120026769,0.3478263277909266,0,1,H,F,1
+42,add,32,Compute: 91926278763816914185120696799727 + 65497188592602895380382458495220,0,0,1,0.46098160997744564,0.10218535006140143,1,0,A,D,1
+43,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [12, 14, 25, 38, 84, 80, 91, 18, 76, 24, 87, 1, 89, 9, 40, 4, 47, 96, 29, 79, 66, 44, 91, 59]",0,1,0,0.16296191776770846,0.074706156392488,0,0,B,B,1
+44,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[12, 11, 12, 4], [11, 3, 3, 2], [8, 12, 8, 11], [3, 5, 5, 3]]",0,0,1,0.10690493087350308,0.09837408821756405,0,0,A,G,1
+45,mul,8,Compute: 55856466 * 34344755,0,0,1,0.39069766655350113,0.020579659704052053,1,0,C,A,1
+46,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 12, 8, 11]
+consumption (rows=resources) = [[4, 2, 2, 4], [1, 5, 7, 5], [2, 1, 1, 3], [4, 2, 7, 3]]
+capacity = [27, 18, 22, 23]
+upper_bounds = [5, 3, 3, 3]",0,0,1,0.3390258411049007,0.09706361959593215,1,0,F,A,1
+47,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [32, 38, 23, 29, 20, 5, 44, 15, 37, 45, 37, 35, 25, 25, 48, 22]",0,0,1,0.08143742232660982,0.2796683908559457,0,0,H,E,1
+48,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[26, 19, 44, 21, 41, 9, 30], [40, 16, 34, 12, 46, 36, 13], [5, 35, 11, 4, 25, 32, 20], [15, 44, 9, 18, 26, 6, 36], [41, 17, 25, 31, 7, 6, 2], [6, 37, 23, 36, 22, 4, 28], [43, 39, 36, 13, 33, 13, 1]]",0,0,1,0.10783767092974098,0.3676815945254179,0,1,B,D,1
+49,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [8, 7, 1, 11]",0,0,1,0.08158886331001108,0.050263190574125684,0,0,G,E,1
+50,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bddaadaaaacdcbccdbcabbbcdbbbacaa""
+T = ""dbbdabacdbcdaacaaabcadacaaadbbc""",0,0,1,0.04940588195713345,0.08941871623166549,0,0,F,F,1
+51,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[35, 44, 45, 18, 11, 66, 4], [40, 66, 89, 27, 48, 68, 7], [50, 88, 78, 9, 50, 17, 58], [85, 71, 20, 19, 83, 31, 18], [16, 31, 28, 40, 65, 5, 73], [96, 12, 4, 61, 34, 85, 16], [76, 23, 5, 58, 48, 7, 9]]",0,0,1,0.047383378889356176,0.14742293998697387,0,0,G,F,1
+52,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 6, 6, 6]",0,1,1,0.21466909406401807,0.13490541724235838,1,0,E,G,1
+53,sub,8,Compute: 99531453 - 69693116,0,1,1,0.04129612296953092,0.10332712342706638,0,0,C,G,1
+54,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [15, 7, 23, 15, 17, 1, 9, 8]",0,0,1,0.062486572538058574,0.11765687823795208,0,0,F,H,1
+55,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [24, 20, 19, 24, 19, 2, 13, 11]",0,0,0,0.030226855848983623,0.04597623366320357,0,0,F,I,1
+56,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[6, 12, 5, 9, 17, 16, 21], [23, 9, 8, 23, 18, 1, 10], [7, 12, 7, 13, 16, 11, 9], [1, 20, 5, 9, 8, 10, 10], [5, 8, 11, 5, 18, 3, 4], [16, 11, 20, 3, 8, 22, 22], [10, 6, 2, 9, 1, 1, 3]]",0,0,1,0.06348033758400817,0.037212356507769155,0,0,B,F,1
+57,sub,32,Compute: 88882251511483399564446026816074 - 43230020657263471354958713063756,0,1,1,0.08499918196717995,0.3018554233359338,0,1,H,B,1
+58,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[22, 96, 77, 50, 39, 52, 87], [68, 44, 3, 83, 14, 34, 84], [25, 96, 31, 93, 12, 6, 69], [74, 55, 45, 87, 42, 1, 46], [1, 2, 30, 77, 33, 4, 74], [40, 79, 85, 11, 68, 13, 35], [34, 55, 92, 49, 89, 44, 60]]",0,0,1,0.20309251396617073,0.2049241364395529,0,0,G,I,1
+59,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [25, 48, 46, 19, 47, 60, 56, 46, 21, 52, 35, 55, 32, 62, 49, 9, 13, 44, 9, 31, 2, 29, 44, 49, 57, 56, 47, 62, 33, 51, 13, 8]
+V = [70, 128, 46, 74, 53, 39, 97, 46, 45, 32, 124, 64, 94, 34, 83, 55, 119, 2, 28, 101, 32, 66, 16, 7, 26, 44, 54, 34, 48, 9, 58, 13]
+C = 605",0,0,1,0.03835892697973018,0.033353437585938756,0,0,A,D,1
+60,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ba""
+T = ""dc""",1,1,1,0.08578581575371931,0.050736559657567105,0,0,E,A,1
+61,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [2, 2, 2, 4]",0,0,1,0.05193681089250404,0.35009147401150703,0,1,A,E,1
+62,sub,2,Compute: 97 - 79,1,1,1,0.037895669836310146,0.2193345492888069,0,0,E,A,1
+63,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [57, 40, 8, 51, 58, 51, 38, 10, 25, 23, 51, 60, 19, 17, 6, 22, 6, 64, 16, 47, 11, 31, 47, 17, 11, 63, 54, 7, 47, 24, 17, 49]
+V = [19, 108, 69, 27, 90, 19, 40, 102, 128, 80, 45, 78, 26, 101, 10, 125, 107, 57, 97, 70, 34, 10, 99, 71, 35, 77, 86, 108, 118, 89, 117, 92]
+C = 523",0,0,1,0.13309215470357133,0.07735586023741813,0,0,C,D,1
+64,sub,8,Compute: 65936204 - 18049146,1,1,1,0.4227940261389042,0.04028981925271486,1,0,B,A,1
+65,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dacdccacacbccdddaabdabdaadacbddc""
+T = ""baacdcaccccbdddaccdcbddcaaddbcd""",0,0,1,0.07057266197104463,0.3684706865296247,0,1,C,G,1
+66,mul,2,Compute: 55 * 85,0,1,1,0.06122945262157943,0.07630850858412977,0,0,A,A,1
+67,add,8,Compute: 86223261 + 36467754,0,1,1,0.8129083658071596,0.7937634860133347,1,1,A,A,1
+68,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [12, 17, 13, 1, 1, 28, 7, 37, 35, 22, 14, 14, 4, 36, 2, 19]",0,0,1,0.15047244678777377,0.010260062468708387,0,0,D,B,1
+69,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [44, 1, 39, 17, 16, 73, 22, 50, 83, 81, 73, 9, 47, 17, 22, 32, 35, 69, 72, 5, 16, 10, 58, 62, 56, 24, 40, 31, 40, 88, 53, 75]",0,0,0,0.10643531718390782,0.12416723348726298,0,0,G,B,1
+70,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""abaa""
+T = ""abab""",1,0,1,0.40361087144313007,0.1559224551074743,1,0,G,H,1
+71,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[45, 38, 21, 10, 38, 33, 22], [12, 45, 43, 4, 47, 23, 38], [31, 19, 7, 46, 10, 26, 15], [21, 46, 34, 9, 43, 1, 11], [33, 22, 4, 18, 35, 48, 25], [26, 43, 37, 35, 45, 20, 48], [31, 11, 47, 30, 21, 31, 15]]",0,0,1,0.1315922064948395,0.1182164390299137,0,0,A,I,1
+72,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [3, 1, 5]
+V = [10, 10, 4]
+C = 4",0,0,1,0.3245774707422421,0.07136544489798996,1,0,H,I,1
+73,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bcbd""
+T = ""ccdba""",0,0,1,0.05964881510566486,0.06836305262623638,0,0,F,E,1
+74,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [27, 8, 27, 15, 12, 26, 24, 32, 2, 11, 32, 23, 5, 21, 15, 3]
+V = [38, 6, 56, 34, 47, 9, 42, 12, 5, 50, 12, 52, 58, 28, 47, 4]
+C = 141",0,0,1,0.023464461335654118,0.11027004899293712,0,0,A,D,1
+75,sub,32,Compute: 26019498633788671566324390269400 - 22000265814820815050640670985204,0,0,1,0.052471789818788105,0.7301823122140609,0,1,A,B,1
+76,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dd""
+T = ""ba""",1,0,1,0.11815364110655886,0.26627075190164784,0,1,H,G,1
+77,mul,16,Compute: 3865727284759657 * 6296408602997800,0,0,1,0.028673713012958263,0.004033346752538263,0,0,A,A,1
+78,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [24, 3, 24, 11, 28, 10, 13, 13, 31, 20, 32, 2, 32, 25, 19, 27]
+V = [26, 38, 11, 50, 39, 3, 7, 14, 3, 13, 19, 3, 38, 23, 7, 29]
+C = 157",0,0,1,0.1572557037854831,0.0998100784924849,0,0,C,G,1
+79,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [2, 8, 3, 2]
+V = [9, 13, 15, 14]
+C = 7",0,0,1,0.0845118827280342,0.06544248895098666,0,0,I,A,1
+80,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [36, 34, 34, 28, 29, 35]
+consumption (rows=resources) = [[7, 10, 16, 12, 12, 6], [12, 8, 2, 4, 1, 12], [5, 12, 10, 13, 15, 15], [16, 1, 4, 14, 1, 12]]
+capacity = [51, 53, 58, 35]
+upper_bounds = [3, 4, 3, 3, 3, 3]",0,0,0,0.08503524675334227,0.045135740611990396,0,0,E,C,1
+81,mul,4,Compute: 3220 * 9078,0,0,1,0.1349588621428221,0.14768062857739903,0,0,B,D,1
+82,add,8,Compute: 39792878 + 65032702,0,1,1,0.01796309496740138,0.5867048946059026,0,1,H,A,1
+83,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [11, 10, 7, 1]",0,0,1,0.13859112610073204,0.021480612776293047,0,0,B,A,1
+84,add,2,Compute: 86 + 59,1,1,1,0.12985133835241472,0.9752310136899228,0,1,D,A,1
+85,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [89, 10, 26, 51, 28, 83]
+consumption (rows=resources) = [[9, 1, 28, 3, 18, 19], [13, 21, 15, 27, 25, 5], [32, 28, 5, 8, 28, 27], [9, 9, 7, 27, 15, 25]]
+capacity = [103, 128, 101, 120]
+upper_bounds = [3, 3, 3, 4, 3, 3]",0,0,0,0.08898712971607904,0.06787433445288817,0,0,I,D,1
+86,sub,2,Compute: 79 - 12,1,1,1,0.24149732214210173,0.02143245618867285,0,0,A,E,1
+87,add,8,Compute: 99984293 + 52794922,0,1,1,0.16205406714980494,0.6238434646951472,0,1,I,A,1
+88,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [7, 6]
+consumption (rows=resources) = [[1, 1], [1, 2]]
+capacity = [7, 7]
+upper_bounds = [7, 3]",0,0,0,0.03696754785397513,0.0626273532113214,0,0,H,I,1
+89,sub,2,Compute: 34 - 33,1,1,1,0.07046394783352936,0.04847438897134487,0,0,A,I,1
+90,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [44, 43, 11, 38, 9, 34]
+consumption (rows=resources) = [[7, 12, 10, 1, 16, 13], [2, 1, 13, 2, 8, 9], [9, 15, 10, 4, 7, 14], [4, 15, 11, 6, 15, 9]]
+capacity = [36, 52, 62, 47]
+upper_bounds = [5, 3, 3, 7, 3, 3]",0,0,0,0.126682085868595,0.39403152246923884,0,1,H,F,1
+91,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [89, 60, 40, 8, 3, 32, 23, 16, 53, 56, 4, 11, 74, 87, 86, 4, 12, 72, 17, 86, 87, 20, 42, 67, 36, 40, 51, 39, 69, 79, 42, 45]",0,0,0,0.15748652318380515,0.025127104072497616,0,0,A,H,1
+92,sub,4,Compute: 3860 - 3604,1,1,1,0.19882911493643515,0.08417994671162421,0,0,D,G,1
+93,mul,4,Compute: 8547 * 8569,0,0,1,0.12655401299436217,0.15881382874823935,0,0,A,A,1
+94,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 6], [6, 5]]",0,0,1,0.1418257741598872,0.10068505606196479,0,0,E,B,1
+95,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ddacccab""
+T = ""acccaccad""",1,1,1,0.13571303903567758,0.44220713871646233,0,1,B,G,1
+96,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [3, 6, 5, 8]",0,0,1,0.08073939424036047,0.1495516588901318,0,0,D,H,1
+97,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[7, 10, 12, 7, 5, 5, 21], [16, 7, 16, 6, 5, 11, 9], [22, 1, 5, 9, 21, 3, 21], [15, 17, 18, 8, 14, 24, 8], [15, 21, 18, 2, 22, 12, 4], [14, 9, 19, 19, 3, 21, 16], [12, 7, 3, 6, 3, 1, 14]]",0,0,0,0.1100978954198058,0.10273065712147944,0,0,G,G,1
+98,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [6, 8, 5, 8]
+V = [5, 16, 10, 11]
+C = 13",1,1,1,0.05491057093506884,0.08722741203430483,0,0,I,G,1
+99,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [20, 15, 31, 21, 19, 10, 5, 25, 1, 32, 15, 4, 3, 26, 6, 32]
+V = [44, 60, 48, 41, 27, 6, 3, 27, 43, 41, 30, 60, 44, 43, 21, 20]
+C = 132",0,0,1,0.21173753656113395,0.03856867159064093,1,0,H,D,1
+100,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [23, 24, 13, 7, 5, 12, 3, 1]",0,0,1,0.022982982119714453,0.19638974447555563,0,0,H,D,1
+101,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [19, 73, 25, 45, 33, 41, 84, 46, 21, 55, 21, 18, 65, 39, 85, 67, 20, 21, 37, 21, 40, 43, 16, 68]",1,1,0,0.07214949555913074,0.03861665433955127,0,0,H,A,1
+102,mul,2,Compute: 86 * 22,0,0,1,0.08312563558760082,0.0329902126247887,0,0,A,A,1
+103,mul,2,Compute: 40 * 38,1,1,1,0.06632969544309324,0.03057408374890962,0,0,I,D,1
+104,mul,32,Compute: 62537068349081325526119791560128 * 80074459825178994453669022697562,0,0,0,0.06988339335202842,0.20839925523932587,0,0,A,D,1
+105,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dbbacdba""
+T = ""cccbdbaac""",0,0,1,0.5041147019106567,0.073431123149584,1,0,G,C,1
+106,mul,2,Compute: 55 * 70,1,1,1,0.2517602966266085,0.10339577803183038,1,0,C,F,1
+107,add,2,Compute: 87 + 28,1,1,1,0.3799267534950757,0.20841794990514906,1,0,A,F,1
+108,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 1, 4]
+V = [6, 5, 3]
+C = 4",0,0,1,0.056599590962131054,0.015308220784597214,0,0,I,A,1
+109,add,2,Compute: 18 + 34,1,1,1,0.023743676447393017,0.09383166821318417,0,0,B,C,1
+110,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [18, 43, 26, 9, 27, 30, 26, 44, 19, 16, 43, 20, 48, 13, 46, 3]",0,0,1,0.14921648357778428,0.0249348090687801,0,0,C,H,1
+111,add,16,Compute: 4678531439802976 + 6464191173820002,1,1,1,0.5465561600130432,0.043669218322316926,1,0,A,C,1
+112,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[10, 10, 2, 4], [12, 5, 7, 3], [9, 8, 12, 5], [6, 11, 3, 11]]",0,1,1,0.2068173925489989,0.08133724060432077,1,0,D,I,1
+113,sub,4,Compute: 4902 - 3785,1,1,1,0.20830132574582325,0.38599183924528896,0,1,A,B,1
+114,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [8, 5, 1, 7]",0,0,1,0.0797471517873056,0.04294126703424864,0,0,H,C,1
+115,mul,8,Compute: 85971804 * 16581820,0,0,1,0.07629798034832343,0.7250287499828911,0,1,B,C,1
+116,sub,2,Compute: 99 - 20,1,1,1,0.015436444135058196,0.43423867473439204,0,1,E,B,1
+117,sub,32,Compute: 71719866154130818657093156541736 - 47408747368085597402766024647460,0,0,1,0.016464436664374936,0.05806769401923616,0,0,A,A,1
+118,mul,4,Compute: 3694 * 4739,0,0,1,0.03627545007663984,0.392512062961179,0,1,A,C,1
+119,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [3, 1, 2]
+V = [7, 10, 7]
+C = 3",0,0,1,0.14079782343145564,0.030252207748104512,0,0,C,D,1
+120,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [14, 1, 6, 4, 12, 14, 8, 9]
+V = [26, 23, 10, 6, 21, 14, 3, 26]
+C = 34",0,0,1,0.027427908270541174,0.08353047305473024,0,0,A,A,1
+121,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cbdaaabc""
+T = ""baabbabbb""",0,0,1,0.042229475780143653,0.23158017212019483,0,1,B,G,1
+122,mul,32,Compute: 82541913939247601774318893004941 * 47768077260533627218156171632393,0,0,0,0.10225971483514963,0.04157898355977877,0,0,E,I,1
+123,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [29, 12, 29, 27, 7, 27, 9, 2, 13, 14, 10, 16, 30, 24, 12, 15]
+V = [53, 50, 42, 25, 53, 13, 25, 48, 33, 50, 1, 27, 7, 61, 44, 40]
+C = 138",0,0,1,0.10506767558182607,0.035712916802852976,0,0,A,F,1
+124,sub,4,Compute: 6378 - 4974,1,1,1,0.3556583499059395,0.026118616153390853,1,0,B,A,1
+125,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [19, 15, 13, 14, 22, 16, 7, 9]",0,0,1,0.405347157821537,0.16995058737323662,1,0,I,G,1
+126,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [20, 38, 7, 26, 21, 35, 34, 2, 19, 12, 3, 33, 1, 36, 23, 19]",0,0,1,0.038660334804413304,0.05834346167680744,0,0,H,D,1
+127,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [23, 32, 31, 20, 30, 18, 35, 13, 33, 33, 12, 14, 22, 4, 14, 41]",1,1,1,0.2385353048418024,0.08876923522176369,1,0,E,A,1
+128,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [1, 4, 3]
+V = [8, 4, 6]
+C = 4",1,1,1,0.3786452724675446,0.2451400833722562,1,1,H,H,1
+129,mul,8,Compute: 72221509 * 89651026,0,0,1,0.05556001851164159,0.36315720365014725,0,1,A,C,1
+130,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[10, 9, 22, 11, 14, 14, 5], [21, 22, 20, 23, 17, 21, 4], [20, 14, 15, 12, 10, 19, 16], [4, 15, 23, 14, 4, 14, 4], [10, 15, 9, 6, 13, 20, 5], [19, 14, 7, 5, 6, 17, 3], [8, 7, 12, 10, 10, 15, 16]]",0,0,1,0.13812111533320795,0.10685161430584121,0,0,B,H,1
+131,sub,16,Compute: 8296700900266109 - 6170473195019302,0,1,1,0.12318407966858802,0.2189868472629532,0,0,E,I,1
+132,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [6, 7, 8, 8, 1, 2, 15, 16]
+V = [22, 10, 5, 4, 4, 4, 15, 26]
+C = 31",0,0,1,0.007059067907881453,0.015357640270215842,0,0,B,D,1
+133,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [20, 38, 42, 5, 29, 2, 15, 45, 30, 10, 45, 11, 24, 36, 48, 30]",0,0,1,0.04767803413103061,0.034554602784686916,0,0,I,D,1
+134,add,2,Compute: 49 + 22,1,1,1,0.07792544916482559,0.9620959198563701,0,1,D,A,1
+135,add,2,Compute: 42 + 78,1,1,1,0.020667605360943864,0.29289217495944975,0,0,F,I,1
+136,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cb""
+T = ""c""",1,1,1,0.007934176481955095,0.13367203852630372,0,0,F,F,1
+137,mul,2,Compute: 11 * 68,1,1,1,0.03224683511592831,0.02189705179813343,0,0,A,A,1
+138,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [50, 52, 45, 71, 76, 64, 61, 48, 2, 94, 6, 84, 77, 60, 2, 63, 56, 4, 21, 61, 80, 81, 96, 90, 13, 34, 78, 17, 92, 22, 17, 48]",0,0,0,0.1188721196333066,0.26473129268992285,0,1,B,I,1
+139,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [80, 65, 27, 50, 4, 67, 64, 90, 34, 83, 12, 24, 36, 70, 93, 72, 15, 72, 75, 62, 66, 27, 42, 25, 50, 72, 81, 20, 42, 72, 60, 7]",0,0,1,0.11139395476751957,0.03722744239616844,0,0,F,F,1
+140,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[14, 21, 2, 32, 30, 45, 23], [33, 14, 11, 21, 35, 32, 33], [38, 47, 32, 22, 13, 2, 4], [15, 30, 25, 42, 26, 8, 7], [12, 22, 17, 7, 11, 5, 38], [1, 25, 28, 36, 13, 8, 3], [24, 35, 1, 5, 1, 14, 8]]",0,0,1,0.08217780536686504,0.03333376321195638,0,0,A,A,1
+141,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [7, 3, 4, 3]
+V = [6, 8, 10, 1]
+C = 8",0,1,1,0.1486624591552603,0.19696805560268596,0,0,A,B,1
+142,mul,16,Compute: 9387794779052720 * 8260296368356570,0,0,1,0.0451968633341913,0.02030230216070572,0,0,A,E,1
+143,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 12, 7]
+consumption (rows=resources) = [[2, 1, 2], [4, 2, 2], [1, 3, 4]]
+capacity = [10, 12, 9]
+upper_bounds = [3, 3, 3]",0,0,0,0.013643231066128964,0.12481076481003657,0,0,C,H,1
+144,add,4,Compute: 6931 + 2947,1,1,1,0.14366648195134496,0.02614141452746871,0,0,D,B,1
+145,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[1, 3, 11, 6], [12, 6, 4, 11], [2, 9, 8, 3], [11, 5, 6, 4]]",0,0,1,0.11114420320390869,0.0195288730267961,0,0,F,H,1
+146,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""abaabccbbbdbcdacdcbabbbbbcbbcabc""
+T = ""dacdddddcdabdbaaaadbbccbcadddcdd""",0,0,1,0.23835506983811042,0.18178417318919698,1,0,G,H,1
+147,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [44, 32, 27, 10, 69, 92, 3, 88, 93, 80, 38, 29, 36, 4, 82, 13, 88, 96, 51, 42, 9, 57, 77, 21]",0,1,1,0.1602908927639457,0.3436483838869374,0,1,F,E,1
+148,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[3, 24, 7, 35, 7, 14, 22], [32, 22, 1, 10, 14, 20, 35], [36, 24, 33, 44, 17, 8, 24], [1, 47, 30, 36, 17, 42, 5], [19, 46, 8, 24, 30, 1, 5], [28, 47, 11, 1, 45, 44, 22], [30, 31, 36, 43, 43, 17, 12]]",0,0,1,0.06737115047338745,0.12940440343886556,0,0,G,E,1
+149,mul,4,Compute: 3898 * 6319,0,0,1,0.18139340794031852,0.0531617972514065,0,0,A,A,1
+150,mul,4,Compute: 3644 * 3778,0,0,1,0.016328511335738607,0.21048986941419395,0,0,I,H,1
+151,sub,16,Compute: 3748919686330189 - 2455694280252317,1,1,1,0.07041354479396056,0.060595103311182376,0,0,D,F,1
+152,mul,2,Compute: 52 * 30,1,1,1,0.4279397904785833,0.034649451641120384,1,0,C,H,1
+153,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ddaccadccbbabcca""
+T = ""dddcbdbacbcccad""",0,0,1,0.017686999369375702,0.004317013635789146,0,0,B,E,1
+154,add,16,Compute: 8493082811625480 + 8062703769992091,1,1,1,0.1670642046736601,0.20018570096579263,0,0,B,H,1
+155,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acbccbdc""
+T = ""dccbaccb""",0,1,1,0.03369264353274093,0.03314693229582931,0,0,H,H,1
+156,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [10, 5, 9, 18, 19, 22, 24, 2]",0,0,1,0.09753631752970272,0.24257552548532374,0,0,G,F,1
+157,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [22, 5, 6, 13, 6, 7, 14, 24]",1,1,0,0.10418720115790275,0.022954828354887793,0,0,D,A,1
+158,add,4,Compute: 4668 + 3037,1,1,1,0.5165036224407811,0.1986877363324661,1,1,A,A,1
+159,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [81, 53, 70, 22, 3, 39]
+consumption (rows=resources) = [[21, 5, 2, 5, 12, 23], [30, 25, 1, 12, 16, 29], [24, 7, 30, 26, 28, 31], [15, 12, 16, 26, 19, 5]]
+capacity = [104, 64, 103, 110]
+upper_bounds = [3, 3, 3, 3, 3, 3]",0,0,0,0.21513665329406226,0.07804630412431982,0,0,B,I,1
+160,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[16, 18, 32, 16, 5, 12, 8], [28, 31, 43, 25, 31, 45, 8], [38, 27, 19, 17, 4, 13, 44], [15, 19, 37, 38, 38, 21, 29], [18, 29, 8, 27, 19, 6, 18], [4, 33, 16, 24, 40, 1, 25], [47, 48, 29, 14, 24, 17, 45]]",0,0,1,0.13818416670384848,0.1247644224825582,0,0,C,F,1
+161,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [23, 10, 10, 22, 11, 25, 23, 23, 21, 26, 11, 29, 25, 9, 30, 22]
+V = [24, 7, 5, 58, 34, 31, 16, 2, 61, 64, 30, 31, 17, 25, 37, 7]
+C = 160",0,0,1,0.10814392774527787,0.011929914639312048,0,0,I,A,1
+162,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [9, 48, 31, 68, 37, 19, 95, 40, 36, 91, 76, 6, 64, 68, 14, 29, 62, 27, 20, 16, 1, 74, 22, 79]",0,0,1,0.12891134786261052,0.3262561999872277,0,1,F,E,1
+163,sub,2,Compute: 29 - 14,1,1,1,0.030091727473349622,0.019644820742772972,0,0,E,I,1
+164,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [1, 4, 26, 27, 21, 17, 29, 23, 8, 22, 25, 13, 13, 24, 1, 24]
+V = [45, 26, 32, 45, 20, 49, 12, 52, 63, 25, 51, 64, 53, 36, 6, 23]
+C = 139",0,0,1,0.22094280637411662,0.021323478250033574,0,0,A,F,1
+165,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [15, 18, 6, 5]
+consumption (rows=resources) = [[7, 4, 3, 4], [5, 6, 8, 8], [7, 4, 8, 6], [2, 4, 8, 5]]
+capacity = [19, 16, 17, 18]
+upper_bounds = [3, 3, 3, 3]",0,0,1,0.01534252898894464,0.09135841158377477,0,0,I,G,1
+166,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [43, 5, 35, 38, 16, 11, 22, 46, 39, 24, 38, 38, 39, 45, 1, 28]",0,0,1,0.05092914804629998,0.046155578663287275,0,0,F,A,1
+167,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[12, 20, 15, 6, 19, 14, 10], [7, 18, 22, 9, 12, 21, 20], [11, 13, 20, 20, 23, 23, 19], [14, 24, 4, 13, 7, 2, 23], [7, 16, 22, 24, 11, 17, 8], [18, 24, 8, 16, 23, 24, 16], [8, 4, 5, 5, 24, 9, 11]]",0,0,1,0.09407041135875911,0.04163891796103552,0,0,I,I,1
+168,mul,8,Compute: 74102489 * 35868846,0,0,1,0.027080989111922936,0.023609859030694673,0,0,I,G,1
+169,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [22, 9, 20, 4, 39, 36, 16, 47, 17, 6, 29, 56, 6, 37, 57, 60, 15, 63, 49, 12, 56, 44, 4, 1, 62, 56, 57, 38, 47, 36, 60, 21]
+V = [99, 57, 28, 36, 104, 3, 98, 101, 44, 29, 24, 29, 59, 26, 55, 77, 99, 11, 88, 83, 21, 82, 100, 92, 52, 35, 37, 112, 97, 85, 38, 40]
+C = 541",0,0,1,0.09898064779207377,0.19490448278895503,0,0,A,C,1
+170,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [40, 11, 55, 51, 45, 5, 18, 28, 34, 20, 25, 12, 10, 7, 7, 27, 16, 25, 27, 19, 6, 33, 12, 36, 25, 43, 53, 22, 37, 20, 10, 54]
+V = [62, 6, 70, 128, 45, 35, 124, 29, 25, 14, 86, 84, 77, 25, 33, 2, 92, 101, 123, 41, 114, 62, 97, 45, 59, 49, 73, 91, 61, 2, 19, 97]
+C = 416",0,0,1,0.2937353141936623,0.011591951394653077,1,0,H,D,1
+171,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [33, 37, 27, 11, 45, 26, 5, 18, 15, 10, 43, 14, 46, 30, 12, 32]",0,0,1,0.05741566503708797,0.3245600901673399,0,1,F,I,1
+172,mul,2,Compute: 40 * 71,1,1,1,0.06436733032786654,0.026478480333456303,0,0,E,A,1
+173,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [11, 6, 5]
+consumption (rows=resources) = [[1, 3, 4], [3, 4, 1], [3, 4, 4]]
+capacity = [16, 10, 16]
+upper_bounds = [3, 3, 4]",0,0,0,0.33900938287061894,0.48704831033918766,1,1,F,F,1
+174,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[60, 28, 61, 30, 7, 44, 20], [12, 85, 14, 96, 77, 1, 30], [21, 65, 44, 85, 9, 18, 27], [8, 35, 37, 78, 61, 52, 4], [72, 27, 14, 55, 64, 72, 29], [26, 33, 55, 22, 7, 36, 64], [89, 6, 54, 24, 57, 53, 4]]",0,0,1,0.07024380773728141,0.349050706462731,0,1,G,D,1
+175,add,16,Compute: 9949915780126618 + 4081027408176218,0,1,1,0.4282947976414209,0.05791436986546839,1,0,A,D,1
+176,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bdabdddd""
+T = ""dacbbcad""",1,0,1,0.18206237564431008,0.2058764470551168,0,0,A,E,1
+177,sub,4,Compute: 5519 - 5134,1,1,1,0.14572455790993352,0.09825933691195851,0,0,A,A,1
+178,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [7, 3, 22, 4]
+consumption (rows=resources) = [[5, 4, 2, 5], [5, 8, 8, 4], [5, 7, 8, 5], [8, 4, 7, 2]]
+capacity = [29, 28, 22, 19]
+upper_bounds = [3, 3, 3, 4]",0,0,1,0.14879075631825364,0.027706398693011065,0,0,I,C,1
+179,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [6, 1]",0,0,0,0.18727029870986994,0.530806643776345,0,1,C,I,1
+180,mul,8,Compute: 98356667 * 12921103,0,0,1,0.03349211497423963,0.3522409757142063,0,1,G,C,1
+181,add,32,Compute: 18002891103419739279064419071247 + 66566388877273237825683928357877,0,0,1,0.10222912366246348,0.23563371808988898,0,0,G,D,1
+182,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [19, 26, 13, 2, 5, 30, 24, 14, 26, 28, 3, 6, 24, 13, 14, 24]
+V = [60, 29, 64, 10, 25, 48, 47, 50, 57, 31, 20, 13, 50, 55, 40, 46]
+C = 135",0,0,1,0.023949207432153785,0.06589245390414569,0,0,C,A,1
+183,mul,8,Compute: 30010790 * 90286410,0,0,1,0.015872979665139158,0.016671900474612773,0,0,A,A,1
+184,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [1, 10, 15, 9, 7, 5, 11, 10]
+V = [9, 12, 21, 26, 19, 23, 29, 31]
+C = 34",0,0,1,0.06117929678284708,0.08276996599002921,0,0,E,G,1
+185,mul,2,Compute: 34 * 99,1,1,1,0.15604610098116428,0.19282092780471163,0,0,A,F,1
+186,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [4, 8, 12, 11]",0,0,1,0.06492824820494035,0.02824111684091422,0,0,I,A,1
+187,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [80, 52, 73, 82, 52, 5, 5, 1, 75, 50, 77, 93, 19, 27, 67, 39, 15, 73, 94, 31, 47, 93, 8, 90]",0,0,0,0.18155781917374228,0.06700263288605254,0,0,F,A,1
+188,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [2, 1]",0,0,0,0.18347076068467194,0.2492424286869214,0,0,A,H,1
+189,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bb""
+T = ""cc""",1,0,1,0.024637530830643253,0.3725665497809146,0,1,I,G,1
+190,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [10, 12, 10, 2]",0,0,1,0.10955406943024167,0.20460954622428365,0,0,D,A,1
+191,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [21, 19, 20, 5, 19, 23, 5, 23]",0,0,0,0.36928615129348796,0.04822672518962458,1,0,I,B,1
+192,sub,8,Compute: 92290984 - 46246115,1,0,1,0.22020249504128647,0.028647119968862638,0,0,I,G,1
+193,mul,16,Compute: 5571581027665419 * 9335381238790923,0,0,1,0.004187203113172862,0.08506230635757979,0,0,A,A,1
+194,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [1, 6, 6, 2]",0,1,0,0.14266611713892263,0.07473289757659761,0,0,H,A,1
+195,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [3, 1, 10, 7, 18, 17, 22, 1]",1,1,1,0.05497813806254975,0.04643138131764669,0,0,B,I,1
+196,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [40, 26, 7, 45, 35, 3, 39, 5, 7, 19, 22, 36, 23, 35, 6, 27]",0,0,1,0.2529540343708671,0.04232807249406736,0,0,E,G,1
+197,sub,2,Compute: 83 - 25,1,1,1,0.022715119773255698,0.05135385287418753,0,0,C,A,1
+198,sub,16,Compute: 6545818454573975 - 6152926018306005,0,1,1,0.10354716791068033,0.1812936632846109,0,0,H,I,1
+199,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [21, 10, 17, 4, 3, 24, 15, 14]",0,0,0,0.13072117034611525,0.07942571989354084,0,0,F,H,1
+200,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[3, 9, 3, 8], [4, 2, 12, 9], [5, 12, 2, 1], [7, 12, 2, 7]]",0,0,1,0.3097148726986921,0.08273647973525942,1,0,D,B,1
+201,add,4,Compute: 2568 + 2312,0,1,1,0.25878069675347487,0.5461073311474259,0,1,D,A,1
+202,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [13, 31, 23, 23, 32, 27, 12, 7, 27, 31, 5, 13, 17, 27, 14, 8]
+V = [56, 29, 59, 29, 33, 3, 39, 53, 50, 45, 40, 1, 30, 34, 52, 28]
+C = 155",0,0,1,0.07981194907651055,0.13927013703897617,0,0,E,D,1
+203,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [71, 73, 40, 14, 53, 89]
+consumption (rows=resources) = [[9, 22, 27, 16, 23, 25], [5, 1, 7, 28, 9, 31], [17, 26, 30, 11, 16, 21], [21, 9, 23, 6, 31, 4]]
+capacity = [126, 128, 80, 102]
+upper_bounds = [4, 3, 3, 4, 3, 3]",0,0,0,0.07963694957126105,0.04819586298031667,0,0,H,C,1
+204,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [14, 12, 8, 4, 14, 24, 16, 24]",0,0,1,0.17281624383381003,0.33920101152011095,0,0,G,B,1
+205,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [24, 23, 1, 5, 2, 6, 18, 9]",0,0,1,0.04206300106185265,0.10299519417631246,0,0,C,I,1
+206,add,16,Compute: 3290758218171243 + 4030531289028150,0,0,1,0.14427136429969958,0.6213049757698516,0,1,B,A,1
+207,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dd""
+T = ""dad""",0,1,1,0.0739861702693389,0.1036518712361109,0,0,I,F,1
+208,mul,32,Compute: 20899029464049227788497855813857 * 34749800788002837007857474114638,0,0,0,0.16442156697403698,0.06422861549292999,0,0,A,B,1
+209,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [4, 6, 7, 15]
+consumption (rows=resources) = [[5, 1, 8, 2], [4, 1, 4, 3], [1, 8, 5, 5], [3, 7, 6, 2]]
+capacity = [21, 19, 20, 31]
+upper_bounds = [4, 3, 3, 4]",0,0,1,0.01649667610773227,0.12171001511617087,0,0,A,H,1
+210,add,2,Compute: 46 + 27,1,1,1,0.024787912804038643,0.5300386937509817,0,1,D,A,1
+211,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[37, 26, 20, 33, 3, 3, 1], [24, 8, 12, 47, 43, 43, 18], [1, 17, 3, 27, 27, 1, 5], [28, 34, 18, 13, 43, 16, 20], [8, 5, 24, 26, 34, 4, 23], [15, 19, 43, 25, 1, 30, 38], [21, 47, 9, 7, 46, 2, 25]]",0,0,1,0.04891535009529394,0.060923432562177034,0,0,H,G,1
+212,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dbdabcbcbacdaaac""
+T = ""cdddccdbadbdccc""",0,0,1,0.7160242638490018,0.521643792123833,1,1,G,G,1
+213,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [35, 32, 6, 47, 45, 6, 18, 9, 20, 35, 8, 4, 18, 47, 5, 11]",0,0,1,0.05232109043606358,0.10102828201681467,0,0,H,C,1
+214,mul,16,Compute: 4471530914820443 * 1865693327034152,0,0,0,0.02085677173109274,0.0741140881095724,0,0,A,A,1
+215,sub,32,Compute: 76130707580873471522506019378056 - 38940452130469910182038498458628,0,1,1,0.07619354190969883,0.34128437975022335,0,1,H,B,1
+216,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [1, 2, 3]
+V = [6, 8, 5]
+C = 3",0,0,1,0.46291007897043346,0.08113126558493963,1,0,H,F,1
+217,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [2, 6, 12, 7]",1,1,0,0.16795972251679156,0.1292257350434027,0,0,F,D,1
+218,add,8,Compute: 61349906 + 24832584,0,0,1,0.05068552995932339,0.23960201835423578,0,1,I,A,1
+219,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [3, 5, 3]
+V = [3, 10, 2]
+C = 5",0,0,1,0.4170667964686124,0.027495852361915207,1,0,H,C,1
+220,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[19, 14, 24, 15, 6, 12, 3], [8, 12, 22, 12, 7, 2, 11], [17, 23, 21, 4, 12, 9, 19], [21, 1, 3, 9, 5, 15, 9], [10, 3, 18, 3, 20, 5, 19], [4, 3, 18, 8, 20, 2, 5], [18, 11, 23, 4, 3, 5, 19]]",0,0,1,0.174922005700141,0.09194556608406329,1,0,D,G,1
+221,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [42, 35, 11, 8, 23, 16, 37, 41, 20, 23, 13, 44, 3, 25, 11, 19]",0,0,1,0.0497879610327373,0.2581704358463385,0,0,E,A,1
+222,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [18, 2, 19, 12, 20, 28, 17, 1, 19, 15, 30, 11, 30, 3, 25, 32]
+V = [15, 36, 43, 5, 61, 39, 4, 24, 15, 27, 59, 25, 17, 40, 53, 7]
+C = 141",0,0,1,0.07870407391231278,0.06867976531068085,0,0,B,E,1
+223,mul,16,Compute: 6520663580409789 * 9491078734492602,0,0,1,0.009693784221928297,0.20448534507993568,0,0,I,G,1
+224,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [7, 15, 16, 7, 8, 3, 10, 5]",1,1,0,0.029475664810451437,0.04024350079840378,0,0,C,G,1
+225,sub,4,Compute: 6768 - 4703,1,1,1,0.046272413183860085,0.039328923263462975,0,0,D,A,1
+226,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 5]
+consumption (rows=resources) = [[2, 2], [1, 3]]
+capacity = [8, 10]
+upper_bounds = [4, 3]",0,1,0,0.1200226918803226,0.12126453383778933,0,0,G,I,1
+227,mul,16,Compute: 3233235722850110 * 1224586404077268,0,0,1,0.058741069964405125,0.12011624318178689,0,0,D,D,1
+228,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [11, 30, 16, 21, 27, 4, 1, 15, 27, 31, 16, 22, 42, 16, 22, 46]",0,0,1,0.14369627619188105,0.09607238498902929,0,0,G,E,1
+229,sub,2,Compute: 71 - 36,1,1,1,0.05036293903380683,0.15934741146494674,0,0,D,A,1
+230,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [7, 9, 2, 12, 10, 13, 5, 2]
+V = [13, 20, 14, 29, 19, 1, 3, 28]
+C = 30",0,0,1,0.2892531222966306,0.23406001883226665,1,1,H,H,1
+231,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 3]
+consumption (rows=resources) = [[1, 1], [1, 2]]
+capacity = [6, 8]
+upper_bounds = [6, 4]",0,0,1,0.019925176204878315,0.043370762111756285,0,0,H,H,1
+232,sub,8,Compute: 76045375 - 59808584,1,1,1,0.04067953693944884,0.03033383601043518,0,0,C,A,1
+233,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 1, 2]
+V = [5, 2, 5]
+C = 3",0,0,1,0.09889959747996381,0.3870630153325847,0,1,G,H,1
+234,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [7, 6, 3, 12]",0,0,1,0.15936362541932786,0.022298139582347134,0,0,G,A,1
+235,mul,16,Compute: 1146693012843284 * 9346730910082877,0,0,0,0.09871123655054329,0.2429140459357461,0,0,G,D,1
+236,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [2, 6, 5, 6]",0,0,1,0.0811084917233703,0.5201832759126753,0,1,B,E,1
+237,add,4,Compute: 7194 + 9395,1,1,1,0.2997928650469178,0.6943595619263873,1,1,A,A,1
+238,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [10, 1, 8, 5]",0,0,0,0.14239852400253084,0.04291734585271405,0,0,F,A,1
+239,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dacdbdaadbbabcaacadbdcaaabbbddac""
+T = ""cdcadbaaabbdadbbdadbcdaadbddacdd""",0,0,1,0.27703688722408676,0.041300866631514076,0,0,C,E,1
+240,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [11, 8, 1, 2, 2, 1, 8, 11]
+V = [8, 6, 19, 17, 30, 4, 7, 28]
+C = 22",0,0,1,0.09228574266826695,0.06789854738602467,0,0,F,B,1
+241,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[13, 14, 2, 14, 2, 13, 3], [15, 7, 21, 22, 11, 1, 5], [15, 17, 24, 15, 22, 14, 17], [2, 5, 5, 8, 16, 3, 2], [3, 18, 1, 1, 18, 11, 22], [3, 12, 2, 7, 16, 18, 3], [19, 7, 24, 10, 10, 1, 8]]",0,0,1,0.10094037497392808,0.06185610131337362,0,0,F,I,1
+242,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [10, 8, 9, 6]",0,0,1,0.09877658834749463,0.014641337036450522,0,0,G,F,1
+243,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [20, 34, 59, 9, 31, 16, 67, 3, 78, 21, 77, 77, 36, 17, 61, 89, 41, 2, 30, 89, 55, 77, 58, 59, 10, 75, 72, 28, 13, 19, 45, 88]",0,0,0,0.03632046415187099,0.174652131253551,0,1,G,I,1
+244,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [11, 6, 10]
+consumption (rows=resources) = [[3, 1, 3], [4, 2, 3], [4, 2, 3]]
+capacity = [9, 15, 12]
+upper_bounds = [3, 6, 3]",0,0,0,0.06010994301515899,0.44333724383478046,0,1,C,F,1
+245,add,8,Compute: 38502519 + 14788861,0,1,1,0.07952707721193462,0.10361796537198122,0,0,G,F,1
+246,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[12, 14, 66, 60, 23, 13, 78], [23, 5, 30, 33, 70, 85, 13], [33, 9, 84, 5, 65, 96, 85], [2, 81, 20, 95, 96, 65, 16], [44, 40, 23, 81, 12, 2, 58], [79, 27, 53, 75, 24, 63, 70], [87, 46, 78, 23, 20, 79, 34]]",0,0,1,0.4936306586813564,0.07223294618132575,1,0,D,G,1
+247,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [15, 5, 81, 51, 26, 6]
+consumption (rows=resources) = [[9, 14, 3, 15, 4, 29], [28, 3, 32, 25, 1, 15], [11, 13, 23, 5, 32, 17], [24, 4, 12, 1, 21, 4]]
+capacity = [78, 72, 105, 66]
+upper_bounds = [3, 5, 3, 3, 3, 3]",0,0,0,0.0754946101431077,0.1949691488410597,0,0,I,G,1
+248,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [9, 1, 15, 9, 16, 8, 16, 4]
+V = [15, 31, 8, 21, 8, 17, 22, 3]
+C = 39",0,0,1,0.08308734617487196,0.06945397712294762,0,0,G,A,1
+249,sub,16,Compute: 7602282401535993 - 6995380047644663,0,0,1,0.053900815178378525,0.08267211025472856,0,0,C,G,1
+250,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [17, 31, 46, 5, 43, 35]
+consumption (rows=resources) = [[15, 11, 10, 15, 2, 12], [16, 16, 8, 7, 3, 10], [9, 2, 11, 3, 11, 16], [6, 6, 8, 2, 13, 6]]
+capacity = [48, 54, 64, 44]
+upper_bounds = [3, 3, 4, 3, 3, 4]",0,0,0,0.08369973621887955,0.04245516355145717,0,0,H,H,1
+251,add,4,Compute: 2016 + 6099,1,1,1,0.7536414943389002,0.6093085048750491,1,1,A,A,1
+252,mul,2,Compute: 75 * 49,1,1,1,0.06372739693620542,0.025852144399591822,0,0,B,I,1
+253,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""daad""
+T = ""ddb""",1,1,1,0.04335700825437586,0.2671399424520935,0,0,C,E,1
+254,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[34, 43, 9, 41, 46, 46, 19], [1, 24, 20, 39, 41, 39, 30], [12, 8, 18, 39, 45, 34, 10], [35, 31, 20, 2, 8, 36, 16], [28, 38, 41, 27, 37, 4, 25], [41, 23, 5, 23, 36, 14, 36], [34, 46, 23, 10, 26, 31, 14]]",0,0,1,0.07284280248499021,0.4064028066907952,0,1,G,D,1
+255,add,32,Compute: 10076970936638733615176647769295 + 28546894083518947576277223977489,0,1,1,0.12694515380668075,0.22222231279499516,0,0,I,D,1
+256,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""abca""
+T = ""bddb""",0,0,1,0.08219346680801423,0.06274027581217108,0,0,F,E,1
+257,mul,4,Compute: 7162 * 6001,0,0,1,0.04321008759025676,0.04264738265287698,0,0,A,H,1
+258,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bdbaabbcdbbddacc""
+T = ""dadcaabcbdbbdbbbc""",0,1,1,0.012710193164647493,0.07932899916573707,0,0,I,I,1
+259,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [15, 16, 13, 9]
+consumption (rows=resources) = [[4, 3, 8, 7], [6, 8, 3, 2], [5, 8, 2, 3], [5, 4, 6, 7]]
+capacity = [26, 18, 27, 31]
+upper_bounds = [3, 3, 3, 3]",0,0,1,0.028871773211773012,0.04632960673034431,0,0,E,I,1
+260,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ddbbdaacbadadbdb""
+T = ""abbadbbcccdbcbdab""",0,0,1,0.17417287900612616,0.2641295821404948,0,1,E,G,1
+261,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [6, 4, 4, 8]
+V = [11, 5, 9, 1]
+C = 11",0,0,1,0.09166156874654417,0.055682035170061144,0,0,I,B,1
+262,add,2,Compute: 21 + 20,1,1,1,0.382929546033,0.5920674001388144,1,1,A,A,1
+263,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acdaaabb""
+T = ""cdbcdba""",1,1,1,0.11391569704744713,0.26056678599855637,0,1,A,G,1
+264,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [18, 40, 48, 22, 4, 41, 16, 6, 47, 12, 25, 25, 31, 12, 3, 7]",0,1,1,0.29838915471637417,0.05566494384094461,1,0,E,I,1
+265,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[8, 10, 9, 14, 14, 9, 10], [5, 1, 8, 5, 20, 16, 7], [18, 18, 22, 16, 16, 2, 20], [22, 18, 16, 2, 1, 23, 24], [20, 4, 22, 8, 19, 3, 18], [8, 5, 14, 19, 22, 21, 24], [10, 5, 21, 21, 7, 9, 20]]",0,0,1,0.14066320614255637,0.09810647048108638,0,0,I,H,1
+266,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 2, 5]
+V = [7, 5, 1]
+C = 5",1,0,1,0.1032759108809165,0.060179154671764906,0,0,G,A,1
+267,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [21, 31, 3, 22, 32, 23, 17, 20, 29, 21, 7, 6, 9, 17, 31, 18]
+V = [12, 10, 24, 26, 43, 23, 28, 33, 49, 25, 12, 34, 60, 5, 42, 23]
+C = 153",0,0,1,0.026638064366830964,0.033704165418220466,0,0,C,D,1
+268,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""baba""
+T = ""bdbdd""",0,0,1,0.029685079642137673,0.005976761690304253,0,0,H,F,1
+269,add,4,Compute: 7753 + 3960,1,1,1,0.02895025127046676,0.5421377317862075,0,1,I,A,1
+270,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acaaaabd""
+T = ""aababbbd""",1,1,1,0.025967130955443198,0.05287472701885895,0,0,C,A,1
+271,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[72, 31, 67, 41, 62, 62, 69], [62, 32, 11, 16, 68, 42, 26], [78, 91, 47, 2, 21, 31, 11], [69, 81, 35, 52, 12, 31, 77], [87, 66, 4, 82, 4, 50, 65], [38, 35, 62, 83, 57, 21, 57], [49, 71, 67, 17, 81, 6, 90]]",0,0,1,0.21856235100736074,0.032098163465674075,1,0,D,F,1
+272,mul,4,Compute: 3593 * 6611,0,0,1,0.035803563705614556,0.0983005924016016,0,0,A,I,1
+273,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [17, 16, 10, 19]
+consumption (rows=resources) = [[3, 3, 8, 3], [1, 1, 7, 3], [1, 4, 7, 4], [8, 1, 7, 2]]
+capacity = [24, 30, 17, 26]
+upper_bounds = [3, 4, 3, 4]",0,0,1,0.12256170934399659,0.010479175647589776,0,0,D,D,1
+274,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""aa""
+T = ""cc""",1,1,1,0.2667466743847096,0.3318078464911854,1,1,G,G,1
+275,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [6, 2]",0,0,0,0.16335842250914945,0.08615310210447306,0,0,G,F,1
+276,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [39, 1, 44, 8, 42, 4, 11, 1, 32, 39, 12, 9, 19, 20, 13, 23]",0,0,0,0.08008917826015617,0.10289817678034924,0,0,C,G,1
+277,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [19, 12, 11, 10]
+consumption (rows=resources) = [[2, 8, 2, 8], [6, 3, 5, 2], [1, 4, 4, 6], [3, 6, 6, 4]]
+capacity = [25, 22, 32, 17]
+upper_bounds = [3, 3, 3, 3]",0,0,1,0.020329244384168634,0.23419658718472,0,0,B,E,1
+278,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 2], [5, 6]]",0,1,1,0.11119776998259495,0.025503223645937045,0,0,F,B,1
+279,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [3, 6, 2, 2]
+V = [12, 7, 9, 15]
+C = 6",0,0,1,0.005375846944743196,0.16855235636025503,0,0,A,B,1
+280,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[3, 7, 2, 12], [4, 12, 3, 3], [12, 5, 5, 11], [6, 3, 8, 12]]",0,0,1,0.09033378851621283,0.23509280670033905,0,0,B,G,1
+281,knap,8,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [13, 1, 2, 7, 6, 6, 15, 6]
+V = [29, 13, 1, 3, 31, 32, 25, 18]
+C = 28",0,0,1,0.09306392072446791,0.2366746395032139,0,0,B,E,1
+282,mul,8,Compute: 75148950 * 78553452,0,0,1,0.23831906043190548,0.09009144041841033,0,0,F,H,1
+283,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dbadcdaa""
+T = ""adbabacb""",0,0,1,0.08590302652553619,0.03247708830761799,0,0,F,I,1
+284,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[45, 40, 52, 58, 42, 54, 91], [38, 9, 5, 96, 89, 65, 3], [5, 90, 28, 87, 17, 59, 76], [10, 59, 71, 17, 11, 28, 72], [30, 85, 93, 87, 25, 18, 86], [70, 3, 71, 6, 43, 27, 4], [62, 77, 14, 23, 74, 9, 34]]",0,0,0,0.16534768807306854,0.08445463418998551,0,0,B,G,1
+285,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 2], [1, 5]]",0,0,1,0.1356959821212758,0.022231117960147095,0,0,B,F,1
+286,sub,2,Compute: 91 - 25,1,1,1,0.051926840700960895,0.08323283381201653,0,0,G,A,1
+287,sub,16,Compute: 7173184072895549 - 3505227133473014,0,1,1,0.41178312369603715,0.03597491907939923,1,0,B,H,1
+288,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [25, 2, 16, 4, 50, 30, 40, 14, 13, 47, 6, 34, 43, 41, 3, 24, 9, 61, 21, 16, 42, 35, 44, 26, 63, 2, 58, 13, 36, 63, 26, 14]
+V = [107, 75, 46, 27, 92, 31, 29, 48, 40, 88, 128, 124, 44, 106, 75, 62, 6, 109, 74, 38, 52, 21, 81, 13, 27, 43, 11, 35, 61, 58, 98, 95]
+C = 460",0,0,1,0.02685388613361208,0.005323092542939725,0,0,G,I,1
+289,mul,32,Compute: 89931088998476022969120166121816 * 61575574269789964802741085516558,0,0,1,0.013796395266139757,0.05481001012691118,0,0,A,A,1
+290,sub,32,Compute: 87491144989157985710828571872585 - 71605249092346078413958173406244,0,0,1,0.03704945644240405,0.04142887826286532,0,0,I,E,1
+291,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[10, 10, 2, 7], [5, 12, 11, 1], [5, 1, 1, 10], [3, 6, 3, 7]]",0,0,1,0.035100141301781754,0.09246471631728193,0,0,A,B,1
+292,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 3, 3, 1]",0,0,0,0.288302146091025,0.16076949045795585,1,0,E,C,1
+293,mul,32,Compute: 66187908898390661124745815964021 * 39631223235585789812003516312319,0,0,0,0.03791101402592426,0.1204047051347879,0,0,A,A,1
+294,sub,16,Compute: 6427856732874287 - 6251791217560834,0,0,1,0.20422421853827424,0.049468510889488115,0,0,C,E,1
+295,add,4,Compute: 1723 + 7780,0,1,1,0.01799647751696134,0.8111880492622867,0,1,E,A,1
+296,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [66, 36, 60, 33, 24, 58]
+consumption (rows=resources) = [[4, 6, 14, 13, 8, 30], [24, 31, 23, 19, 6, 15], [31, 20, 28, 24, 22, 27], [16, 5, 17, 3, 3, 4]]
+capacity = [121, 94, 107, 119]
+upper_bounds = [3, 3, 3, 4, 4, 3]",0,0,0,0.1569743349655207,0.036624263872210634,0,0,E,B,1
+297,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [6, 7, 2, 4]
+V = [16, 10, 9, 13]
+C = 9",0,0,1,0.2282382943991025,0.03619095393754102,0,0,B,D,1
+298,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [9, 10, 19, 4, 14, 18, 4, 19, 17, 5, 6, 25, 27, 32, 24, 18]
+V = [14, 21, 40, 2, 21, 51, 31, 55, 22, 54, 20, 16, 57, 46, 39, 22]
+C = 125",0,0,1,0.031986023393965016,0.07079139005977472,0,0,A,G,1
+299,sub,16,Compute: 9893773899922493 - 5326180606288197,0,0,1,0.07505446927547167,0.041196284478749984,0,0,E,A,1
+300,add,32,Compute: 50262527099870594436306521807331 + 54627847190309618195235578689516,0,0,1,0.11483837040989894,0.1430076036671968,0,0,E,G,1
+301,sub,16,Compute: 7622497427856106 - 7093435424182289,0,0,1,0.07072656223938165,0.08759339464735988,0,0,A,F,1
+302,mul,8,Compute: 88312644 * 49635063,0,0,1,0.1208759879412288,0.1595371290963238,0,0,G,A,1
+303,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [12, 5, 3]
+consumption (rows=resources) = [[3, 4, 4], [2, 4, 2], [4, 1, 1]]
+capacity = [16, 14, 9]
+upper_bounds = [3, 3, 4]",0,0,0,0.14014200514808434,0.08759507467029334,0,0,E,A,1
+304,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [21, 57, 39, 15, 4, 44, 35, 51, 31, 61, 29, 31, 50, 33, 64, 50, 28, 14, 55, 31, 33, 4, 38, 52, 53, 43, 13, 49, 42, 43, 60, 44]
+V = [120, 51, 47, 3, 122, 102, 72, 77, 18, 26, 53, 67, 67, 92, 14, 78, 5, 13, 96, 103, 50, 124, 47, 42, 95, 20, 77, 32, 42, 115, 7, 99]
+C = 608",0,0,1,0.006070366868510672,0.0233267892012399,0,0,C,D,1
+305,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [22, 51, 12, 42, 61, 17, 31, 41, 89, 2, 61, 15, 29, 96, 96, 23, 31, 94, 15, 80, 74, 31, 76, 28, 5, 40, 72, 78, 85, 88, 17, 89]",0,0,0,0.18005083229387975,0.040498284795210754,0,0,D,G,1
+306,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [1, 7, 11, 10]",0,0,1,0.27140728609789555,0.03613801445838425,0,0,A,A,1
+307,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [6, 10, 6, 7]",0,0,1,0.11477877519190374,0.04507571002976736,0,0,C,B,1
+308,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [12, 12, 6, 11]",0,0,1,0.08041422140135847,0.0710025059370469,0,0,A,D,1
+309,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dbcddcdbabdbacac""
+T = ""dbdbadaacccbbaba""",0,0,1,0.02202727269172995,0.04327571892111804,0,0,B,E,1
+310,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[14, 46, 22, 25, 13, 6, 27], [47, 23, 1, 12, 39, 27, 12], [4, 48, 14, 41, 3, 16, 29], [12, 4, 38, 34, 23, 24, 3], [35, 38, 9, 48, 33, 18, 1], [31, 21, 16, 42, 23, 48, 2], [33, 44, 31, 1, 23, 19, 14]]",0,0,1,0.02840604801592268,0.05322630121869839,0,0,B,B,1
+311,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [27, 16, 42, 11, 24, 12, 6, 41, 4, 9, 39, 10, 39, 19, 15, 35]",0,0,1,0.07971617264841828,0.025352732773523304,0,0,D,F,1
+312,add,4,Compute: 2613 + 8723,0,1,1,0.11470420805435066,0.49798806888426944,0,1,B,A,1
+313,add,2,Compute: 75 + 72,1,1,1,0.3591100739619039,0.1262318281528069,0,0,I,C,1
+314,sub,16,Compute: 3441159060540906 - 3179867852908899,1,1,1,0.07711565615092843,0.16220324762314856,0,0,E,I,1
+315,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [8, 4, 11, 27, 27, 35, 21, 48, 47, 26, 32, 31, 46, 15, 7, 1]",0,0,1,0.057388285622180825,0.054159939153261595,0,0,H,A,1
+316,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[45, 12, 7, 36, 28, 36, 18], [23, 4, 34, 33, 30, 15, 35], [34, 41, 34, 29, 22, 45, 10], [15, 46, 1, 48, 46, 39, 1], [43, 41, 27, 32, 43, 11, 30], [21, 14, 37, 44, 11, 5, 41], [6, 29, 22, 24, 25, 16, 48]]",0,0,1,0.04334344666867856,0.06303170258708184,0,0,G,F,1
+317,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [6, 2]",0,0,0,0.11719748898281296,0.023195132237500696,0,0,H,E,1
+318,sub,32,Compute: 53844458575888648390886458491404 - 10555849235321681952702126065756,0,0,1,0.07401700697188494,0.24633647640601908,0,0,D,A,1
+319,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [17, 8, 8, 5, 15, 7, 16, 20]",0,0,1,0.16986229233270994,0.031453024132300736,0,0,F,H,1
+320,sub,8,Compute: 49436964 - 17802481,1,1,1,0.0775360228114901,0.0535158150234571,0,0,H,G,1
+321,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [54, 28, 82, 17, 53, 85, 74, 15, 78, 36, 48, 30, 46, 26, 70, 25, 27, 53, 90, 57, 77, 61, 33, 84, 30, 76, 69, 46, 50, 5, 25, 5]",0,0,0,0.3541971901798949,0.11873629286882163,1,0,I,A,1
+322,add,16,Compute: 4825166833995107 + 8767389407545985,0,1,1,0.08024808439025967,0.9386234515648046,0,1,C,A,1
+323,sub,8,Compute: 81615796 - 13605639,1,1,1,0.12480813561239389,0.16300085381097765,0,0,I,H,1
+324,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [4, 1, 5, 4]",0,0,1,0.3677238745669368,0.1727227056953407,1,0,E,I,1
+325,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [31, 43, 2, 38, 65, 53, 18, 96, 20, 13, 71, 82, 4, 33, 41, 39, 79, 3, 64, 27, 68, 23, 96, 63, 10, 85, 62, 6, 41, 24, 10, 27]",0,0,0,0.04488539887360302,0.36015266527211004,0,1,B,I,1
+326,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""baabcccb""
+T = ""ccadccc""",1,0,1,0.19171730461001518,0.0952015939220613,0,0,H,E,1
+327,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [24, 15, 11, 12]
+consumption (rows=resources) = [[7, 5, 2, 1], [1, 3, 4, 1], [3, 5, 3, 3], [8, 1, 8, 5]]
+capacity = [23, 27, 19, 22]
+upper_bounds = [3, 3, 3, 4]",0,0,1,0.048174006590348005,0.11719921076367301,0,0,D,D,1
+328,sub,32,Compute: 88061156057203582414316867907956 - 12792198415664463728235201596266,0,0,1,0.03074386787965768,0.1183301784566038,0,0,A,D,1
+329,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[39, 40, 14, 30, 46, 3, 15], [8, 45, 24, 21, 18, 38, 41], [26, 21, 13, 30, 10, 6, 13], [48, 35, 14, 30, 15, 16, 11], [35, 28, 6, 15, 12, 30, 6], [16, 41, 22, 41, 18, 34, 2], [43, 9, 48, 2, 12, 5, 39]]",0,0,1,0.12803166785452805,0.006801285143952095,0,0,B,F,1
+330,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[2, 8, 10, 8], [5, 4, 7, 12], [1, 6, 6, 3], [2, 9, 5, 8]]",0,0,1,0.04665998334269211,0.16435127682336878,0,0,I,H,1
+331,mul,8,Compute: 46046127 * 53984366,0,0,1,0.051173204935041586,0.29228583717698586,0,1,H,C,1
+332,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [9, 8, 9, 7]",0,0,1,0.15974469217100523,0.10252094591537875,0,0,C,F,1
+333,sub,4,Compute: 6964 - 3258,0,1,1,0.06276033106418182,0.025925116178427396,0,0,A,C,1
+334,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[14, 40, 14, 25, 8, 37, 40], [44, 38, 36, 20, 31, 5, 31], [21, 16, 37, 24, 15, 2, 16], [6, 2, 12, 21, 40, 35, 10], [33, 12, 32, 11, 24, 34, 16], [23, 10, 45, 45, 40, 42, 6], [24, 37, 37, 22, 9, 34, 17]]",0,0,1,0.2720867098071223,0.07852793473476992,1,0,D,H,1
+335,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [38, 8, 20, 48, 15, 8]
+consumption (rows=resources) = [[16, 1, 2, 10, 7, 4], [13, 10, 16, 4, 10, 6], [11, 2, 4, 1, 16, 7], [11, 14, 8, 1, 8, 8]]
+capacity = [63, 62, 53, 43]
+upper_bounds = [3, 3, 3, 6, 3, 5]",0,0,0,0.16200975566132286,0.1660832044754243,0,0,E,G,1
+336,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[6, 3], [2, 2]]",0,1,1,0.13434318714939067,0.11032887167057594,0,0,I,B,1
+337,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [33, 35, 46, 20, 8, 14]
+consumption (rows=resources) = [[1, 5, 10, 16, 8, 6], [12, 2, 8, 14, 16, 1], [1, 4, 8, 2, 1, 12], [7, 2, 16, 2, 8, 9]]
+capacity = [40, 53, 51, 46]
+upper_bounds = [4, 8, 3, 3, 3, 4]",0,0,0,0.042411563585970646,0.0771609793786158,0,0,H,C,1
+338,mul,2,Compute: 91 * 89,0,0,1,0.1087657055376935,0.6757394385112533,0,1,A,C,1
+339,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [11, 4, 9, 5]",0,1,0,0.28792749813473895,0.07933295763456423,1,0,E,A,1
+340,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""adba""
+T = ""dabbb""",0,0,1,0.2228697831307097,0.0028776050309148563,0,0,H,A,1
+341,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [6, 46, 5, 40, 30, 3, 26, 37, 24, 40, 4, 26, 17, 13, 10, 15]",0,0,1,0.21779770553782885,0.0675804833085844,1,0,E,I,1
+342,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ccacccdadbbdadcbabcdbccddccdaaad""
+T = ""adcbbbbacbbcddbbdcbacdcbacdbbddad""",0,0,1,0.05582484240807993,0.07175709810073723,0,0,D,D,1
+343,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [21, 60, 44, 95, 7, 45, 56, 27, 79, 78, 94, 84, 76, 22, 18, 78, 40, 18, 96, 37, 9, 57, 25, 38, 52, 95, 91, 52, 66, 58, 66, 38]",0,0,0,0.31747674741490745,0.045226951039713546,1,0,I,H,1
+344,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [16, 19, 22, 15, 22, 26, 8, 13, 11, 27, 5, 27, 30, 2, 9, 1]
+V = [24, 15, 59, 41, 57, 33, 3, 29, 53, 43, 38, 33, 60, 32, 56, 56]
+C = 126",0,0,1,0.013849809329486465,0.021280536725412164,0,0,D,F,1
+345,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [3, 5, 5, 5]",0,0,0,0.14565995388252118,0.06461744487199046,0,0,H,F,1
+346,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [2, 1, 4]
+V = [7, 7, 1]
+C = 3",0,0,1,0.08883018995644583,0.14637879432868434,0,0,D,A,1
+347,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [7, 38, 33, 40, 46, 48]
+consumption (rows=resources) = [[13, 15, 6, 11, 7, 7], [15, 15, 7, 1, 1, 1], [8, 13, 1, 5, 2, 6], [10, 12, 8, 2, 16, 11]]
+capacity = [61, 47, 64, 53]
+upper_bounds = [3, 3, 6, 5, 3, 4]",0,0,0,0.047752122157581754,0.13326472483267063,0,0,A,B,1
+348,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[1, 10, 11, 3], [3, 12, 9, 10], [6, 11, 12, 8], [12, 2, 7, 5]]",0,0,1,0.18163265707179407,0.2696835670333008,0,1,E,D,1
+349,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [7, 2, 2, 8]
+V = [11, 6, 10, 8]
+C = 9",0,0,1,0.048842101887106595,0.021971472536354914,0,0,C,G,1
+350,knap,2,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 2, 3]
+V = [1, 8, 10]
+C = 4",0,0,1,0.25427805978898954,0.13695831978518255,1,0,H,G,1
+351,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [13, 20, 9, 9]
+consumption (rows=resources) = [[3, 8, 7, 3], [2, 5, 7, 6], [6, 5, 7, 6], [4, 1, 7, 3]]
+capacity = [26, 18, 20, 23]
+upper_bounds = [3, 3, 3, 3]",0,0,1,0.37877949260849236,0.32279696760537024,1,1,F,F,1
+352,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [11, 4, 11]
+consumption (rows=resources) = [[3, 1, 1], [3, 1, 2], [1, 2, 4]]
+capacity = [10, 10, 15]
+upper_bounds = [3, 7, 3]",0,0,0,0.1112708555691946,0.025562884234555015,0,0,B,G,1
+353,sub,4,Compute: 8719 - 7254,1,1,1,0.040742298122833344,0.0863970579373296,0,0,A,A,1
+354,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [1, 8, 2, 3]",0,0,0,0.03450203476362082,0.15227654650902164,0,0,F,F,1
+355,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[8, 8, 11, 3], [12, 3, 1, 2], [3, 11, 2, 7], [10, 2, 5, 2]]",0,0,1,0.23205463715086344,0.18363188074040407,1,0,D,I,1
+356,add,16,Compute: 7888344864288389 + 8033088899095396,0,1,1,0.048254865667920914,0.15547143045241202,0,0,G,E,1
+357,mul,8,Compute: 49722122 * 58094880,0,0,1,0.060177911762586925,0.1189058948690147,0,0,A,A,1
+358,add,4,Compute: 6465 + 6874,0,1,1,0.08169948362556394,0.24725548305855602,0,0,G,I,1
+359,add,2,Compute: 21 + 61,1,1,1,0.9079215090518734,0.06549215987584495,1,0,A,I,1
+360,add,4,Compute: 6747 + 1349,1,1,1,0.1468170984174738,0.8540526184349057,0,1,C,A,1
+361,add,2,Compute: 59 + 63,1,1,1,0.06533759183206961,0.1431160651936454,0,0,B,D,1
+362,sub,4,Compute: 8070 - 2581,1,1,1,0.30385701948599003,0.03122376630159573,1,0,B,I,1
+363,ilp_partition,16,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [24, 48, 31, 6, 48, 25, 4, 26, 3, 30, 36, 5, 28, 43, 3, 2]",0,0,1,0.05900276057843784,0.08806016911075909,0,0,F,A,1
+364,add,32,Compute: 70366541210050397985954794990885 + 22779128888349708860304850210167,0,0,1,0.42157692401042585,0.251440837536343,1,0,A,G,1
+365,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[6, 1], [3, 6]]",0,0,1,0.13700612962934355,0.1744968244525432,0,0,E,A,1
+366,add,16,Compute: 6026097354156460 + 8736495851389873,0,0,1,0.4450736293761995,0.0757854539023867,1,0,A,I,1
+367,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [14, 23, 23, 23]
+consumption (rows=resources) = [[4, 1, 2, 1], [7, 6, 4, 4], [6, 7, 2, 1], [8, 7, 5, 5]]
+capacity = [28, 24, 28, 20]
+upper_bounds = [3, 3, 4, 4]",0,0,1,0.029810421017442332,0.09754391518001883,0,0,I,B,1
+368,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [23, 4, 11, 19, 6, 3, 23, 9]",0,0,1,0.10769311796177496,0.0537149385603761,0,0,F,A,1
+369,sub,4,Compute: 8584 - 6952,1,1,1,0.0179796929279962,0.07684169870842666,0,0,E,D,1
+370,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 2, 19, 22, 19, 23, 17], [13, 6, 13, 15, 2, 9, 15], [12, 21, 10, 13, 20, 14, 17], [3, 14, 16, 24, 10, 8, 1], [14, 10, 20, 15, 19, 19, 16], [13, 22, 11, 24, 12, 20, 5], [12, 10, 19, 15, 5, 17, 7]]",0,0,1,0.07220070816919677,0.009693228015866832,0,0,G,G,1
+371,add,2,Compute: 55 + 65,1,1,1,0.04015491892511058,0.2664076269751329,0,0,F,I,1
+372,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[4, 24, 23, 2, 1, 9, 13], [17, 21, 21, 13, 7, 21, 23], [2, 13, 19, 17, 22, 1, 22], [22, 11, 16, 8, 12, 18, 11], [21, 19, 20, 2, 23, 2, 8], [15, 14, 16, 24, 9, 10, 20], [3, 1, 9, 3, 4, 8, 18]]",0,0,1,0.08645733467736771,0.2375940440777962,0,0,B,I,1
+373,mul,16,Compute: 9613176151713839 * 8894166427059141,0,0,0,0.06179127607165473,0.10045046850606293,0,0,G,G,1
+374,rod,16,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [23, 31, 16, 27, 29, 44, 34, 3, 46, 48, 40, 3, 12, 42, 27, 11]",0,0,1,0.19851848064943267,0.08873160968230062,1,0,I,B,1
+375,add,16,Compute: 7590765299981586 + 4721346875076351,0,1,1,0.12567520605131458,0.4693023457925638,0,1,C,A,1
+376,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [4, 1]",0,0,0,0.06647624542547588,0.014546679125524833,0,0,H,B,1
+377,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [38, 19, 6, 91, 48, 35, 46, 53, 55, 39, 35, 55, 10, 90, 56, 71, 65, 32, 36, 14, 21, 25, 2, 73, 78, 34, 33, 50, 72, 40, 94, 4]",0,0,1,0.16194465557339985,0.023817953403951864,0,0,A,H,1
+378,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [8, 3]
+consumption (rows=resources) = [[1, 3], [2, 1]]
+capacity = [7, 8]
+upper_bounds = [4, 3]",0,0,1,0.009674369124010944,0.09821963458387126,0,0,C,G,1
+379,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ddbb""
+T = ""acbc""",0,0,1,0.3181772306509414,0.010457578449079947,1,0,G,E,1
+380,add,2,Compute: 61 + 48,1,1,1,0.39898816854511604,0.913172202763517,1,1,A,A,1
+381,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [13, 14, 18, 12]
+consumption (rows=resources) = [[6, 6, 6, 2], [5, 7, 2, 8], [6, 6, 7, 2], [2, 1, 3, 6]]
+capacity = [23, 16, 18, 19]
+upper_bounds = [3, 3, 3, 3]",0,0,1,0.024547006567062556,0.08306706233325613,0,0,A,H,1
+382,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [1, 6, 5, 1]",1,1,1,0.06620061798806057,0.41917267261291846,0,1,D,E,1
+383,sub,4,Compute: 7332 - 3260,0,1,1,0.12809250861586874,0.05378825964769019,0,0,I,C,1
+384,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [15, 1, 11, 16, 14, 32, 19, 31, 16, 7, 13, 15, 24, 14, 30, 24]
+V = [40, 17, 12, 39, 34, 37, 52, 15, 62, 60, 55, 47, 10, 52, 34, 16]
+C = 141",0,0,1,0.07363122942222347,0.3117912287022117,0,1,I,H,1
+385,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [24, 15, 31, 8, 8, 10]
+consumption (rows=resources) = [[16, 5, 16, 10, 3, 15], [5, 9, 5, 7, 3, 2], [2, 10, 9, 16, 8, 15], [7, 12, 13, 7, 14, 5]]
+capacity = [36, 46, 59, 51]
+upper_bounds = [3, 4, 3, 3, 3, 3]",0,0,0,0.054262929560245685,0.01688891531869358,0,0,I,H,1
+386,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [68, 11, 68, 58, 40, 59]
+consumption (rows=resources) = [[24, 6, 10, 6, 19, 2], [23, 20, 25, 29, 2, 18], [3, 29, 17, 8, 7, 14], [25, 28, 25, 3, 2, 9]]
+capacity = [127, 84, 121, 81]
+upper_bounds = [3, 3, 3, 3, 6, 4]",0,0,0,0.08597055491481743,0.07413046009089791,0,0,D,G,1
+387,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [7, 6, 3, 1]
+V = [8, 16, 13, 1]
+C = 8",0,0,1,0.3197988104776351,0.03484358952835271,1,0,H,I,1
+388,mul,16,Compute: 8994248978245902 * 1398310692600054,0,0,1,0.03977930051808239,0.01859573476347775,0,0,I,I,1
+389,sub,4,Compute: 3656 - 1220,1,1,1,0.4052886610649592,0.030662273172524866,1,0,B,A,1
+390,mul,4,Compute: 7735 * 3605,0,0,1,0.01386118684849048,0.15393285758274905,0,0,A,A,1
+391,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [8, 28, 85, 80, 47, 35, 47, 40, 31, 23, 8, 17, 79, 87, 44, 34, 35, 82, 81, 80, 27, 52, 10, 89]",1,1,0,0.054063959382280265,0.35772729618271715,0,1,I,E,1
+392,add,8,Compute: 86892286 + 70976025,0,1,1,0.7654454659696018,0.027929241512538724,1,0,A,B,1
+393,sub,16,Compute: 7329010454848692 - 6293779411517555,0,0,1,0.26988635952230833,0.0400167313740764,0,0,I,E,1
+394,mul,16,Compute: 7549968449606185 * 3224135093745609,0,0,0,0.013463207852363376,0.1188417690115104,0,0,A,A,1
+395,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cbabccadbdababac""
+T = ""bacaabbabbbcbbab""",0,0,1,0.04440632305978781,0.05705511025669027,0,0,E,H,1
+396,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [1, 3, 2, 4]",0,0,1,0.2982552527158328,0.20328330469948802,1,1,E,E,1
+397,add,2,Compute: 79 + 67,1,1,1,0.1966039461974301,0.08075036833608744,0,0,H,D,1
+398,sub,16,Compute: 9606042797625227 - 1017700015675752,0,0,1,0.0736303938849702,0.20384794613419144,0,0,C,A,1
+399,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""abaaabcbcdaccbbbbbadcdccadbbdaad""
+T = ""cddbddbddbcacbdcbcbaacbbacacadca""",0,0,1,0.39904355178724515,0.08006191081027393,1,0,G,I,1
+400,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""aa""
+T = ""dbc""",0,0,1,0.014010330108387913,0.005284431759761172,0,0,I,C,1
+401,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [58, 54, 45, 81, 45, 22]
+consumption (rows=resources) = [[2, 3, 20, 18, 20, 17], [17, 32, 2, 13, 3, 3], [19, 13, 30, 13, 26, 7], [17, 26, 19, 12, 25, 22]]
+capacity = [93, 121, 75, 110]
+upper_bounds = [3, 3, 3, 5, 3, 5]",0,0,0,0.04363164325019802,0.07188186034374291,0,0,D,B,1
+402,add,2,Compute: 66 + 76,1,1,1,0.3745998140550883,0.5490111558063331,1,1,A,A,1
+403,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [19, 13, 4, 5]
+consumption (rows=resources) = [[1, 5, 5, 1], [3, 2, 6, 6], [5, 3, 8, 7], [4, 4, 2, 2]]
+capacity = [29, 21, 31, 32]
+upper_bounds = [6, 5, 3, 3]",0,0,1,0.29526215048209775,0.09165738861450275,1,0,F,B,1
+404,mul,4,Compute: 2747 * 9756,0,0,1,0.038730528609158744,0.04920185838606425,0,0,A,G,1
+405,add,32,Compute: 72026027508761734051066191687181 + 14083353913553288730096620652555,0,1,1,0.12228157348954904,0.5582858776821926,0,1,I,A,1
+406,sub,4,Compute: 3630 - 3406,1,1,1,0.30280489502147345,0.1189342089803476,1,0,B,C,1
+407,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[2, 30, 41, 17, 31, 16, 20], [19, 12, 4, 11, 11, 37, 11], [22, 39, 45, 15, 20, 3, 29], [38, 10, 41, 22, 37, 4, 47], [35, 33, 47, 10, 28, 36, 13], [30, 45, 40, 27, 13, 24, 21], [40, 19, 38, 26, 36, 39, 16]]",0,0,1,0.11833921355404171,0.007052812011525071,0,0,H,F,1
+408,add,4,Compute: 8007 + 6772,1,1,1,0.12966527337224773,0.9024719219995561,0,1,I,A,1
+409,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [22, 6, 16, 24, 18, 4, 23, 18]",1,1,0,0.055755738990010385,0.04348760574068591,0,0,I,A,1
+410,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [14, 32, 96, 89, 78, 3]
+consumption (rows=resources) = [[18, 9, 11, 25, 5, 25], [27, 3, 16, 14, 12, 24], [26, 26, 5, 18, 5, 2], [26, 24, 17, 3, 28, 7]]
+capacity = [125, 103, 65, 96]
+upper_bounds = [3, 3, 5, 3, 3, 4]",0,0,0,0.10021237698050861,0.09881915090798937,0,0,E,H,1
+411,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bcccbddd""
+T = ""cacacabd""",0,1,1,0.09226540183367206,0.05355301648558496,0,0,F,E,1
+412,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[2, 72, 88, 5, 76, 92, 25], [11, 43, 33, 40, 50, 35, 41], [69, 46, 43, 64, 57, 46, 46], [61, 67, 73, 13, 61, 60, 91], [31, 91, 1, 89, 78, 11, 47], [62, 86, 55, 42, 51, 44, 85], [12, 6, 47, 7, 33, 17, 26]]",0,0,1,0.021413760415599985,0.0847998969789398,0,0,H,G,1
+413,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[40, 7, 40, 30, 27, 14, 14], [29, 35, 21, 4, 36, 12, 18], [3, 3, 48, 2, 30, 47, 37], [22, 32, 34, 19, 4, 47, 37], [39, 18, 29, 24, 45, 47, 14], [30, 32, 3, 45, 6, 43, 48], [33, 44, 12, 1, 6, 5, 38]]",0,0,1,0.056583401043398124,0.009835742296507025,0,0,G,H,1
+414,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [8, 6, 6, 2]
+V = [14, 4, 1, 6]
+C = 11",0,0,1,0.08819697958255286,0.02707806079044663,0,0,E,I,1
+415,ilp_prod,32,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [72, 37, 55, 90, 95, 29]
+consumption (rows=resources) = [[25, 23, 21, 10, 24, 29], [5, 21, 12, 18, 2, 28], [11, 10, 26, 15, 6, 30], [16, 25, 30, 22, 3, 29]]
+capacity = [92, 113, 94, 97]
+upper_bounds = [3, 3, 3, 4, 3, 3]",0,0,0,0.10970655492438991,0.026103808603633295,0,0,H,D,1
+416,ilp_assign,2,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 6], [6, 6]]",0,1,1,0.05629605849430052,0.044198079652056355,0,0,F,F,1
+417,mul,32,Compute: 30362685682063808034093338973223 * 43584932827082637860957468008780,0,0,0,0.11602859333852293,0.06476038583879629,0,0,D,B,1
+418,add,32,Compute: 60295471057584646151996901173488 + 69706868506724639658843805369252,0,0,1,0.3147877136023611,0.044977621570031906,1,0,A,B,1
+419,add,32,Compute: 87681472717251800129873972165762 + 62851752696093250368082328198474,0,0,1,0.7785583119663569,0.13277306010573703,1,0,A,B,1
+420,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [10, 4, 6]
+consumption (rows=resources) = [[1, 2, 2], [4, 4, 3], [4, 1, 3]]
+capacity = [13, 11, 8]
+upper_bounds = [3, 3, 3]",0,0,0,0.0930375099825503,0.02188791785309091,0,0,B,A,1
+421,sub,8,Compute: 55707031 - 36140302,0,1,1,0.04983370164389108,0.3848520448633483,0,1,A,B,1
+422,sub,4,Compute: 1412 - 1319,0,1,1,0.1565069666099554,0.024483787778726986,0,0,A,G,1
+423,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [78, 3, 27, 10, 72, 41, 27, 82, 46, 54, 48, 1, 75, 72, 58, 1, 93, 38, 48, 82, 35, 78, 64, 81, 89, 10, 29, 72, 45, 69, 65, 66]",0,0,0,0.24127757704608274,0.03325047047514791,0,0,A,G,1
+424,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [23, 43, 19, 53, 10, 25, 36, 5, 22, 35, 17, 53, 27, 23, 54, 42, 13, 28, 35, 16, 33, 28, 25, 2, 5, 26, 54, 36, 24, 34, 20, 55]
+V = [89, 52, 90, 99, 69, 85, 97, 58, 102, 64, 34, 119, 76, 51, 87, 58, 67, 58, 88, 118, 85, 99, 12, 68, 86, 116, 18, 108, 76, 124, 90, 90]
+C = 460",0,0,1,0.06932174751727567,0.027240363648204497,0,0,F,D,1
+425,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 3]
+consumption (rows=resources) = [[1, 3], [1, 2]]
+capacity = [8, 7]
+upper_bounds = [7, 3]",0,0,0,0.14046577515963488,0.015772004549035292,0,0,H,H,1
+426,mul,32,Compute: 81785250294173609783952467767488 * 42083887983943412467849157177676,0,0,0,0.1048894221885867,0.13414146826225629,0,0,E,I,1
+427,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [5, 1]",0,0,0,0.21835052530094237,0.20201748635033978,0,0,G,D,1
+428,add,16,Compute: 6271107295226910 + 1516104047471788,0,0,1,0.03997833931895927,0.8677488917534918,0,1,B,A,1
+429,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [46, 2, 81, 68, 9, 33, 64, 86, 83, 61, 21, 57, 93, 77, 6, 48, 82, 91, 57, 24, 57, 80, 86, 48]",0,0,1,0.09329321570614438,0.09063750204918962,0,0,G,C,1
+430,ilp_prod,4,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [7, 5, 10]
+consumption (rows=resources) = [[1, 4, 1], [1, 1, 3], [1, 4, 2]]
+capacity = [12, 14, 11]
+upper_bounds = [10, 3, 4]",0,0,0,0.0024720923818011458,0.24594127956055595,0,0,A,E,1
+431,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [17, 25, 22, 13, 7, 15, 30, 10, 3, 15, 16, 27, 14, 27, 5, 1]
+V = [54, 52, 61, 22, 56, 19, 24, 23, 11, 14, 7, 35, 25, 8, 38, 6]
+C = 123",0,0,1,0.10889930865537886,0.03955256912486189,0,0,F,B,1
+432,sub,2,Compute: 33 - 14,1,1,1,0.028443398922836264,0.005923970581311051,0,0,A,F,1
+433,add,2,Compute: 95 + 90,1,1,1,0.08521273852520721,0.30427503863060346,0,1,B,A,1
+434,mul,2,Compute: 55 * 88,0,0,1,0.030640148255046757,0.03596129767342665,0,0,D,I,1
+435,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [6, 4]
+consumption (rows=resources) = [[1, 3], [1, 1]]
+capacity = [7, 9]
+upper_bounds = [7, 3]",0,0,0,0.1603929616875611,0.4294095719555631,0,1,I,F,1
+436,knap,32,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [51, 47, 32, 21, 32, 64, 10, 35, 55, 11, 4, 41, 54, 42, 2, 13, 58, 32, 23, 40, 14, 49, 46, 62, 31, 31, 34, 61, 9, 17, 16, 1]
+V = [63, 33, 73, 1, 71, 83, 109, 108, 118, 44, 64, 29, 95, 16, 11, 112, 127, 27, 116, 77, 107, 74, 107, 122, 80, 12, 6, 47, 118, 92, 61, 87]
+C = 519",0,0,1,0.025599902121751127,0.007163812813094811,0,0,D,A,1
+437,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 2, 3, 2]",0,0,0,0.24081050615326713,0.08108265697071443,1,0,E,I,1
+438,sub,4,Compute: 1602 - 1011,1,1,1,0.043894203903907775,0.06898486823966968,0,0,D,F,1
+439,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[19, 59, 39, 29, 80, 77, 62], [45, 26, 26, 30, 17, 46, 1], [48, 95, 5, 74, 28, 34, 37], [2, 85, 21, 42, 60, 66, 87], [82, 22, 17, 96, 52, 86, 59], [71, 87, 81, 87, 25, 74, 69], [53, 70, 69, 39, 5, 34, 36]]",0,0,1,0.043764104639069296,0.2691089453229485,0,1,E,D,1
+440,lcs,16,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""baccdbacbbdaddca""
+T = ""cacbbabbddaadccd""",0,0,1,0.032638770176857554,0.032693218189446385,0,0,D,D,1
+441,rod,2,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [5, 3]",0,0,0,0.1299732482719855,0.39189776225595435,0,1,D,I,1
+442,lcs,4,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""adcb""
+T = ""dcbc""",1,1,1,0.008788445350017101,0.1360281224832025,0,0,I,E,1
+443,mul,32,Compute: 76955842335551101085549561143956 * 40893568846629026792599269291579,0,0,0,0.19851034036844675,0.024405481594598048,0,0,A,I,1
+444,mul,2,Compute: 66 * 95,0,0,1,0.3588184704200226,0.6221938484561621,1,1,C,C,1
+445,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 13, 19, 4, 8, 14, 16, 10]",1,1,0,0.18897761599845825,0.2775820251134148,1,1,E,E,1
+446,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [11, 12, 8, 7]",0,0,1,0.010606936856869715,0.06071166097376382,0,0,G,C,1
+447,mul,2,Compute: 35 * 43,0,1,1,0.047559498692496996,0.020833271181247483,0,0,A,F,1
+448,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [17, 1, 6, 13, 6, 4, 14, 11]",0,0,1,0.04924345125208363,0.07696075582604725,0,0,H,D,1
+449,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [17, 6, 15, 7, 23, 16, 5, 14]",1,1,0,0.08851798724476347,0.21814521792816838,0,0,G,A,1
+450,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[22, 12, 3, 1, 21, 16, 23], [24, 1, 8, 3, 21, 10, 22], [4, 19, 9, 14, 2, 9, 4], [23, 23, 19, 13, 7, 18, 12], [7, 5, 15, 3, 18, 13, 24], [4, 17, 6, 17, 4, 15, 7], [6, 24, 24, 11, 24, 6, 20]]",0,0,1,0.09385343341726042,0.23417523445163604,0,0,H,I,1
+451,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[21, 11, 13, 15, 4, 5, 16], [16, 15, 6, 7, 24, 6, 23], [4, 21, 23, 21, 12, 5, 19], [17, 6, 19, 21, 18, 15, 8], [8, 18, 14, 16, 21, 6, 2], [20, 17, 9, 10, 17, 4, 1], [16, 9, 14, 2, 23, 9, 16]]",0,0,1,0.09406791184296626,0.052383859005387695,0,0,F,C,1
+452,mul,8,Compute: 97481254 * 24548169,0,0,1,0.1646269560962672,0.08217405579877292,0,0,B,A,1
+453,sub,8,Compute: 50712565 - 32175529,0,1,1,0.07957705483632214,0.07619254336151554,0,0,A,A,1
+454,rod,4,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [8, 4, 12, 3]",0,0,1,0.12135867822002175,0.0076519328293649545,0,0,B,G,1
+455,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [30, 28, 30, 29, 3, 25, 8, 29, 5, 21, 27, 9, 12, 11, 23, 28]
+V = [27, 13, 53, 39, 54, 27, 4, 31, 13, 4, 46, 60, 25, 42, 2, 34]
+C = 159",0,0,1,0.22921120016244154,0.020720333138529362,1,0,H,A,1
+456,lcs,32,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""addccccbabdcacddccddbadbccccbbbd""
+T = ""addcabacbdbddaccadbbbbdccbbbadc""",0,0,1,0.37695752865318516,0.20126795433085332,1,0,G,H,1
+457,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [6, 3, 6, 2]
+V = [14, 3, 9, 4]
+C = 8",1,0,1,0.06663483533022888,0.04327912508317876,0,0,I,F,1
+458,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [7, 4]
+consumption (rows=resources) = [[3, 2], [2, 3]]
+capacity = [10, 9]
+upper_bounds = [3, 3]",0,0,0,0.1331801020869793,0.13249561876217597,0,0,B,E,1
+459,sub,8,Compute: 42370783 - 41219136,0,1,1,0.017394286168758197,0.027792881607420262,0,0,A,D,1
+460,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [4, 7]
+consumption (rows=resources) = [[3, 1], [3, 2]]
+capacity = [9, 10]
+upper_bounds = [3, 5]",0,0,0,0.27027009145890796,0.0926302783478533,1,0,F,H,1
+461,ilp_partition,32,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [22, 28, 21, 42, 49, 56, 80, 16, 47, 78, 5, 28, 2, 94, 82, 96, 56, 31, 51, 35, 42, 40, 41, 31]",1,1,0,0.042027385161984135,0.05987649676886016,0,0,G,B,1
+462,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[1, 3, 2, 1], [6, 5, 11, 4], [2, 11, 1, 4], [12, 3, 6, 7]]",0,0,1,0.0747568060200488,0.38888556669210395,0,1,H,D,1
+463,ilp_assign,32,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[57, 80, 65, 36, 53, 35, 25], [29, 61, 24, 29, 91, 96, 1], [78, 90, 75, 80, 4, 41, 65], [35, 12, 41, 80, 14, 14, 24], [16, 45, 87, 48, 45, 27, 24], [65, 57, 31, 69, 30, 17, 9], [34, 26, 51, 2, 8, 40, 1]]",0,0,1,0.06363634694865195,0.06087394080267632,0,0,G,I,1
+464,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""daaaadcd""
+T = ""adadcaca""",1,0,1,0.04628980571073423,0.22500945591060126,0,1,F,G,1
+465,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[14, 37, 12, 8, 33, 1, 24], [15, 18, 36, 40, 12, 18, 3], [25, 11, 10, 43, 42, 44, 27], [24, 31, 47, 5, 28, 13, 12], [19, 39, 25, 31, 38, 35, 29], [12, 22, 25, 30, 48, 24, 1], [37, 36, 42, 35, 29, 22, 36]]",0,0,1,0.08368699329270378,0.09816754255489021,0,0,G,I,1
+466,add,2,Compute: 15 + 43,1,1,1,0.13209858662935917,0.10396877809848695,0,0,B,C,1
+467,sub,8,Compute: 28483599 - 15971137,1,1,1,0.3737189201892254,0.04339359828149868,1,0,B,A,1
+468,ilp_assign,4,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 2, 3, 8], [6, 6, 5, 8], [6, 4, 3, 8], [3, 12, 6, 4]]",0,0,1,0.09024025302640772,0.15028276522050643,0,0,F,H,1
+469,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 4, 3, 5]",1,1,0,0.033314804125860235,0.2563949188395073,0,0,G,I,1
+470,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[4, 11, 19, 11, 4, 22, 6], [11, 10, 17, 4, 18, 5, 11], [14, 21, 6, 23, 5, 2, 11], [10, 7, 8, 10, 15, 1, 17], [9, 18, 4, 20, 21, 1, 7], [6, 23, 19, 14, 1, 5, 15], [13, 15, 17, 15, 11, 24, 17]]",0,0,1,0.14258815970796354,0.03269161226191059,0,0,I,H,1
+471,sub,16,Compute: 3910011543643301 - 2030422722654819,0,0,1,0.05012526383866731,0.02268834138708824,0,0,I,E,1
+472,ilp_assign,8,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[2, 1, 5, 23, 21, 24, 2], [23, 16, 5, 7, 14, 5, 21], [2, 7, 6, 18, 23, 1, 7], [3, 5, 18, 1, 7, 13, 21], [24, 23, 18, 22, 24, 24, 16], [23, 20, 1, 23, 15, 17, 13], [9, 1, 15, 23, 24, 6, 16]]",0,0,1,0.13541883693339918,0.22968866323209466,0,0,B,I,1
+473,rod,8,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [19, 18, 6, 8, 22, 1, 16, 4]",0,0,1,0.1738150746696074,0.07307811861257359,0,0,G,D,1
+474,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [34, 75, 48, 42, 6, 52, 52, 34, 93, 93, 9, 16, 6, 1, 95, 86, 85, 65, 8, 93, 22, 51, 23, 7, 95, 62, 64, 56, 32, 43, 52, 76]",0,0,0,0.05192544815215547,0.07231125350510549,0,0,F,F,1
+475,ilp_prod,2,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [4, 5]
+consumption (rows=resources) = [[2, 1], [3, 2]]
+capacity = [9, 9]
+upper_bounds = [3, 4]",0,0,0,0.1807714799874149,0.04655595000744491,0,0,C,C,1
+476,ilp_assign,16,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[4, 16, 23, 30, 47, 27, 44], [32, 18, 12, 47, 20, 31, 29], [32, 40, 13, 20, 36, 34, 37], [35, 42, 41, 11, 40, 14, 12], [18, 8, 28, 23, 38, 31, 28], [38, 44, 37, 36, 7, 27, 18], [40, 12, 26, 4, 46, 2, 17]]",0,0,1,0.040155574669451397,0.0926897219748814,0,0,G,F,1
+477,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 6, 5, 10]",0,0,1,0.22913555658803955,0.0291093246437292,0,0,D,G,1
+478,sub,4,Compute: 8775 - 4883,1,1,1,0.34399598069869974,0.0397551209975738,1,0,B,F,1
+479,add,2,Compute: 66 + 21,1,1,1,0.18501223864199876,0.53986382432568,0,1,B,A,1
+480,rod,32,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [6, 52, 60, 60, 6, 38, 78, 51, 85, 5, 27, 20, 29, 29, 95, 11, 30, 74, 33, 3, 67, 16, 16, 68, 10, 41, 59, 17, 74, 34, 43, 94]",0,0,0,0.17632322994813773,0.021658630226861732,0,0,F,A,1
+481,sub,16,Compute: 4568129258742381 - 1151962760730489,0,0,1,0.18392995482905375,0.040880311439101334,0,0,A,F,1
+482,lcs,8,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""acbdadbc""
+T = ""abcbbbd""",0,0,1,0.525050504075027,0.20235979059105785,1,0,G,F,1
+483,sub,8,Compute: 59181731 - 11771722,0,1,1,0.03085123439771285,0.015426432040150678,0,0,A,H,1
+484,knap,4,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 7, 8, 5]
+V = [14, 12, 13, 9]
+C = 12",0,0,1,0.1902398218197804,0.10424333450587353,0,0,F,B,1
+485,sub,32,Compute: 56951333521986082229959109584844 - 46342096795538751008011612125932,0,0,1,0.07857256283973052,0.043958217009348086,0,0,I,G,1
+486,sub,8,Compute: 81797420 - 43747361,1,1,1,0.05533458246588426,0.04816814038497308,0,0,C,A,1
+487,ilp_prod,8,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [12, 10, 6, 19]
+consumption (rows=resources) = [[8, 7, 5, 6], [2, 2, 3, 4], [8, 3, 1, 8], [3, 8, 3, 1]]
+capacity = [23, 21, 22, 17]
+upper_bounds = [3, 3, 4, 3]",0,0,1,0.2638837801611795,0.041942034670487585,1,0,F,B,1
+488,ilp_partition,8,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [20, 18, 3, 15, 16, 16, 18, 19]",0,0,0,0.1188757175755387,0.024599140278812773,0,0,B,I,1
+489,ilp_prod,16,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [36, 39, 26, 24, 44, 15]
+consumption (rows=resources) = [[10, 2, 3, 11, 16, 2], [6, 9, 3, 13, 16, 5], [9, 13, 5, 2, 6, 9], [5, 13, 1, 8, 15, 3]]
+capacity = [35, 45, 42, 55]
+upper_bounds = [3, 3, 8, 3, 3, 4]",0,0,0,0.10668064479928431,0.6599454596850791,0,1,E,F,1
+490,ilp_partition,4,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [3, 2, 7, 9]",1,1,1,0.06715655349424099,0.1093902609143646,0,0,H,B,1
+491,sub,4,Compute: 8147 - 7860,1,1,1,0.04920252314698061,0.05142871977388889,0,0,A,C,1
+492,lcs,2,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bc""
+T = ""bdc""",1,0,1,0.05680085177176254,0.26526778878194796,0,1,F,G,1
+493,sub,16,Compute: 7969959231759519 - 5994582286398116,0,1,1,0.07813514690074962,0.08006128497749793,0,0,E,A,1
+494,knap,16,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [26, 29, 25, 13, 3, 16, 4, 19, 19, 25, 30, 22, 27, 25, 8, 27]
+V = [59, 38, 61, 27, 1, 36, 52, 27, 55, 9, 41, 52, 62, 2, 51, 58]
+C = 159",0,0,1,0.002307030521397192,0.06989575267154131,0,0,D,F,1
+495,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [4, 5, 2, 1]",0,0,0,0.3764926016557078,0.06918479447018751,1,0,E,B,1
+496,sub,2,Compute: 94 - 73,1,1,1,0.06105032037357364,0.025507984678596878,0,0,C,A,1
+497,add,32,Compute: 89115627046534271912091058684440 + 67053844408921039197630105065816,0,0,1,0.25672666026163204,0.10645676264841193,1,0,A,B,1
+498,add,8,Compute: 86349774 + 76798893,0,1,1,0.0929936990209624,0.17357430017795983,0,0,I,D,1
+499,ilp_partition,2,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [1, 3, 1, 4]",1,1,1,0.09674604286056226,0.041599722468498246,0,0,F,A,1
