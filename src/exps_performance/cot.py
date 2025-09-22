@@ -318,6 +318,7 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int]=None) -> P
             "profit": profit, "consumption": consumption, "capacity": capacity, "upper_bound": upper
         })
 
+    # perhap save this sometwhere
     if kind == "ilp_partition":
         n_items = max(4, min(int(d), 24))
         w_max   = max(6, 3*d)
@@ -360,13 +361,15 @@ You are tasked with solving an algorithmic problem by reasoning through it step 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
 - "answer": give the final requested answer as an integer.
 
-Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output.
+Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. Your entire chain of thought / rationale + answer should be <= 1024 tokens. 
 
 Example:
 
 Problem: Find the maximum element of the array [3, -1, 7, 2, 5].
 
 Response:
+I look at the numbers sequentially. Start with 3 as the current maximum. Compare with -1, it is smaller so keep 3. Compare with 7, it is larger so update the maximum to 7. Compare with 2, it is smaller so keep 7. Compare with 5, it is smaller so keep 7. Therefore, the largest value overall is 7.
+
 {{
   "rationale": "I look at the numbers sequentially. Start with 3 as the current maximum. Compare with -1, it is smaller so keep 3. Compare with 7, it is larger so update the maximum to 7. Compare with 2, it is smaller so keep 7. Compare with 5, it is smaller so keep 7. Therefore, the largest value overall is 7.",
   "answer": 7
@@ -381,38 +384,76 @@ Give the solution:
 
 CODE_PROMPT = (
 """
-You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step.
+You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step to generate an code block before simulating execution.
 Write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. 
 Ensure proper syntax, indentation, definitions, and variable instantiation. The last line of the program must print the final result. 
-After the code block, also produce a JSON dictionary with two keys:
+After the code block and execution simulation, also produce a JSON dictionary with two keys:
 
 - "rationale": the complete Python code solution, enclosed in a code block.
 - "answer": the result from executing the code, should be an integer.
 
 Constraints:
+* Your entire chain of thought / rationale + answer should be <= 1024 tokens. 
 * Provide a fully executable solution.
+* Simulate the execution step by step. Break down the problem and solve each execution line step by step, giving the state and line. Wrap the lines in [BEGIN] and [DONE].  
 * Use comments to clarify reasoning.
 * End with a print(...) statement for the answer.
 
 Example:
 
-Problem: Compute the GCD of 48 and 18.
+Problem: Compute repeated doubling of the number 6.
 
 Response:
-1. I am using GCD, so I'll use a while loop and modulus. 
-2. I will instantiate vars, algorithm and execute. 
+```python
+def f(v0):
+    v0 += 0
+    v4 = 2
+    while v4 > 0:
+        v4 -= 1
+        v0 *= 2
+    return v0
+output = f(6)
+print(output)
+```
+
+[BEGIN]
+state: []
+line: def f(v0):
+state: ["f": "<callable_object f>"]
+line: output = f(6)
+state: ["v0": 6]
+line: v0 += 0
+state: ["v0": 6]
+line: v4 = 2
+state: ["v0": 6, "v4": 2]
+line: while v4 > 0:
+state: ["v0": 6, "v4": 2]
+line: v4 -= 1
+state: ["v0": 6, "v4": 1]
+line: v0 *= 2
+state: ["v0": 12, "v4": 1]
+line: while v4 > 0:
+state: ["v0": 12, "v4": 1]
+line: v4 -= 1
+state: ["v0": 12, "v4": 0]
+line: v0 *= 2
+state: ["v0": 24, "v4": 0]
+line: while v4 > 0:
+state: ["v0": 24, "v4": 0]13line: return v0
+state: ["f": "<callable_object f>", "output": 24]
+[DONE]
 
 {{\"rationale\": \"```python
-# Euclid's algorithm for GCD
-num1 = 48
-num2 = 18
-def gcd(a, b):
-    while b:
-        a, b = b, a % b
-    return a
-res = gcd(num1, num2)
-print(res)
-```\", \"answer\": 6}}
+def f(v0):
+    v0 += 0
+    v4 = 2
+    while v4 > 0:
+        v4 -= 1
+        v0 *= 2
+    return v0
+output = f(6)
+print(output)
+```\", \"answer\": 24}}
 
 Here is the actual problem:
 {problem}
