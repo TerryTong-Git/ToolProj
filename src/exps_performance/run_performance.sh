@@ -20,18 +20,6 @@
 
 seeds=(0 1 2 3 4)
 
-
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-  --backend vllm \
-  --model mistralai/Ministral-8B-Instruct-2410 \
-  --hf_dtype float16 \
-  --hf_device_map auto \
-  --vllm_tensor_parallel 8 \
-  --n 2000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-  --outdir execution_ministral --exec_code --batch_size 64
-done
-
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
   --backend vllm \
@@ -43,6 +31,16 @@ for seed in ${seeds[@]}; do
   --outdir execution_pythia --exec_code --batch_size 64
 done
 
+for seed in ${seeds[@]}; do
+  pixi run python cot.py \
+  --backend vllm \
+  --model mistralai/Ministral-8B-Instruct-2410 \
+  --hf_dtype float16 \
+  --hf_device_map auto \
+  --vllm_tensor_parallel 8 \
+  --n 2000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+  --outdir execution_ministral --exec_code --batch_size 64
+done
 
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
@@ -96,27 +94,6 @@ for seed in ${seeds[@]}; do
   --outdir out_hf_scale_qwen --exec_code --batch_size 8
 done
 
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-  --backend vllm \
-  --model mistralai/Ministral-8B-Instruct-2410 \
-  --hf_dtype float16 \
-  --hf_device_map auto \
-  --vllm_tensor_parallel 8 \
-  --n 2000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-  --outdir execution_ministral --exec_code --batch_size 64
-done
-
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-  --backend vllm \
-  --model togethercomputer/Pythia-Chat-Base-7B \
-  --hf_dtype float16 \
-  --hf_device_map auto \
-  --vllm_tensor_parallel 8 \
-  --n 2000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-  --outdir execution_pythia --exec_code --batch_size 64
-done
 
 
 

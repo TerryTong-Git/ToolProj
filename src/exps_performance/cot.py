@@ -363,31 +363,82 @@ You are tasked with solving an algorithmic problem by reasoning through it step 
 
 Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. 
 
-Example:
-
-Problem: Find the maximum element of the array [3, -1, 7, 2, 5].
+Examples:
+===============================================
+(1) Problem:
+0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [2, 3, 4]
+V = [4, 5, 7]
+C = 5
 
 Response:
-I look at the numbers sequentially. Start with 3 as the current maximum. Compare with -1, it is smaller so keep 3. Compare with 7, it is larger so update the maximum to 7. Compare with 2, it is smaller so keep 7. Compare with 5, it is smaller so keep 7. Therefore, the largest value overall is 7.
+I can take at most weight 5.
+
+Try taking item of weight 2 (value 4) and weight 3 (value 5): total weight 5, total value 9.
+
+Try item 4 alone (value 7): value 7 < 9.
+
+Any single item of weight 2 or 3 alone gives value ≤ 5.
+The best is taking weights 2 and 3 together for value 9.
 
 {{
-  "rationale": "I look at the numbers sequentially. Start with 3 as the current maximum. Compare with -1, it is smaller so keep 3. Compare with 7, it is larger so update the maximum to 7. Compare with 2, it is smaller so keep 7. Compare with 5, it is smaller so keep 7. Therefore, the largest value overall is 7.",
-  "answer": 7
+\"rationale\": \"Evaluate combinations under capacity 5. Items (2,3) fit with total value 4+5=9, which beats taking 4 alone (7) or any single item. Thus the maximum value is 9.\",
+\"answer\": 9
 }}
 
-Here is the actual problem:
+(2) Problem:
+Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer.
+C = [[9, 2, 7],
+   [6, 4, 3],
+   [5, 8, 1]]
+
+Response:
+Consider all one-to-one assignments (worker i → one distinct task).
+
+Assignment (0→1, 1→0, 2→2) costs 2 + 6 + 1 = 9.
+
+(0→2, 1→1, 2→0) costs 7 + 4 + 5 = 16.
+
+(0→0, 1→1, 2→2) costs 9 + 4 + 1 = 14.
+Other permutations are ≥ 10. The smallest we found is 9, so the minimum total cost is 9.
+
+{{
+\"rationale\": \"Check the small set of permutations; the (0→1,1→0,2→2) mapping yields the minimum cost 9 among feasible assignments.\",
+\"answer\": 9
+}}
+
+(3) Problem:
+Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [1, 5, 8, 9]
+
+Response:
+Consider all ways to make length 4.
+
+No cut: take price P4 = 9.
+
+Split 1+3: P1+P3 = 1 + 8 = 9.
+
+Split 2+2: P2+P2 = 5 + 5 = 10.
+
+Split 1+1+2 or 1+1+1+1 give ≤ 7.
+The best is the 2+2 split with total revenue 10.
+
+{{
+\"rationale\": \"Enumerate optimal substructures for length 4; the 2+2 split gives 5+5=10 which exceeds all other options.\",
+\"answer\": 10
+}}
+
+Problem:
 {problem}
 
-Give the solution:
+Response:
 """
 )
 
 CODE_PROMPT = (
 """
-You are an expert algorithm problem solver who reasons entirely in Python code. Think step by step to generate an code block before simulating execution and wrapping the simulated execution in [BEGIN] and [DONE], and writing out the line numbers and state, simular to how a single-cycle cpu does.
-Write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. 
-Ensure proper syntax, indentation, definitions, and variable instantiation. The last line of the program must print the final result. 
-After the code block and execution simulation wrapped in [BEGIN] and [DONE], also produce a JSON dictionary with two keys:
+You are an expert algorithm problem solver who reasons entirely in Python code by generating a piece of code, then simulating its execution. When you generate code, write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. Ensure proper syntax, indentation, definitions, and variable instantiation. When simulating execution, write out the line number, the variable state, and behave like a single-cycle cpu.  The last line of the program must print the final result. You MUST write out [BEGIN] and [DONE] before the execution simulation. Moreover, after simulating the program, report out the program that you attempted to simulate and the answer you got from simulation by producing a JSON dictionary with two keys:
 
 - "rationale": the complete Python code solution, enclosed in a code block.
 - "answer": the result from executing the code, should be an integer.
@@ -398,67 +449,139 @@ Constraints:
 * Use comments to clarify reasoning.
 * End with a print(...) statement for the answer.
 
-Example:
-
-Problem: 
-Compute: repeated doubling of the number 6.
+Examples:
+===============================================
+(1) Problem:
+0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [2, 3, 4]
+V = [4, 5, 7]
+C = 5
 
 Response:
 ```python
-def f(v0):
-    v0 += 0
-    v4 = 2
-    while v4 > 0:
-        v4 -= 1
-        v0 *= 2
-    return v0
-output = f(6)
+def f(weights, values, C):
+    n = len(weights)
+    dp = [0] * (C + 1)
+    for i in range(n):
+        w = weights[i]
+        v = values[i]
+        for c in range(C, w - 1, -1):
+            cand = dp[c - w] + v
+            if cand > dp[c]:
+                dp[c] = cand
+    return dp[C]
+output = f([2,3,4], [4,5,7], 5)
 print(output)
 ```
-# Begin execution simulation
+
+Begin execution simulation
+
 [BEGIN]
 state: []
-line: def f(v0):
+line: def f(weights, values, C):
 state: ["f": "<callable_object f>"]
-line: output = f(6)
-state: ["v0": 6]
-line: v0 += 0
-state: ["v0": 6]
-line: v4 = 2
-state: ["v0": 6, "v4": 2]
-line: while v4 > 0:
-state: ["v0": 6, "v4": 2]
-line: v4 -= 1
-state: ["v0": 6, "v4": 1]
-line: v0 *= 2
-state: ["v0": 12, "v4": 1]
-line: while v4 > 0:
-state: ["v0": 12, "v4": 1]
-line: v4 -= 1
-state: ["v0": 12, "v4": 0]
-line: v0 *= 2
-state: ["v0": 24, "v4": 0]
-line: while v4 > 0:
-state: ["v0": 24, "v4": 0]13line: return v0
-state: ["f": "<callable_object f>", "output": 24]
+line: output = f([2,3,4], [4,5,7], 5)
+state: ["weights":[2,3,4], "values":[4,5,7], "C":5]
+line: n = len(weights) → 3
+state: ["n":3, "dp":[0,0,0,0,0,0]]
+line: i=0, w=2, v=4
+state: ["dp":[0,0,4,4,4,4]]
+line: i=1, w=3, v=5
+state: ["dp":[0,0,4,5,5,9]]
+line: i=2, w=4, v=7
+state: ["dp":[0,0,4,5,7,9]]
+line: return dp[C]
+state: ["f":"<callable_object f>", "output":9]
 [DONE]
 
-{{\"rationale\": \"```python
-def f(v0):
-    v0 += 0
-    v4 = 2
-    while v4 > 0:
-        v4 -= 1
-        v0 *= 2
-    return v0
-output = f(6)
-print(output)
-```\", \"answer\": 24}}
+{{\"rationale\":\"```python\ndef f(weights, values, C):\n n = len(weights)\n dp = [0] * (C + 1)\n for i in range(n):\n w = weights[i]\n v = values[i]\n for c in range(C, w - 1, -1):\n cand = dp[c - w] + v\n if cand > dp[c]:\n dp[c] = cand\n return dp[C]\n\noutput = f([2,3,4], [4,5,7], 5)\nprint(output)\n```\",\"answer\":9}}
 
-Here is the actual problem:
+Problem: 
+Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer.
+C = [[9, 2, 7],
+   [6, 4, 3],
+   [5, 8, 1]]
+
+Response:
+
+def f(C):
+    import itertools
+    n = len(C)
+    best = 10**9
+    for perm in itertools.permutations(range(n)):  # worker i -> task perm[i]
+        cost = sum(C[i][perm[i]] for i in range(n))
+        if cost < best:
+            best = cost
+    return best
+
+output = f([[9,2,7],[6,4,3],[5,8,1]])
+print(output)
+
+Begin execution simulation
+
+[BEGIN]
+state: []
+line: def f(C):
+state: ["f":"<callable_object f>"]
+line: output = f([[9,2,7],[6,4,3],[5,8,1]])
+state: ["n":3, "best":1000000000]
+line: perm=(0,1,2) → cost=9+4+1=14 → best=14
+state: ["best":14]
+line: perm=(1,0,2) → cost=2+6+1=9 → best=9
+state: ["best":9]
+line: perm=(1,2,0) → cost=2+3+5=10 → best stays 9
+line: (other perms) → costs ≥ 14 → best stays 9
+line: return best
+state: ["output":9]
+[DONE]
+
+{{\"rationale\":\"```python\ndef f(C):\n import itertools\n n = len(C)\n best = 10**9\n for perm in itertools.permutations(range(n)): # worker i -> task perm[i]\n cost = sum(C[i][perm[i]] for i in range(n))\n if cost < best:\n best = cost\n return best\n\noutput = f([[9,2,7],[6,4,3],[5,8,1]])\nprint(output)\n```\",\"answer\":9}}
+
+Problem:
+Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [1, 5, 8, 9]
+
+Response:
+
+def f(prices):
+    N = len(prices)
+    dp = [0] * (N + 1)  # dp[n] = best revenue for length n
+    for n in range(1, N + 1):
+        best = 0
+        for cut in range(1, n + 1):
+            best = max(best, prices[cut - 1] + dp[n - cut])
+        dp[n] = best
+    return dp[N]
+
+output = f([1,5,8,9])
+print(output)
+
+Begin execution simulation
+
+[BEGIN]
+state: []
+line: def f(prices):
+state: ["f":"<callable_object f>"]
+line: output = f([1,5,8,9])
+state: ["N":4, "dp":[0,0,0,0,0]]
+line: n=1 → best=max(P1+dp0)=1 → dp[1]=1
+state: ["dp":[0,1,0,0,0]]
+line: n=2 → best=max(P1+dp1=2, P2+dp0=5)=5 → dp[2]=5
+state: ["dp":[0,1,5,0,0]]
+line: n=3 → best=max(1+5=6, 5+1=6, 8+0=8)=8 → dp[3]=8
+state: ["dp":[0,1,5,8,0]]
+line: n=4 → best=max(1+8=9, 5+5=10, 8+1=9, 9+0=9)=10 → dp[4]=10
+line: return dp[N]
+state: ["output":10]
+[DONE]
+
+{{\"rationale\":\"```python\ndef f(prices):\n N = len(prices)\n dp = [0] * (N + 1) # dp[n] = best revenue for length n\n for n in range(1, N + 1):\n best = 0\n for cut in range(1, n + 1):\n best = max(best, prices[cut - 1] + dp[n - cut])\n dp[n] = best\n return dp[N]\n\noutput = f([1,5,8,9])\nprint(output)\n```\",\"answer\":10}}
+
+Problem:
 {problem}
     
-Give the solution:
+Response:
     
 """
 )
