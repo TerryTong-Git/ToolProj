@@ -1,11 +1,10 @@
 === Results (embedding features) ===
 Target label:     gamma  (#classes=761)
 Feats:            tfidf | model=n/a | pool=-
-Rep filter:       code
+Rep filter:       nl
 N_train / N_test: 7606 / 1902
-Cross-entropy:    3.3967 bits
-Accuracy:         0.5883
-Macro F1:         0.0572
+Cross-entropy:    3.8221 bits
+Accuracy:         0.5000
+Macro F1:         0.0486
 H(gamma):  7.3249 bits  (empirical on test)
-I(gamma; Z_r) ≥ 3.9282 bits   (variational lower bound)
-
+I(gamma; Z_r) ≥ 3.5028 bits   (variational lower bound)
