@@ -1,0 +1,242 @@
+idx,kind,digits,truth,answer_nl,correct_nl,answer_code,correct_code,answer_code_exec,correct_code_exec,problem
+0,ilp_assign,16,44,10,0,37,0,"{'ok': True, 'value': 30, 'stdout': '30\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.13976359367370605}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[46, 31, 6, 44, 32, 15, 35], [26, 18, 41, 2, 8, 18, 43], [3, 1, 17, 26, 34, 38, 46], [26, 29, 7, 48, 17, 23, 19], [44, 13, 39, 6, 3, 5, 17], [20, 35, 22, 8, 34, 16, 11], [5, 27, 19, 19, 34, 9, 37]]"
+1,ilp_assign,32,113,41,0,86,0,"{'ok': True, 'value': 102, 'stdout': '102\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10596704483032227}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[82, 51, 35, 33, 56, 46, 79], [42, 12, 40, 4, 64, 2, 33], [26, 51, 50, 56, 82, 81, 87], [50, 90, 5, 75, 60, 46, 73], [17, 73, 91, 36, 42, 4, 51], [61, 67, 18, 6, 11, 73, 45], [47, 1, 9, 25, 92, 15, 86]]"
+2,sub,16,228302551638673,228302551648673,0,2283025516386753,0,"{'ok': True, 'value': 228302551638673, 'stdout': '228302551638673\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10152530670166016}",1,Compute: 1365979018727553 - 1137676467088880
+3,rod,4,24,14,0,14,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_w3rpyhic/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.10828781127929688}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [6, 7, 1, 2]"
+4,ilp_assign,8,45,18,0,1,0,"{'ok': True, 'value': 32, 'stdout': '32\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.11528134346008301}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[4, 3, 23, 1, 17, 15, 22], [7, 4, 16, 13, 9, 7, 21], [2, 7, 20, 5, 4, 7, 15], [13, 12, 18, 5, 4, 20, 16], [5, 19, 13, 21, 22, 14, 17], [16, 22, 11, 16, 16, 21, 22], [7, 18, 20, 8, 1, 11, 23]]"
+5,ilp_prod,4,28,18,0,0,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_6cbng9ml/main.py"", line 15, in <module>\n    output = f([5, 6, 3], [[1, 1, 1], [2, 1, 4], [1, 3, 1]], [8, 8, 11], [4, 3, 3])\n  File ""/tmp/cot_exec_6cbng9ml/main.py"", line 10, in f\n    if np.dot(consumption[i - 1], np.ones(x)) <= capacity[i - 1]:\nValueError: shapes (3,) and (0,) not aligned: 3 (dim 0) != 0 (dim 0)\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.6589584350585938}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 6, 3]
+consumption (rows=resources) = [[1, 1, 1], [2, 1, 4], [1, 3, 1]]
+capacity = [8, 8, 11]
+upper_bounds = [4, 3, 3]"
+6,rod,8,84,38,0,1,0,"{'ok': True, 'value': 84, 'stdout': '84\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09453606605529785}",1,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [5, 21, 17, 21, 21, 12, 4, 5]"
+7,sub,4,5636,5636,1,5636,1,"{'ok': True, 'value': 5636, 'stdout': '5636\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09383463859558105}",1,Compute: 9965 - 4329
+8,mul,16,5727944462022541928458085852017,59883349185928463422656536,0,599999999999999980000000000000000,0,"{'ok': True, 'value': 5727944462022541928458085852017, 'stdout': '5727944462022541928458085852017\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08506369590759277}",1,Compute: 2447369025893203 * 2340449846925739
+9,sub,8,73573313,73573313,1,73573313,1,"{'ok': True, 'value': 73573313, 'stdout': '73573313\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09896326065063477}",1,Compute: 85242487 - 11669174
+10,sub,2,3,3,1,3,1,"{'ok': True, 'value': 3, 'stdout': '3\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08727693557739258}",1,Compute: 75 - 72
+11,knap,4,17,9,0,17,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_d3uijeyr/main.py"", line 5\n    w = weights[i]\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.0907285213470459}",0,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [2, 8, 6, 4]
+V = [8, 1, 9, 4]
+C = 10"
+12,add,8,46632018,46632018,1,46632018,1,"{'ok': True, 'value': 46632018, 'stdout': '46632018\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.11817097663879395}",1,Compute: 12863820 + 33768198
+13,rod,2,5,5,1,5,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_zk_px30o/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.0953819751739502}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [1, 5]"
+14,mul,4,30759404,30814324,0,30934944,0,"{'ok': True, 'value': 30759404, 'stdout': '30759404\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08744382858276367}",1,Compute: 6194 * 4966
+15,rod,16,160,16,0,190,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_cn8y7066/main.py"", line 4\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 3\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.08588480949401855}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [10, 12, 30, 8, 31, 23, 46, 17, 9, 2, 14, 24, 22, 31, 19, 19]"
+16,ilp_prod,32,351,-1,0,-265,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_5pb92n26/main.py"", line 8, in <module>\n    c = -profit  # we want to maximize profit, so we minimize -profit\nTypeError: bad operand type for unary -: \'list\'\n', 'retcode': 1, 'timeout': False, 'duration_s': 1.2147746086120605}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [91, 86, 4, 44, 61, 73]
+consumption (rows=resources) = [[32, 31, 6, 4, 26, 17], [2, 7, 6, 22, 23, 7], [31, 3, 10, 19, 3, 1], [25, 22, 11, 10, 11, 12]]
+capacity = [84, 95, 106, 67]
+upper_bounds = [3, 3, 6, 4, 3, 4]"
+17,rod,2,4,3,0,4,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_c2y49lq1/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.0877389907836914}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [2, 3]"
+18,rod,4,48,10,0,28,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_9bjpop58/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09780716896057129}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 4
+P = [12, 4, 6, 3]"
+19,ilp_assign,16,108,60,0,1,0,"{'ok': True, 'value': 94, 'stdout': '94\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09662103652954102}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[34, 41, 14, 35, 7, 27, 41], [35, 26, 48, 18, 19, 29, 24], [37, 41, 9, 11, 8, 45, 8], [25, 26, 38, 30, 9, 36, 43], [20, 23, 41, 31, 48, 27, 14], [31, 32, 45, 33, 21, 32, 42], [4, 29, 20, 10, 48, 32, 4]]"
+20,add,2,122,122,1,122,1,"{'ok': True, 'value': 122, 'stdout': '122\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10245347023010254}",1,Compute: 59 + 63
+21,rod,16,576,46,0,105,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_gg7j7ho6/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.08853387832641602}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 16
+P = [36, 41, 21, 12, 38, 6, 7, 35, 38, 20, 11, 25, 10, 9, 15, 21]"
+22,rod,32,2272,10,0,10,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_285bfwow/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.07935571670532227}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [71, 61, 5, 69, 74, 71, 34, 88, 5, 59, 51, 93, 16, 52, 45, 64, 7, 3, 35, 95, 5, 33, 88, 88, 75, 90, 38, 88, 27, 68, 67, 44]"
+23,ilp_prod,32,284,10,0,-1,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_1fev34bu/main.py"", line 18, in <module>\n    output = f(profit, consumption, capacity, upper_bounds)\n  File ""/tmp/cot_exec_1fev34bu/main.py"", line 15, in f\n    res = linprog(c, A_ub=A, b_ub=b, bounds=x_bounds, method=\'highs\')\n  File ""/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/scipy/optimize/_linprog.py"", line 649, in linprog\n    lp, solver_options = _parse_linprog(lp, options, meth)\n  File ""/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/scipy/optimize/_linprog_util.py"", line 1026, in _parse_linprog\n    lp = _clean_inputs(lp._replace(A_ub=A_ub, A_eq=A_eq))\n  File ""/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/scipy/optimize/_linprog_util.py"", line 462, in _clean_inputs\n    raise ValueError(\nValueError: Invalid input for linprog: unable to interpret bounds with this dimension tuple: (7, 2).\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.39748120307922363}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [24, 3, 21, 75, 8, 59]
+consumption (rows=resources) = [[9, 22, 1, 31, 17, 13], [5, 28, 18, 12, 11, 5], [11, 8, 25, 28, 18, 20], [19, 1, 28, 18, 17, 21]]
+capacity = [107, 88, 119, 82]
+upper_bounds = [4, 3, 3, 3, 4, 3]"
+24,ilp_partition,16,1,1,1,0,0,"{'ok': True, 'value': 1, 'stdout': '1\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.11081624031066895}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [24, 3, 8, 40, 1, 18, 41, 45, 19, 47, 15, 10, 37, 19, 13, 7]"
+25,ilp_prod,8,96,100,0,0,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_7bsrwnou/main.py"", line 13, in <module>\n    output = f([8, 7, 21, 12], [[6, 7, 3, 5], [2, 8, 4, 1], [5, 3, 2, 5], [7, 6, 5, 7]], [19, 19, 31, 31], [3, 3, 4, 3])\n  File ""/tmp/cot_exec_7bsrwnou/main.py"", line 9, in f\n    if consumption[i - 1, j - 1] <= capacity[i - 1] and j <= upper_bounds[i - 1]:\nTypeError: list indices must be integers or slices, not tuple\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.21564769744873047}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [8, 7, 21, 12]
+consumption (rows=resources) = [[6, 7, 3, 5], [2, 8, 4, 1], [5, 3, 2, 5], [7, 6, 5, 7]]
+capacity = [19, 19, 31, 31]
+upper_bounds = [3, 3, 4, 3]"
+26,lcs,16,10,10,1,2,0,"{'ok': True, 'value': 10, 'stdout': '10\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09107279777526855}",1,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ddbdabcdadddaadb""
+T = ""abcacbddaadcacb"""
+27,ilp_prod,32,363,200,0,0,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_0szi1f4a/main.py"", line 9, in <module>\n    c = -profit  # We want to maximize profit, so we minimize -profit\nTypeError: bad operand type for unary -: \'list\'\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.39880943298339844}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [3, 68, 22, 87, 92, 75]
+consumption (rows=resources) = [[25, 24, 30, 3, 27, 15], [2, 24, 11, 13, 23, 32], [2, 16, 16, 18, 12, 27], [5, 29, 16, 29, 7, 13]]
+capacity = [85, 120, 72, 118]
+upper_bounds = [3, 3, 3, 4, 3, 3]"
+28,mul,32,733785658252636338895171499373936678879472135208959962959078100,7382122557218653118537446487776000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,0,743486253492732684848627885924271845689064363907017086801,0,"{'ok': True, 'value': 733785658252636338895171499373936678879472135208959962959078100, 'stdout': '733785658252636338895171499373936678879472135208959962959078100\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.11006283760070801}",1,Compute: 19219275016844124361651750860900 * 38179674186957268617193836243709
+29,sub,16,4623941648806838,4623941648806838,1,4623941648806838,1,"{'ok': True, 'value': 4623941648806838, 'stdout': '4623941648806838\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08887672424316406}",1,Compute: 8601670171602902 - 3977728522796064
+30,ilp_prod,2,9,-1,0,1,0,"{'ok': True, 'value': 0, 'stdout': '0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.21271610260009766}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [3, 3]
+consumption (rows=resources) = [[3, 2], [3, 3]]
+capacity = [6, 10]
+upper_bounds = [3, 3]"
+31,ilp_partition,8,0,1,0,5,0,"{'ok': True, 'value': 0, 'stdout': '0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0982198715209961}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 13, 19, 10, 23, 23, 16, 3]"
+32,add,8,160426430,160826430,0,160426430,1,"{'ok': True, 'value': 160426430, 'stdout': '160426430\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0961601734161377}",1,Compute: 62162678 + 98263752
+33,ilp_assign,2,5,1,0,6,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_y9vsrsat/main.py"", line 5\n    cost = sum(C[i][perm[i]] for i in range(n))\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.08805227279663086}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 4], [1, 1]]"
+34,add,4,16303,16253,0,16303,1,"{'ok': True, 'value': 16303, 'stdout': '16303\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09529638290405273}",1,Compute: 6451 + 9852
+35,ilp_partition,4,1,1,1,2,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_qsd9zdsp/main.py"", line 6\n    for c in range(half, w - 1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 5\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.08802938461303711}",0,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [9, 5, 11, 6]"
+36,lcs,4,1,2,0,1,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'no_fenced_code', 'retcode': None, 'timeout': False, 'duration_s': 0.0}",0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cbbb""
+T = ""cda"""
+37,knap,16,393,136,0,0,0,"{'ok': True, 'value': 393, 'stdout': '393\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.1076517105102539}",1,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [25, 19, 8, 13, 3, 26, 29, 24, 13, 30, 23, 5, 3, 3, 32, 17]
+V = [4, 28, 30, 12, 54, 40, 15, 19, 55, 55, 11, 14, 54, 9, 13, 54]
+C = 136"
+38,mul,8,3067190476575375,3089353846120875,0,29600000000000,0,"{'ok': True, 'value': 3067190476575375, 'stdout': '3067190476575375\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0884237289428711}",1,Compute: 78484925 * 39079995
+39,lcs,8,3,1,0,0,0,"{'ok': True, 'value': 3, 'stdout': '3\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08752799034118652}",1,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bbdcccbc""
+T = ""daabcbbb"""
+40,sub,8,3631986,3631986,1,3731986,0,"{'ok': True, 'value': 3631986, 'stdout': '3631986\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10735106468200684}",1,Compute: 26557854 - 22925868
+41,mul,8,888717097129724,108245753,0,8904616554446624,0,"{'ok': True, 'value': 888717097129724, 'stdout': '888717097129724\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09316205978393555}",1,Compute: 55085956 * 16133279
+42,lcs,32,19,10,0,0,0,"{'ok': True, 'value': 19, 'stdout': '19\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10373115539550781}",1,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""ddddaaababdbdaddabbdbbcccdacbcdd""
+T = ""ccbaaabdbbcadaadcacbcbbaccbcdcbba"""
+43,ilp_assign,16,69,50,0,1,0,"{'ok': True, 'value': 75, 'stdout': '75\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08918166160583496}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[38, 5, 17, 18, 34, 24, 35], [2, 39, 40, 31, 16, 18, 3], [40, 21, 26, 41, 7, 35, 4], [10, 46, 26, 2, 27, 47, 26], [28, 7, 46, 30, 39, 30, 11], [11, 22, 31, 27, 11, 38, 19], [33, 8, 24, 23, 10, 41, 23]]"
+44,sub,32,31350296711000340690426538218145,32417465267267306177656207756444,0,31349996711000340700426538218145,0,"{'ok': True, 'value': 31350296711000340690426538218145, 'stdout': '31350296711000340690426538218145\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08709454536437988}",1,Compute: 73183822493762824653451468923916 - 41833525782762483963024930705771
+45,lcs,32,18,1,0,0,0,"{'ok': True, 'value': 18, 'stdout': '18\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0905599594116211}",1,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bcaccddadddcdbccaaabcacabadbdbdb""
+T = ""aaccdccaabcabcbbcccdcdcbacaaddda"""
+46,lcs,2,0,1,0,0,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_unf3rzrm/main.py"", line 5\n    for j in range(n - 1, -1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09633374214172363}",0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cb""
+T = ""aa"""
+47,lcs,8,4,5,0,0,0,"{'ok': True, 'value': 4, 'stdout': '4\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08866000175476074}",1,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""dddaddab""
+T = ""acbddaad"""
+48,knap,16,300,129,0,0,0,"{'ok': True, 'value': 300, 'stdout': '300\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08626389503479004}",1,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [10, 2, 29, 28, 27, 2, 32, 21, 17, 6, 23, 5, 8, 23, 2, 23]
+V = [45, 23, 2, 30, 47, 10, 19, 27, 1, 27, 16, 1, 38, 48, 4, 30]
+C = 129"
+49,add,32,111588036603972076698304407552643,111588036603982076698204417552643,0,111588036603922076698304411452643,0,"{'ok': True, 'value': 111588036603972076698304407552643, 'stdout': '111588036603972076698304407552643\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10058856010437012}",1,Compute: 80646759920380079103873753786137 + 30941276683591997594430653766506
+50,add,4,13013,13013,1,13013,1,"{'ok': True, 'value': 13013, 'stdout': '13013\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09951090812683105}",1,Compute: 3044 + 9969
+51,rod,8,72,27,0,9,0,"{'ok': True, 'value': 72, 'stdout': '72\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08749914169311523}",1,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 8
+P = [9, 1, 2, 2, 7, 22, 9, 18]"
+52,sub,8,50852468,50852468,1,50852468,1,"{'ok': True, 'value': 50852468, 'stdout': '50852468\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.07862138748168945}",1,Compute: 71465572 - 20613104
+53,rod,32,800,1040,0,1458,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_2mzwsaup/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.086700439453125}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [25, 6, 53, 83, 8, 90, 40, 50, 7, 77, 92, 22, 46, 10, 53, 7, 57, 46, 78, 80, 33, 87, 40, 73, 59, 53, 24, 4, 59, 34, 25, 50]"
+54,ilp_prod,4,46,83,0,14,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec__9ge7ob4/main.py"", line 7\n    if all(sum(x[j]*consumption[i][j] for j in range(n)) <= capacity[i] for i in range(n)):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 6\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.08926129341125488}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [5, 4, 10]
+consumption (rows=resources) = [[2, 1, 1], [4, 1, 3], [1, 2, 1]]
+capacity = [12, 13, 14]
+upper_bounds = [3, 7, 4]"
+55,ilp_assign,32,112,335,0,0,0,"{'ok': True, 'value': 95, 'stdout': '95\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08800888061523438}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[70, 61, 6, 41, 4, 41, 51], [17, 82, 36, 53, 86, 19, 77], [19, 52, 40, 66, 8, 21, 17], [18, 62, 91, 83, 92, 93, 6], [94, 67, 6, 72, 89, 96, 90], [81, 50, 24, 45, 75, 11, 11], [72, 23, 34, 26, 34, 42, 90]]"
+56,knap,2,7,4,0,9,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_la9f_i74/main.py"", line 5\n    w = weights[i]\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.08885502815246582}",0,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [3, 4, 5]
+V = [2, 6, 7]
+C = 6"
+57,ilp_assign,4,14,8,0,18,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_axzhpee7/main.py"", line 5\n    cost = sum(C[i][perm[i]] for i in range(n))\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.0886533260345459}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[12, 11, 4, 1], [11, 3, 3, 6], [9, 5, 2, 10], [8, 11, 3, 1]]"
+58,add,2,58,58,1,58,1,"{'ok': True, 'value': 58, 'stdout': '58\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.1055612564086914}",1,Compute: 15 + 43
+59,add,4,4363,4363,1,4363,1,"{'ok': True, 'value': 4363, 'stdout': '4363\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09780693054199219}",1,Compute: 3049 + 1314
+60,rod,2,10,10,1,8,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_mk1xztyr/main.py"", line 5\n    best = 0\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.10209059715270996}",0,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 2
+P = [5, 3]"
+61,ilp_prod,2,18,30,0,18,1,"{'ok': True, 'value': 0, 'stdout': '0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.21805882453918457}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [6, 5]
+consumption (rows=resources) = [[1, 3], [2, 3]]
+capacity = [6, 7]
+upper_bounds = [3, 3]"
+62,ilp_assign,16,58,11,0,1,0,"{'ok': True, 'value': 35, 'stdout': '35\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09438896179199219}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[3, 15, 16, 41, 19, 22, 11], [16, 23, 15, 11, 27, 30, 24], [37, 9, 25, 37, 1, 11, 38], [1, 44, 25, 46, 12, 10, 2], [2, 21, 33, 1, 3, 4, 8], [37, 40, 10, 10, 44, 25, 2], [27, 28, 37, 44, 22, 46, 16]]"
+63,add,32,142015097264916484845342616074140,142015116864916487865342616274140,0,141915197065016484845342616074140,0,"{'ok': True, 'value': 142015097264916484845342616074140, 'stdout': '142015097264916484845342616074140\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0875251293182373}",1,Compute: 63614992616708114520566631488775 + 78400104648208370324775984585365
+64,mul,32,1735616122049056936783496798341010022119269065530673412258020780,17386257921072714636768547280440997666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666,0,1728409866329682269928352144608059444414664604466444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444,0,"{'ok': True, 'value': 1735616122049056936783496798341010022119269065530673412258020780, 'stdout': '1735616122049056936783496798341010022119269065530673412258020780\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10167694091796875}",1,Compute: 73058155820062295184423333813570 * 23756637470069348003849196338454
+65,add,16,10588711885564532,8826313100077693,0,10588711885564532,1,"{'ok': True, 'value': 10588711885564532, 'stdout': '10588711885564532\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10033869743347168}",1,Compute: 1762398785486839 + 8826313100077693
+66,ilp_prod,16,86,,0,0,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_5x904r4l/main.py"", line 16, in <module>\n    output = f([21, 33, 8, 14, 9, 20], [[4, 5, 15, 13, 6, 14], [14, 6, 8, 15, 11, 5], [12, 15, 3, 16, 7, 10], [1, 15, 15, 1, 7, 10]], [39, 51, 41, 59], [3, 3, 3, 3, 4, 3])\n  File ""/tmp/cot_exec_5x904r4l/main.py"", line 4, in f\n    c = -profit  # we want to maximize profit, so we minimize -profit\nTypeError: bad operand type for unary -: \'list\'\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.39035844802856445}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [21, 33, 8, 14, 9, 20]
+consumption (rows=resources) = [[4, 5, 15, 13, 6, 14], [14, 6, 8, 15, 11, 5], [12, 15, 3, 16, 7, 10], [1, 15, 15, 1, 7, 10]]
+capacity = [39, 51, 41, 59]
+upper_bounds = [3, 3, 3, 3, 4, 3]"
+67,knap,2,17,17,1,17,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_4nej87cy/main.py"", line 5\n    w = weights[i]\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09333443641662598}",0,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [3, 5, 2]
+V = [9, 8, 8]
+C = 5"
+68,mul,16,67190237593290174076729869487072,663919466871796000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,0,6709929899999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999,0,"{'ok': True, 'value': 67190237593290174076729869487072, 'stdout': '67190237593290174076729869487072\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09466743469238281}",1,Compute: 6909479298356287 * 9724356162305056
+69,ilp_assign,8,24,11,0,24,1,"{'ok': True, 'value': 24, 'stdout': '24\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09403347969055176}",1,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[11, 11, 4, 16, 4, 23, 16], [14, 2, 10, 11, 24, 22, 5], [6, 21, 19, 13, 21, 3, 3], [3, 7, 24, 8, 2, 13, 1], [4, 13, 18, 17, 10, 15, 16], [19, 23, 22, 7, 14, 3, 12], [8, 9, 19, 6, 14, 7, 12]]"
+70,rod,32,1600,1080,0,32,0,"{'ok': True, 'value': 1600, 'stdout': '1600\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08571743965148926}",1,"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
+N = 32
+P = [50, 33, 27, 15, 73, 43, 32, 76, 87, 93, 69, 88, 46, 21, 20, 43, 96, 2, 75, 7, 73, 20, 45, 47, 38, 81, 38, 42, 64, 52, 77, 56]"
+71,sub,2,13,13,1,13,1,"{'ok': True, 'value': 13, 'stdout': '13\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08702874183654785}",1,Compute: 61 - 48
+72,sub,4,2578,2578,1,2578,1,"{'ok': True, 'value': 2578, 'stdout': '2578\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0903921127319336}",1,Compute: 8290 - 5712
+73,knap,8,103,103,1,37,0,"{'ok': True, 'value': 103, 'stdout': '103\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09767985343933105}",1,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 7, 4, 7, 10, 9, 6, 4]
+V = [31, 26, 6, 2, 18, 29, 8, 17]
+C = 25"
+74,ilp_assign,2,4,4,1,7,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_yo9pux7z/main.py"", line 5\n    cost = sum(C[i][perm[i]] for i in range(n))\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09186387062072754}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[5, 2], [2, 2]]"
+75,ilp_partition,2,1,1,1,1,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_8j2h4qsa/main.py"", line 6\n    for c in range(half, w - 1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 5\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09699177742004395}",0,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [3, 5, 4, 1]"
+76,ilp_partition,2,1,1,1,0,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_j27u0ut7/main.py"", line 6\n    for c in range(half, w - 1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 5\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09534621238708496}",0,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [3, 5, 3, 6]"
+77,knap,8,75,10,0,0,0,"{'ok': True, 'value': 75, 'stdout': '75\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0962514877319336}",1,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [11, 10, 15, 2, 14, 7, 3, 5]
+V = [1, 26, 27, 21, 1, 14, 1, 1]
+C = 33"
+78,knap,4,28,27,0,16,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_kvtm3xka/main.py"", line 5\n    w = weights[i]\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09216976165771484}",0,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [4, 7, 5, 8]
+V = [16, 12, 3, 11]
+C = 12"
+79,ilp_partition,32,0,1,0,1000,0,"{'ok': True, 'value': 0, 'stdout': '0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09231328964233398}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [91, 33, 34, 67, 59, 20, 58, 71, 20, 5, 81, 75, 23, 83, 66, 5, 41, 10, 25, 83, 59, 79, 31, 59]"
+80,ilp_partition,4,0,1,0,2,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_wg04zsq9/main.py"", line 6\n    for c in range(half, w - 1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 5\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.07750368118286133}",0,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [8, 11, 7, 10]"
+81,ilp_partition,8,1,1,1,2,0,"{'ok': True, 'value': 1, 'stdout': '1\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09799385070800781}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [24, 11, 11, 2, 17, 5, 9, 20]"
+82,mul,2,3905,3905,1,3905,1,"{'ok': True, 'value': 3905, 'stdout': '3905\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08799624443054199}",1,Compute: 71 * 55
+83,add,16,4382461230891940,4382461230891940,1,4382461230891940,1,"{'ok': True, 'value': 4382461230891940, 'stdout': '4382461230891940\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09638714790344238}",1,Compute: 1355025928791222 + 3027435302100718
+84,ilp_partition,16,0,1,0,83,0,"{'ok': True, 'value': 0, 'stdout': '0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10398697853088379}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [40, 14, 2, 23, 31, 26, 1, 34, 5, 44, 6, 44, 48, 43, 26, 1]"
+85,ilp_partition,32,1,10,0,-61,0,"{'ok': True, 'value': 1, 'stdout': '1\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09754514694213867}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [67, 21, 91, 43, 84, 18, 61, 72, 8, 70, 11, 67, 44, 1, 11, 14, 55, 78, 46, 73, 58, 43, 49, 66]"
+86,mul,2,3108,2108,0,3048,0,"{'ok': True, 'value': 3108, 'stdout': '3108\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09628033638000488}",1,Compute: 84 * 37
+87,knap,32,1716,1000,0,517,0,"{'ok': True, 'value': 1716, 'stdout': '1716\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09117937088012695}",1,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [42, 9, 8, 45, 55, 18, 28, 58, 56, 19, 46, 40, 23, 43, 53, 49, 2, 53, 34, 60, 6, 16, 53, 50, 22, 1, 18, 19, 11, 43, 31, 23]
+V = [64, 6, 44, 44, 21, 110, 27, 118, 39, 11, 65, 88, 97, 7, 10, 128, 23, 92, 75, 39, 118, 61, 92, 42, 104, 87, 70, 127, 101, 4, 80, 74]
+C = 517"
+88,ilp_prod,8,55,50,0,1,0,"{'ok': True, 'value': 156, 'stdout': '156.0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.2196035385131836}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [13, 14, 21, 4]
+consumption (rows=resources) = [[8, 8, 7, 6], [3, 4, 7, 5], [1, 3, 3, 5], [6, 6, 6, 2]]
+capacity = [26, 17, 17, 24]
+upper_bounds = [3, 3, 3, 3]"
+89,add,8,74270325,74270325,1,74270325,1,"{'ok': True, 'value': 74270325, 'stdout': '74270325\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.10490131378173828}",1,Compute: 43679612 + 30590713
+90,mul,8,3961792921537000,166,0,3934839195453000,0,"{'ok': True, 'value': 3961792921537000, 'stdout': '3961792921537000\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09633064270019531}",1,Compute: 83057326 * 47699500
+91,sub,32,8889664476346805891872662567347,946006490682516854206853641006843,0,48889673476346805891872662567347,0,"{'ok': True, 'value': 8889664476346805891872662567347, 'stdout': '8889664476346805891872662567347\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.0953829288482666}",1,Compute: 82033201482394529949881898385254 - 73143537006047724058009235817907
+92,mul,4,18272306,18263666,0,18261566,0,"{'ok': True, 'value': 18272306, 'stdout': '18272306\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09694576263427734}",1,Compute: 2501 * 7306
+93,ilp_assign,4,10,15,0,14,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_6km9eogk/main.py"", line 5\n    cost = sum(C[i][perm[i]] for i in range(n))\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09539961814880371}",0,"Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer. 
+C = [[3, 1, 9, 8], [1, 10, 2, 12], [7, 4, 5, 6], [12, 8, 10, 3]]"
+94,lcs,4,1,2,0,1,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_p728k0mr/main.py"", line 5\n    for j in range(n - 1, -1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09568428993225098}",0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""abba""
+T = ""dcb"""
+95,lcs,2,0,0,1,0,1,"{'ok': False, 'value': None, 'stdout': '', 'stderr': '  File ""/tmp/cot_exec_83szu65_/main.py"", line 5\n    for j in range(n - 1, -1, -1):\n    ^\nIndentationError: expected an indented block after \'for\' statement on line 4\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.09781336784362793}",0,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""bc""
+T = ""a"""
+96,ilp_prod,16,119,100,0,1,0,"{'ok': False, 'value': None, 'stdout': '', 'stderr': 'Traceback (most recent call last):\n  File ""/tmp/cot_exec_occsl3xz/main.py"", line 9, in <module>\n    c = -profit  # we want to maximize profit, so we minimize -profit\nTypeError: bad operand type for unary -: \'list\'\n', 'retcode': 1, 'timeout': False, 'duration_s': 0.39745140075683594}",0,"Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.
+profit = [35, 18, 18, 14, 21, 26]
+consumption (rows=resources) = [[14, 2, 5, 1, 13, 3], [3, 5, 14, 10, 14, 5], [14, 10, 12, 3, 8, 15], [12, 2, 13, 14, 1, 14]]
+capacity = [52, 60, 45, 55]
+upper_bounds = [3, 4, 3, 3, 4, 3]"
+97,knap,32,1472,1000,0,531,0,"{'ok': True, 'value': 1472, 'stdout': '1472\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.09776186943054199}",1,"0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
+W = [42, 47, 4, 17, 51, 20, 23, 10, 18, 27, 64, 28, 31, 17, 30, 50, 46, 17, 64, 14, 4, 46, 63, 59, 40, 2, 29, 21, 64, 62, 41, 11]
+V = [67, 36, 103, 49, 82, 75, 99, 16, 54, 10, 81, 64, 88, 113, 58, 67, 89, 42, 79, 5, 92, 15, 39, 91, 6, 126, 16, 7, 62, 12, 4, 58]
+C = 531"
+98,lcs,16,10,8,0,0,0,"{'ok': True, 'value': 10, 'stdout': '10\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08387589454650879}",1,"Compute the length of the Longest Common Subsequence (LCS) between strings:
+S = ""cdaaadbcdddbaabc""
+T = ""ccadccdddabbbccaa"""
+99,ilp_partition,16,0,2,0,177,0,"{'ok': True, 'value': 0, 'stdout': '0\n', 'stderr': '', 'retcode': 0, 'timeout': False, 'duration_s': 0.08672523498535156}",1,"Partition: Split the items into two groups to minimize the absolute difference between the sums. Return the minimum difference as an integer.
+weights = [5, 9, 27, 37, 43, 23, 7, 28, 28, 16, 31, 25, 15, 26, 16, 42]"

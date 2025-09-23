@@ -345,7 +345,6 @@ def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int=1) 
     rng.shuffle(problems)
     return problems[:n]
 
-
 # ------------------------------- Prompts ------------------------------------
 
 JSON_SCHEMA = (
@@ -366,67 +365,40 @@ Ensure your explanation is clear, logically structured, and leads naturally to t
 Examples:
 ===============================================
 (1) Problem:
-0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
-W = [2, 3, 4]
-V = [4, 5, 7]
-C = 5
+Minimum Vertex Cover: Given an undirected graph G=(V,E), choose the smallest set of vertices that touches every edge. Return the cover size.
+V = {{0,1,2,3}}
+E = {{(0,1), (1,2), (2,3)}}
 
 Response:
-I can take at most weight 5.
-
-Try taking item of weight 2 (value 4) and weight 3 (value 5): total weight 5, total value 9.
-
-Try item 4 alone (value 7): value 7 < 9.
-
-Any single item of weight 2 or 3 alone gives value ≤ 5.
-The best is taking weights 2 and 3 together for value 9.
+The edges form a simple path: (0 1 2 3). To cover every edge, choose vertices so that each edge has at least one endpoint selected. Picking {{1,2}} covers (0,1) via 1, (1,2) via either 1 or 2, and (2,3) via 2. That uses 2 vertices. Any single vertex cannot cover all three edges, so 2 is minimal.
 
 {{
-\"rationale\": \"Evaluate combinations under capacity 5. Items (2,3) fit with total value 4+5=9, which beats taking 4 alone (7) or any single item. Thus the maximum value is 9.\",
-\"answer\": 9
+\"rationale\": \"The graph is a path of length 3. Selecting the middle two vertices {{1,2}} covers all edges, and a cover of size 1 is impossible, so the minimum cover size is 2.\",
+\"answer\": 2
 }}
 
 (2) Problem:
-Assignment problem: Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer.
-C = [[9, 2, 7],
-   [6, 4, 3],
-   [5, 8, 1]]
+Coin Change (min coins): Given coin denominations and a target amount, compute the minimum number of coins to make the amount (use -1 if impossible).
+coins = [1, 3, 4]
+amount = 6
 
 Response:
-Consider all one-to-one assignments (worker i → one distinct task).
-
-Assignment (0→1, 1→0, 2→2) costs 2 + 6 + 1 = 9.
-
-(0→2, 1→1, 2→0) costs 7 + 4 + 5 = 16.
-
-(0→0, 1→1, 2→2) costs 9 + 4 + 1 = 14.
-Other permutations are ≥ 10. The smallest we found is 9, so the minimum total cost is 9.
+I consider the smallest number of coins to total 6. Using 4 first, the remainder is 2, which needs two 1s for a total of 3 coins. Using 3 first, the remainder is 3; another 3 makes 6 with 2 coins total. Using only 1s needs 6 coins. The best among these is 2 coins (3 + 3).
 
 {{
-\"rationale\": \"Check the small set of permutations; the (0→1,1→0,2→2) mapping yields the minimum cost 9 among feasible assignments.\",
-\"answer\": 9
+\"rationale\": \"Compare constructions: 4+1+1 uses 3 coins; 3+3 uses 2 coins; six 1s uses 6 coins. The minimum is achieved by 3+3 with 2 coins.\",
+\"answer\": 2
 }}
 
 (3) Problem:
-Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
-N = 4
-P = [1, 5, 8, 9]
+Compute: 84 ÷ 6
 
 Response:
-Consider all ways to make length 4.
-
-No cut: take price P4 = 9.
-
-Split 1+3: P1+P3 = 1 + 8 = 9.
-
-Split 2+2: P2+P2 = 5 + 5 = 10.
-
-Split 1+1+2 or 1+1+1+1 give ≤ 7.
-The best is the 2+2 split with total revenue 10.
+Divide 84 by 6. Since 6 × 14 = 84, the quotient is 14.
 
 {{
-\"rationale\": \"Enumerate optimal substructures for length 4; the 2+2 split gives 5+5=10 which exceeds all other options.\",
-\"answer\": 10
+\"rationale\": \"84 divided by 6 equals 14 because 6 × 14 = 84.\",
+\"answer\": 14
 }}
 
 Problem:
@@ -452,25 +424,27 @@ Constraints:
 Examples:
 ===============================================
 (1) Problem:
-0/1 Knapsack: Given item weights W and values V and capacity C, compute the maximum total value.
-W = [2, 3, 4]
-V = [4, 5, 7]
-C = 5
+Minimum Vertex Cover (ILP): Given an undirected graph G=(V,E), choose the smallest set of vertices covering all edges. Return the cover size.
+V = {{0,1,2,3}}
+E = {{(0,1), (1,2), (2,3)}}
 
 Response:
 ```python
-def f(weights, values, C):
-    n = len(weights)
-    dp = [0] * (C + 1)
-    for i in range(n):
-        w = weights[i]
-        v = values[i]
-        for c in range(C, w - 1, -1):
-            cand = dp[c - w] + v
-            if cand > dp[c]:
-                dp[c] = cand
-    return dp[C]
-output = f([2,3,4], [4,5,7], 5)
+# ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
+def f(V, E):
+    import pulp
+    x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
+    prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
+    # objective
+    prob += pulp.lpSum([x[v] for v in V])
+    # cover constraints
+    for (u, v) in E:
+        prob += x[u] + x[v] >= 1
+    prob.solve(pulp.PULP_CBC_CMD(msg=False))
+    val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
+    return val
+
+output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
 print(output)
 ```
 
@@ -478,114 +452,148 @@ Begin execution simulation
 
 [BEGIN]
 state: []
-line: def f(weights, values, C):
-state: ["f": "<callable_object f>"]
-line: output = f([2,3,4], [4,5,7], 5)
-state: ["weights":[2,3,4], "values":[4,5,7], "C":5]
-line: n = len(weights) → 3
-state: ["n":3, "dp":[0,0,0,0,0,0]]
-line: i=0, w=2, v=4
-state: ["dp":[0,0,4,4,4,4]]
-line: i=1, w=3, v=5
-state: ["dp":[0,0,4,5,5,9]]
-line: i=2, w=4, v=7
-state: ["dp":[0,0,4,5,7,9]]
-line: return dp[C]
-state: ["f":"<callable_object f>", "output":9]
+line: def f(V, E):
+state: ["f":"<callable_object f>"]
+line: output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+state: ["V":{{0,1,2,3}}, "E":{{(0,1),(1,2),(2,3)}}]
+line: create binary vars x_0..x_3; set objective Σ x_v
+state: ["x":{{"0":bin,"1":bin,"2":bin,"3":bin}}]
+line: add constraints: x0+x1≥1, x1+x2≥1, x2+x3≥1
+state: ["constraints":3]
+line: solve with CBC
+state: ["x*":{{"0":0,"1":1,"2":1,"3":0}}]
+line: val = sum x* = 2
+state: ["val":2]
+line: return val
+state: ["output":2]
 [DONE]
 
-{{\"rationale\":\"```python\ndef f(weights, values, C):\n n = len(weights)\n dp = [0] * (C + 1)\n for i in range(n):\n w = weights[i]\n v = values[i]\n for c in range(C, w - 1, -1):\n cand = dp[c - w] + v\n if cand > dp[c]:\n dp[c] = cand\n return dp[C]\n\noutput = f([2,3,4], [4,5,7], 5)\nprint(output)\n```\",\"answer\":9}}
+{{"rationale":"```python
+# ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
+def f(V, E):
+    import pulp
+    x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
+    prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
+    # objective
+    prob += pulp.lpSum([x[v] for v in V])
+    # cover constraints
+    for (u, v) in E:
+        prob += x[u] + x[v] >= 1
+    prob.solve(pulp.PULP_CBC_CMD(msg=False))
+    val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
+    return val
+output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+print(output)
+```","answer":2}}
 
-Problem: 
-Given an n×n cost matrix C, assign each worker to one task minimizing the total cost. Return the minimum total cost as an integer.
-C = [[9, 2, 7],
-   [6, 4, 3],
-   [5, 8, 1]]
+(2) Problem:
+Coin Change (DP, min coins): Given coin denominations and a target amount, compute the minimum number of coins to make the amount (use -1 if impossible).
+coins = [1, 3, 4]
+amount = 6
 
 Response:
 
-def f(C):
-    import itertools
-    n = len(C)
-    best = 10**9
-    for perm in itertools.permutations(range(n)):  # worker i -> task perm[i]
-        cost = sum(C[i][perm[i]] for i in range(n))
-        if cost < best:
-            best = cost
-    return best
+```python
+# Copy code
+def f(coins, amount):
+    INF = 10**9
+    dp = [INF] * (amount + 1)
+    dp[0] = 0
+    for a in range(1, amount + 1):
+        best = INF
+        for c in coins:
+            if a - c >= 0 and dp[a - c] + 1 < best:
+                best = dp[a - c] + 1
+        dp[a] = best
+    return -1 if dp[amount] >= INF else dp[amount]
 
-output = f([[9,2,7],[6,4,3],[5,8,1]])
+output = f([1,3,4], 6)
 print(output)
+```
 
 Begin execution simulation
 
 [BEGIN]
 state: []
-line: def f(C):
+line: def f(coins, amount):
 state: ["f":"<callable_object f>"]
-line: output = f([[9,2,7],[6,4,3],[5,8,1]])
-state: ["n":3, "best":1000000000]
-line: perm=(0,1,2) → cost=9+4+1=14 → best=14
-state: ["best":14]
-line: perm=(1,0,2) → cost=2+6+1=9 → best=9
-state: ["best":9]
-line: perm=(1,2,0) → cost=2+3+5=10 → best stays 9
-line: (other perms) → costs ≥ 14 → best stays 9
-line: return best
-state: ["output":9]
+line: output = f([1,3,4], 6)
+state: ["coins":[1,3,4], "amount":6]
+line: init dp[0]=0, others INF
+state: ["dp":[0,INF,INF,INF,INF,INF,INF]]
+line: a=1 → best=min(dp[0]+1)=1 → dp[1]=1
+state: ["dp":[0,1,INF,INF,INF,INF,INF]]
+line: a=2 → from c=1: dp[1]+1=2 → dp[2]=2
+state: ["dp":[0,1,2,INF,INF,INF,INF]]
+line: a=3 → min(dp[2]+1=3, dp[0]+1=1 with c=3) → dp[3]=1
+state: ["dp":[0,1,2,1,INF,INF,INF]]
+line: a=4 → min(dp[3]+1=2, dp[0]+1=1 with c=4) → dp[4]=1
+state: ["dp":[0,1,2,1,1,INF,INF]]
+line: a=5 → min(dp[4]+1=2, dp[2]+1=3, dp[1]+1=2) → dp[5]=2
+state: ["dp":[0,1,2,1,1,2,INF]]
+line: a=6 → min(dp[5]+1=3, dp[3]+1=2, dp[2]+1=3) → dp[6]=2
+state: ["dp":[0,1,2,1,1,2,2]]
+line: return dp[6]
+state: ["output":2]
 [DONE]
 
-{{\"rationale\":\"```python\ndef f(C):\n import itertools\n n = len(C)\n best = 10**9\n for perm in itertools.permutations(range(n)): # worker i -> task perm[i]\n cost = sum(C[i][perm[i]] for i in range(n))\n if cost < best:\n best = cost\n return best\n\noutput = f([[9,2,7],[6,4,3],[5,8,1]])\nprint(output)\n```\",\"answer\":9}}
+{{"rationale":"```python
+def f(coins, amount):
+    INF = 10**9
+    dp = [INF] * (amount + 1)
+    dp[0] = 0
+    for a in range(1, amount + 1):
+        best = INF
+        for c in coins:
+            if a - c >= 0 and dp[a - c] + 1 < best:
+                best = dp[a - c] + 1
+        dp[a] = best
+    return -1 if dp[amount] >= INF else dp[amount]
+output = f([1,3,4], 6)
+print(output)
+```","answer":2}}
 
-Problem:
-Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.
-N = 4
-P = [1, 5, 8, 9]
+(3) Problem:
+Compute: 84 ÷ 6
 
 Response:
 
-def f(prices):
-    N = len(prices)
-    dp = [0] * (N + 1)  # dp[n] = best revenue for length n
-    for n in range(1, N + 1):
-        best = 0
-        for cut in range(1, n + 1):
-            best = max(best, prices[cut - 1] + dp[n - cut])
-        dp[n] = best
-    return dp[N]
+```python
+def f(a, b):
+    # integer division
+    return a // b
 
-output = f([1,5,8,9])
+output = f(84, 6)
 print(output)
+```
 
 Begin execution simulation
 
 [BEGIN]
 state: []
-line: def f(prices):
+line: def f(a, b):
 state: ["f":"<callable_object f>"]
-line: output = f([1,5,8,9])
-state: ["N":4, "dp":[0,0,0,0,0]]
-line: n=1 → best=max(P1+dp0)=1 → dp[1]=1
-state: ["dp":[0,1,0,0,0]]
-line: n=2 → best=max(P1+dp1=2, P2+dp0=5)=5 → dp[2]=5
-state: ["dp":[0,1,5,0,0]]
-line: n=3 → best=max(1+5=6, 5+1=6, 8+0=8)=8 → dp[3]=8
-state: ["dp":[0,1,5,8,0]]
-line: n=4 → best=max(1+8=9, 5+5=10, 8+1=9, 9+0=9)=10 → dp[4]=10
-line: return dp[N]
-state: ["output":10]
+line: output = f(84, 6)
+state: ["a":84, "b":6]
+line: return a // b → 14
+state: ["output":14]
 [DONE]
 
-{{\"rationale\":\"```python\ndef f(prices):\n N = len(prices)\n dp = [0] * (N + 1) # dp[n] = best revenue for length n\n for n in range(1, N + 1):\n best = 0\n for cut in range(1, n + 1):\n best = max(best, prices[cut - 1] + dp[n - cut])\n dp[n] = best\n return dp[N]\n\noutput = f([1,5,8,9])\nprint(output)\n```\",\"answer\":10}}
+{{"rationale":"```python
+def f(a, b):
+    # integer division
+    return a // b
+output = f(84, 6)
+print(output)
+```","answer":14}}
 
 Problem:
 {problem}
-    
+
 Response:
-    
+
 """
 )
-
 # ------------------------------- LLM Clients --------------------------------
 
 class LLMClient:
@@ -657,7 +665,8 @@ class VLLMClient(LLMClient):
             max_model_len=int(max_model_len) if max_model_len else None,
             trust_remote_code=bool(trust_remote_code),
             download_dir=download_dir,
-            seed=seed
+            seed=seed, 
+            # use_flash_attn=False
         )
         # Use HF tokenizer to format chat prompts if available
         self.tok = AutoTokenizer.from_pretrained(
@@ -1203,10 +1212,9 @@ def parse_args():
     p.add_argument('--hf_device_map', type=str, default='auto')
     p.add_argument('--hf_trust_remote_code', action='store_true')
 
-    p.add_argument('--max_tokens', type=int, default=1024)
-    p.add_argument('--temperature', type=int, default=0)
-    p.add_argument('--top_p', type=int, default=1)
-
+    p.add_argument('--max_tokens', type=int, default=2048)
+    p.add_argument('--temperature', type=int, default=0.7)
+    p.add_argument('--top_p', type=int, default=0.95)
 
     p.add_argument('--exec_code', action='store_true', help='execute code-CoT in sandboxed subprocess (imports allowed)')
     p.add_argument('--outdir', type=str, default='out')
