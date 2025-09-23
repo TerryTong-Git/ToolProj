@@ -1,1 +1,1 @@
-pixi run python run_corr.py --models google/gemma-2-9b-it,meta-llama/Llama-3.1-8B-Instruct --engine vllm
+pixi run python run_corr.py --models meta-llama/Llama-3.1-8B-Instruct --engine vllm

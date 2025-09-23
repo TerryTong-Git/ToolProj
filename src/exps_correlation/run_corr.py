@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Experiment: Coding Ability ↔ Tool-Use Ability Correlation
+Experiment: Coding Ability ↔ Tool-Use Ability Correlation (Batched + Tensor Parallel)
 
 Benchmarks
 - Coding: HumanEval pass@1, MBPP pass@1
 - Tool-use: GSM8K accuracy with Python-REPL tool execution (PAL-style)
 
-Models
-- Backends: mock | hf | vllm | openai
-- Evaluate multiple models and compute Pearson/Spearman correlations between:
-    coding_score (avg of HumanEval and MBPP pass@1)
-    tool_score (GSM8K accuracy with tool)
+Models / Backends
+- mock | hf | vllm | openai
+- vLLM supports tensor parallelism (--vllm-tp-size)
 
 Usage
 python code_tool_correlation.py \
   --models "meta-llama/Llama-3.1-8B-Instruct,google/gemma-2-9b-it" \
   --engine vllm \
+  --vllm-tp-size 2 \
+  --batch-size 16 \
   --limit-humaneval 164 \
   --limit-mbpp 100 \
   --limit-gsm8k 250 \
@@ -29,30 +29,83 @@ For OpenAI: pip install openai and set OPENAI_API_KEY
 from __future__ import annotations
 import os, re, ast, math, time, json, signal, argparse, textwrap, multiprocessing as mp
 from dataclasses import dataclass
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Optional, Iterable
 from statistics import mean
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import io, sys, traceback
 
 # ----------------------------
-# Backends
+# Sandboxed execution (unchanged structure, minor cleanup)
+# ----------------------------
+def _sandbox_worker(payload, q):
+    try:
+        sys.stderr = io.StringIO()
+        allowed_builtins = {
+            "range": range, "len": len, "min": min, "max": max, "sum": sum, "abs": abs,
+            "all": all, "any": any, "enumerate": enumerate, "zip": zip, "sorted": sorted,
+            "map": map, "filter": filter, "int": int, "float": float, "str": str,
+            "list": list, "dict": dict, "set": set, "tuple": tuple, "print": print
+        }
+        g = {"__builtins__": allowed_builtins}
+        l = {}
+        code = payload["code"]
+        exec(code, g, l)
+        res = None
+        if "entry" in payload:
+            fn = l.get(payload["entry"]) or g.get(payload["entry"])
+            if callable(fn):
+                res = fn(*payload.get("args", []), **payload.get("kwargs", {}))
+        q.put((True, res, sys.stderr.getvalue()))
+    except Exception:
+        err = (sys.stderr.getvalue() if hasattr(sys, "stderr") else "") + "\n" + traceback.format_exc()
+        q.put((False, None, err))
+
+
+def _exec_in_subprocess(code: str, input_payload: Dict[str, Any], timeout: float = 3.0):
+    ctx = mp.get_context("spawn")
+    q = ctx.Queue()
+    payload = dict(input_payload)
+    payload["code"] = code
+    p = ctx.Process(target=_sandbox_worker, args=(payload, q))
+    p.start()
+    ok = False; res = None; err = ""
+    try:
+        ok, res, err = q.get(timeout=timeout)
+    except Exception:
+        err = "Timeout"
+        try:
+            p.terminate()
+        except Exception:
+            pass
+    finally:
+        p.join(timeout=0.1)
+    return ok, res, err
+
+# ----------------------------
+# Backends (now with batch + TP for vLLM)
 # ----------------------------
 class LMEngine:
     def generate(self, prompt: str, max_new_tokens: int = 384, temperature: float = 0.0) -> str:
         raise NotImplementedError
 
+    def batch_generate(self, prompts: List[str], max_new_tokens: int = 384, temperature: float = 0.0) -> List[str]:
+        # Default fallback: serial (override in subclasses)
+        return [self.generate(p, max_new_tokens, temperature) for p in prompts]
+
 class MockEngine(LMEngine):
     def generate(self, prompt: str, max_new_tokens: int = 384, temperature: float = 0.0) -> str:
-        # trivial pattern: return minimal plausible code or number
         if "Write a function" in prompt or "def " in prompt:
-            # emit pass-through solution that often fails
             m = re.search(r"def ([a-zA-Z_]\w*)\(", prompt)
             fn = m.group(1) if m else "solution"
             return f"```python\ndef {fn}(*args, **kwargs):\n    raise NotImplementedError\n```"
         if "FINAL_ANSWER" in prompt or "Solve the problem" in prompt:
             return "FINAL_ANSWER: 0"
         return "0"
+
+    def batch_generate(self, prompts: List[str], max_new_tokens: int = 384, temperature: float = 0.0) -> List[str]:
+        return [self.generate(p, max_new_tokens, temperature) for p in prompts]
 
 class HFEngine(LMEngine):
     def __init__(self, model_name: str):
@@ -61,34 +114,72 @@ class HFEngine(LMEngine):
         self.tk = AutoTokenizer.from_pretrained(model_name)
         self.m = AutoModelForCausalLM.from_pretrained(
             model_name,
-            device_map="auto",
+            device_map="auto",  # shards layers across GPUs if available
             torch_dtype=torch.float16 if torch.cuda.is_available() else None,
         )
-        self.device = self.m.device
+        self.device = getattr(self.m, "device", "cpu")
+
+    def _decode_new(self, input_ids, out_ids) -> str:
+        # Decode only the generated continuation
+        in_txt = self.tk.decode(input_ids, skip_special_tokens=True)
+        full = self.tk.decode(out_ids, skip_special_tokens=True)
+        return full[len(in_txt):].strip()
 
     def generate(self, prompt: str, max_new_tokens: int = 384, temperature: float = 0.0) -> str:
         import torch
         toks = self.tk(prompt, return_tensors="pt").to(self.device)
-        out = self.m.generate(
-            **toks,
-            max_new_tokens=max_new_tokens,
-            do_sample=temperature > 0.0,
-            temperature=temperature if temperature > 0.0 else None,
-            pad_token_id=self.tk.eos_token_id,
-        )
-        txt = self.tk.decode(out[0], skip_special_tokens=True)
-        return txt[len(self.tk.decode(toks["input_ids"][0], skip_special_tokens=True)) :].strip()
+        with torch.no_grad():
+            out = self.m.generate(
+                **toks,
+                max_new_tokens=max_new_tokens,
+                do_sample=bool(temperature and temperature > 0.0),
+                temperature=temperature if temperature and temperature > 0.0 else None,
+                pad_token_id=self.tk.eos_token_id,
+            )
+        return self._decode_new(toks["input_ids"][0], out[0])
+
+    def batch_generate(self, prompts: List[str], max_new_tokens: int = 384, temperature: float = 0.0) -> List[str]:
+        import torch
+        toks = self.tk(prompts, return_tensors="pt", padding=True, truncation=False)
+        toks = {k: v.to(self.device) for k, v in toks.items()}
+        with torch.no_grad():
+            outs = self.m.generate(
+                **toks,
+                max_new_tokens=max_new_tokens,
+                do_sample=bool(temperature and temperature > 0.0),
+                temperature=temperature if temperature and temperature > 0.0 else None,
+                pad_token_id=self.tk.eos_token_id,
+            )
+        # outs shape [B, T+N]; need per-sample decode
+        res = []
+        for i in range(len(prompts)):
+            res.append(self._decode_new(toks["input_ids"][i], outs[i]))
+        return res
 
 class VLLMEngine(LMEngine):
-    def __init__(self, model_name: str):
-        from vllm import LLM, SamplingParams
-        self.llm = LLM(model=model_name, dtype='float16', download_dir="../models", max_model_len=4196)
-        self.sp = SamplingParams(temperature=0.0, max_tokens=384)
+    def __init__(self, model_name: str, tp_size: int = 1):
+        from vllm import LLM
+        # tensor_parallel_size enables true TP across GPUs
+        self.llm = LLM(
+            model=model_name,
+            dtype="float16",
+            tensor_parallel_size=int(tp_size),
+            max_model_len=4096,
+            download_dir="../models"
+        )
 
     def generate(self, prompt: str, max_new_tokens: int = 384, temperature: float = 0.0) -> str:
-        # vLLM SamplingParams already set; ignore per-call max_new_tokens/temperature for simplicity
-        outs = self.llm.generate([prompt], self.sp)
+        from vllm import SamplingParams
+        sp = SamplingParams(temperature=float(temperature), max_tokens=int(max_new_tokens))
+        outs = self.llm.generate([prompt], sp)
         return outs[0].outputs[0].text.strip()
+
+    def batch_generate(self, prompts: List[str], max_new_tokens: int = 384, temperature: float = 0.0) -> List[str]:
+        from vllm import SamplingParams
+        sp = SamplingParams(temperature=float(temperature), max_tokens=int(max_new_tokens))
+        outs = self.llm.generate(prompts, sp)
+        # vLLM returns in same order
+        return [o.outputs[0].text.strip() if o.outputs else "" for o in outs]
 
 class OpenAIEngine(LMEngine):
     def __init__(self, model_name: str):
@@ -100,67 +191,25 @@ class OpenAIEngine(LMEngine):
         resp = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=max_new_tokens,
+            temperature=float(temperature),
+            max_tokens=int(max_new_tokens),
         )
         return resp.choices[0].message.content.strip()
 
-def make_engine(kind: str, model_name: str) -> LMEngine:
+    def batch_generate(self, prompts: List[str], max_new_tokens: int = 384, temperature: float = 0.0) -> List[str]:
+        # Simple chunked loop to be nice to rate limits
+        out = []
+        for p in prompts:
+            out.append(self.generate(p, max_new_tokens, temperature))
+        return out
+
+def make_engine(kind: str, model_name: str, vllm_tp_size: int) -> LMEngine:
     kind = kind.lower()
-    if kind == "mock": return MockEngine()
-    if kind == "hf":   return HFEngine(model_name)
-    if kind == "vllm": return VLLMEngine(model_name)
+    if kind == "mock":   return MockEngine()
+    if kind == "hf":     return HFEngine(model_name)
+    if kind == "vllm":   return VLLMEngine(model_name, tp_size=vllm_tp_size)
     if kind == "openai": return OpenAIEngine(model_name)
     raise ValueError(f"Unknown engine {kind}")
-
-# ----------------------------
-# Safe execution utilities
-# ----------------------------
-def _exec_in_subprocess(code: str, input_payload: Dict[str, Any], timeout: float = 3.0) -> Tuple[bool, Any, str]:
-    """
-    Execute Python code in a clean subprocess with minimal builtins.
-    Return (ok, result, stderr_text).
-    """
-    def worker(payload, conn):
-        try:
-            import sys, io
-            sys.stderr = io.StringIO()
-            # Restricted globals
-            allowed_builtins = {
-                "range": range, "len": len, "min": min, "max": max, "sum": sum, "abs": abs, "all": all, "any": any,
-                "enumerate": enumerate, "zip": zip, "sorted": sorted, "map": map, "filter": filter, "int": int,
-                "float": float, "str": str, "list": list, "dict": dict, "set": set, "tuple": tuple
-            }
-            g = {"__builtins__": allowed_builtins}
-            l = {}
-            exec(payload["code"], g, l)
-            res = None
-            if "entry" in payload:
-                fn = l.get(payload["entry"]) or g.get(payload["entry"])
-                if callable(fn):
-                    res = fn(*payload.get("args", []), **payload.get("kwargs", {}))
-            conn.send((True, res, sys.stderr.getvalue()))
-        except Exception as e:
-            import traceback, sys
-            conn.send((False, None, (sys.stderr.getvalue() if hasattr(sys, "stderr") else "") + "\n" + traceback.format_exc()))
-        finally:
-            conn.close()
-
-    parent, child = mp.Pipe()
-    p = mp.Process(target=worker, args=(input_payload, child))
-    p.start()
-    parent_conn = parent
-    ok = False; res = None; err = ""
-    if parent_conn.poll(timeout):
-        ok, res, err = parent_conn.recv()
-    else:
-        try:
-            p.terminate()
-        except Exception:
-            pass
-        ok, res, err = (False, None, "Timeout")
-    p.join(timeout=0.1)
-    return ok, res, err
 
 # ----------------------------
 # Benchmarks: loaders
@@ -173,23 +222,23 @@ def load_humaneval(limit: Optional[int]) -> List[Dict[str, Any]]:
         if limit and i >= limit: break
         items.append({
             "task_id": ex["task_id"],
-            "prompt": ex["prompt"],          # includes 'def f(...):'
+            "prompt": ex["prompt"],
             "canonical_solution": ex["canonical_solution"],
-            "test": ex["test"],              # unit tests as code
+            "test": ex["test"],
         })
     return items
 
 def load_mbpp(limit: Optional[int]) -> List[Dict[str, Any]]:
     from datasets import load_dataset
-    ds = load_dataset("mbpp", split="test")  # test has held-out tasks with test_list field
+    ds = load_dataset("mbpp", split="test")
     items = []
     for i, ex in enumerate(ds):
         if limit and i >= limit: break
         items.append({
             "task_id": f"mbpp-{i}",
-            "text": ex["text"],                 # natural language description
-            "code": ex.get("code", ""),         # reference solution (unused)
-            "test_list": ex.get("test_list", []), # list of assert strings
+            "text": ex["text"],
+            "code": ex.get("code", ""),
+            "test_list": ex.get("test_list", []),
         })
     return items
 
@@ -201,14 +250,16 @@ def load_gsm8k(limit: Optional[int]) -> List[Dict[str, Any]]:
         if limit and i >= limit: break
         items.append({
             "question": ex["question"],
-            "answer": ex["answer"],  # contains final number like "#### 42"
+            "answer": ex["answer"],
         })
     return items
 
 # ----------------------------
-# Benchmarks: prompts and evaluation
+# Prompts / parsing
 # ----------------------------
 def strip_code_fence(txt: str) -> str:
+    if txt is None:
+        return ""
     m = re.search(r"```python(.*?)```", txt, flags=re.S|re.I)
     if m: return m.group(1).strip()
     m2 = re.search(r"```(.*?)```", txt, flags=re.S)
@@ -216,7 +267,6 @@ def strip_code_fence(txt: str) -> str:
     return txt.strip()
 
 def humaneval_prompt(ex: Dict[str, Any]) -> str:
-    # Instruct to output pure code block with complete function
     return textwrap.dedent(f"""
     Write a correct and efficient solution as Python code block for the following specification.
     Return only a single ```python code block``` containing the full function implementation. No prose.
@@ -225,15 +275,6 @@ def humaneval_prompt(ex: Dict[str, Any]) -> str:
     {ex["prompt"]}
     """).strip()
 
-def run_humaneval_case(engine: LMEngine, ex: Dict[str, Any]) -> bool:
-    gen = engine.generate(humaneval_prompt(ex), max_new_tokens=512, temperature=0.0)
-    code = strip_code_fence(gen)
-    # Compose code + tests; run tests in subprocess
-    test_code = ex["test"]
-    payload_code = code + "\n\n" + test_code + "\n"
-    ok, _, err = _exec_in_subprocess(payload_code, {"code": payload_code}, timeout=5.0)
-    return ok
-
 def mbpp_prompt(ex: Dict[str, Any]) -> str:
     return textwrap.dedent(f"""
     Write a correct Python function that satisfies the description. Return only a single ```python code block``` with the function definition. No prose.
@@ -241,19 +282,6 @@ def mbpp_prompt(ex: Dict[str, Any]) -> str:
     Description:
     {ex["text"]}
     """).strip()
-
-def run_mbpp_case(engine: LMEngine, ex: Dict[str, Any]) -> bool:
-    gen = engine.generate(mbpp_prompt(ex), max_new_tokens=384, temperature=0.0)
-    code = strip_code_fence(gen)
-    test_snippets = "\n".join(ex.get("test_list", []))
-    payload = code + "\n\n" + test_snippets + "\n"
-    ok, _, err = _exec_in_subprocess(payload, {"code": payload}, timeout=5.0)
-    return ok
-
-def parse_gsm8k_gold(ans: str) -> Optional[int]:
-    # gold has "#### 42" pattern
-    m = re.search(r"####\s*(-?\d+)", ans)
-    return int(m.group(1)) if m else None
 
 def gsm8k_tool_prompt(q: str) -> str:
     return textwrap.dedent(f"""
@@ -265,28 +293,65 @@ def gsm8k_tool_prompt(q: str) -> str:
     {q}
     """).strip()
 
-def run_gsm8k_case_with_tool(engine: LMEngine, ex: Dict[str, Any]) -> bool:
-    gen = engine.generate(gsm8k_tool_prompt(ex["question"]), max_new_tokens=512, temperature=0.0)
-    # Execute any python block found; capture FINAL_ANSWER
-    code = strip_code_fence(gen)
-    final_ans = None
+def parse_gsm8k_gold(ans: str) -> Optional[int]:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1)) if m else None
 
-    if "FINAL_ANSWER" in code:
-        # Execute code; try to capture stdout text
-        ok, _, err = _exec_in_subprocess(code, {"code": code}, timeout=5.0)
-        # Regardless of execution, also parse from generated text after the code block
-    # Parse FINAL_ANSWER from full text
-    m = re.findall(r"FINAL_ANSWER\s*[:=]\s*(-?\d+)", gen)
-    if m:
-        final_ans = int(m[-1])
-    else:
-        # fallback: last integer in the output
-        m2 = re.findall(r"-?\d+", gen)
-        if m2:
-            final_ans = int(m2[-1])
+# ----------------------------
+# Batched evaluation helpers
+# ----------------------------
+def _chunks(seq: List[Any], n: int) -> Iterable[List[Any]]:
+    for i in range(0, len(seq), n):
+        yield seq[i:i+n]
 
-    gold = parse_gsm8k_gold(ex["answer"])
-    return (final_ans is not None) and (gold is not None) and (final_ans == gold)
+def evaluate_humaneval_batched(engine: LMEngine, items: List[Dict[str,Any]], batch_size: int, temp: float=0.0, max_new: int=512) -> float:
+    prompts = [humaneval_prompt(ex) for ex in items]
+    correct = 0
+    for batch_idx, batch_prompts in enumerate(tqdm(list(_chunks(prompts, batch_size)), desc="HumanEval (batched)")):
+        gens = engine.batch_generate(batch_prompts, max_new_tokens=max_new, temperature=temp)
+        for j, gen in enumerate(gens):
+            ex = items[batch_idx*batch_size + j]
+            code = strip_code_fence(gen)
+            payload_code = code + "\n\n" + ex["test"] + "\n"
+            ok, _, _ = _exec_in_subprocess(payload_code, {"code": payload_code}, timeout=5.0)
+            correct += int(ok)
+    return correct / max(1, len(items))
+
+def evaluate_mbpp_batched(engine: LMEngine, items: List[Dict[str,Any]], batch_size: int, temp: float=0.0, max_new: int=384) -> float:
+    prompts = [mbpp_prompt(ex) for ex in items]
+    correct = 0
+    for batch_idx, batch_prompts in enumerate(tqdm(list(_chunks(prompts, batch_size)), desc="MBPP (batched)")):
+        gens = engine.batch_generate(batch_prompts, max_new_tokens=max_new, temperature=temp)
+        for j, gen in enumerate(gens):
+            ex = items[batch_idx*batch_size + j]
+            code = strip_code_fence(gen)
+            test_snippets = "\n".join(ex.get("test_list", []))
+            payload = code + "\n\n" + test_snippets + "\n"
+            ok, _, _ = _exec_in_subprocess(payload, {"code": payload}, timeout=5.0)
+            correct += int(ok)
+    return correct / max(1, len(items))
+
+def evaluate_gsm8k_batched(engine: LMEngine, items: List[Dict[str,Any]], batch_size: int, temp: float=0.0, max_new: int=512) -> float:
+    prompts = [gsm8k_tool_prompt(ex["question"]) for ex in items]
+    correct = 0
+    for batch_idx, batch_prompts in enumerate(tqdm(list(_chunks(prompts, batch_size)), desc="GSM8K+Tool (batched)")):
+        gens = engine.batch_generate(batch_prompts, max_new_tokens=max_new, temperature=temp)
+        for j, gen in enumerate(gens):
+            ex = items[batch_idx*batch_size + j]
+            code = strip_code_fence(gen)
+            final_ans = None
+            if "FINAL_ANSWER" in code:
+                _exec_in_subprocess(code, {"code": code}, timeout=5.0)  # ignore output; we parse text below
+            m = re.findall(r"FINAL_ANSWER\s*[:=]\s*(-?\d+)", gen)
+            if m:
+                final_ans = int(m[-1])
+            else:
+                m2 = re.findall(r"-?\d+", gen)
+                if m2:
+                    final_ans = int(m2[-1])
+            gold = parse_gsm8k_gold(ex["answer"])
+            correct += int((final_ans is not None) and (gold is not None) and (final_ans == gold))
+    return correct / max(1, len(items))
 
 # ----------------------------
 # Scoring and correlation
@@ -315,27 +380,14 @@ class Scores:
     coding_avg: float
     tool_gsm8k: float
 
-def evaluate_model(engine: LMEngine, model_name: str, limits: Dict[str,int]) -> Scores:
-    # HumanEval
+def evaluate_model(engine: LMEngine, model_name: str, limits: Dict[str,int], batch_size: int) -> Scores:
     he = load_humaneval(limits.get("humaneval"))
-    he_correct = 0
-    for ex in tqdm(he, desc=f"[{model_name}] HumanEval"):
-        he_correct += int(run_humaneval_case(engine, ex))
-    he_pass1 = he_correct / max(1, len(he))
-
-    # MBPP
     mb = load_mbpp(limits.get("mbpp"))
-    mb_correct = 0
-    for ex in tqdm(mb, desc=f"[{model_name}] MBPP"):
-        mb_correct += int(run_mbpp_case(engine, ex))
-    mb_pass1 = mb_correct / max(1, len(mb))
-
-    # GSM8K with tool
     g8 = load_gsm8k(limits.get("gsm8k"))
-    g8_correct = 0
-    for ex in tqdm(g8, desc=f"[{model_name}] GSM8K+Tool"):
-        g8_correct += int(run_gsm8k_case_with_tool(engine, ex))
-    g8_acc = g8_correct / max(1, len(g8))
+
+    he_pass1 = evaluate_humaneval_batched(engine, he, batch_size=batch_size, temp=0.0, max_new=512)
+    mb_pass1 = evaluate_mbpp_batched(engine, mb, batch_size=batch_size, temp=0.0, max_new=384)
+    g8_acc   = evaluate_gsm8k_batched(engine, g8, batch_size=batch_size, temp=0.0, max_new=512)
 
     return Scores(
         model=model_name,
@@ -349,22 +401,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", type=str, required=True, help="Comma-separated model names")
     ap.add_argument("--engine", type=str, default="vllm", choices=["mock","hf","vllm","openai"])
-    ap.add_argument("--limit-humaneval", type=int, default=164)   # full HumanEval=164
-    ap.add_argument("--limit-mbpp", type=int, default=100)        # subset for speed
-    ap.add_argument("--limit-gsm8k", type=int, default=250)       # subset for speed
+    ap.add_argument("--vllm-tp-size", type=int, default=8, help="Tensor parallel size for vLLM")
+    ap.add_argument("--batch-size", type=int, default=8, help="Batch size for prompt generation")
+    ap.add_argument("--limit-humaneval", type=int, default=164)
+    ap.add_argument("--limit-mbpp", type=int, default=100)
+    ap.add_argument("--limit-gsm8k", type=int, default=250)
     ap.add_argument("--out", type=str, default="results_code_tool.csv")
     args = ap.parse_args()
 
     limits = {"humaneval": args.limit_humaneval, "mbpp": args.limit_mbpp, "gsm8k": args.limit_gsm8k}
-
     model_names = [m.strip() for m in args.models.split(",") if m.strip()]
+
     rows = []
     coding_scores = []
     tool_scores = []
 
     for mname in model_names:
-        eng = make_engine(args.engine, mname)
-        s = evaluate_model(eng, mname, limits)
+        eng = make_engine(args.engine, mname, vllm_tp_size=args.vllm_tp_size)
+        s = evaluate_model(eng, mname, limits, batch_size=args.batch_size)
         rows.append({
             "model": s.model,
             "coding_humaneval_pass1": s.coding_humaneval,
@@ -372,8 +426,21 @@ def main():
             "coding_avg": s.coding_avg,
             "tool_gsm8k_acc": s.tool_gsm8k,
         })
+        # Keep running partials per model
+        partial_df = pd.DataFrame(rows)
+        if len(coding_scores) == len(tool_scores):  # in case of previous failure
+            pass
         coding_scores.append(s.coding_avg)
         tool_scores.append(s.tool_gsm8k)
+        try:
+            pear_tmp = corr_pearson(coding_scores, tool_scores)
+            spear_tmp = corr_spearman(coding_scores, tool_scores)
+            partial_df["pearson_code_tool"] = pear_tmp
+            partial_df["spearman_code_tool"] = spear_tmp
+            suffix = mname.split("/")[1]
+            partial_df.to_csv(f"{suffix}_" + args.out, index=False)
+        except Exception:
+            partial_df.to_csv(f"{mname}_" + args.out, index=False)
 
     pear = corr_pearson(coding_scores, tool_scores)
     spear = corr_spearman(coding_scores, tool_scores)
