@@ -355,7 +355,7 @@ JSON_SCHEMA = (
 # IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = (
 """
-You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail. You are never allowed to use code. After fully reasoning through the problem in natural language, consolidate your final thoughts into a JSON dictionary containing two keys:
+You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail. The problem is given after <|Problem|>. You should fill in <|Response|>. You are never allowed to use code. After fully reasoning through the problem in natural language, output <|Final Answer|> and consolidate your final thoughts into a JSON dictionary containing two keys:
 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
 - "answer": give the final requested answer as an integer.
@@ -363,72 +363,107 @@ You are tasked with solving an algorithmic problem by reasoning through it step 
 Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. 
 
 Examples:
-===============================================
-(1) Problem:
+
+===========================================================================
+
+<|Problem|>
 Minimum Vertex Cover: Given an undirected graph G=(V,E), choose the smallest set of vertices that touches every edge. Return the cover size.
 V = {{0,1,2,3}}
 E = {{(0,1), (1,2), (2,3)}}
 
-Response:
+<|Response|>
 The edges form a simple path: (0 1 2 3). To cover every edge, choose vertices so that each edge has at least one endpoint selected. Picking {{1,2}} covers (0,1) via 1, (1,2) via either 1 or 2, and (2,3) via 2. That uses 2 vertices. Any single vertex cannot cover all three edges, so 2 is minimal.
 
+<|Final Answer|>
 {{
 \"rationale\": \"The graph is a path of length 3. Selecting the middle two vertices {{1,2}} covers all edges, and a cover of size 1 is impossible, so the minimum cover size is 2.\",
 \"answer\": 2
 }}
 
-(2) Problem:
+============================================================================
+
+<|Problem|>
 Coin Change (min coins): Given coin denominations and a target amount, compute the minimum number of coins to make the amount (use -1 if impossible).
 coins = [1, 3, 4]
 amount = 6
 
-Response:
+<|Response|>
 I consider the smallest number of coins to total 6. Using 4 first, the remainder is 2, which needs two 1s for a total of 3 coins. Using 3 first, the remainder is 3; another 3 makes 6 with 2 coins total. Using only 1s needs 6 coins. The best among these is 2 coins (3 + 3).
 
+<|Final Answer|>
 {{
 \"rationale\": \"Compare constructions: 4+1+1 uses 3 coins; 3+3 uses 2 coins; six 1s uses 6 coins. The minimum is achieved by 3+3 with 2 coins.\",
 \"answer\": 2
 }}
 
-(3) Problem:
+============================================================================
+
+<|Problem|>
 Compute: 84 ÷ 6
 
-Response:
+<|Response|>
 Divide 84 by 6. Since 6 × 14 = 84, the quotient is 14.
 
+<|Final Answer|>
 {{
 \"rationale\": \"84 divided by 6 equals 14 because 6 × 14 = 84.\",
 \"answer\": 14
 }}
 
-Problem:
+============================================================================
+
+<|Problem|>
 {problem}
 
-Response:
+<|Response|>
 """
 )
 
 CODE_PROMPT = (
 """
-You are an expert algorithm problem solver who reasons entirely in Python code by generating a piece of code, then simulating its execution. When you generate code, write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. Ensure proper syntax, indentation, definitions, and variable instantiation. When simulating execution, write out the line number, the variable state, and behave like a single-cycle cpu.  The last line of the program must print the final result. You MUST write out [BEGIN] and [DONE] before the execution simulation. Moreover, after simulating the program, report out the program that you attempted to simulate and the answer you got from simulation by producing a JSON dictionary with two keys:
+You are an expert algorithm problem solver who reasons entirely in Python code by generating a piece of code, then simulating its execution after <|Execution Simulation|>. When you generate code, write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. Ensure proper syntax, indentation, definitions, and variable instantiation. When simulating execution, write out the line number, the variable state, and behave like a single-cycle cpu.  The last line of the program must print the final result. The problem is given after <|Problem|>. You should fill in <|Response|>. After response, give a piece of code, then give <|Execution Simulation|> and try to simulate the code.  You MUST write out [BEGIN] and [DONE] before the execution simulation. Moreover, after simulating the program, report out the program that you attempted to simulate and the answer you got from simulation. Do this by first outputting <|Final Answer|>, then by producing a JSON dictionary with two keys:
 
 - "rationale": the complete Python code solution, enclosed in a code block.
 - "answer": the result from executing the code, should be an integer.
 
-Constraints:
-* Simulate the execution step by step. Break down the problem and solve each execution line step by step, giving the state and line. Wrap the lines in [BEGIN] and [DONE]. 
-* Provide a fully executable solution.
-* Use comments to clarify reasoning.
-* End with a print(...) statement for the answer.
+After generating a short Python program that defines a single function `f(...)` and then calls it as `output = f(<args>)`, produce ONLY the execution trace in the exact format below.
+
+## Required format
+[BEGIN]
+state: {{}}
+line: def f(<params>):
+state: {{"f": "<callable_object f>"}}
+line: output = f(<args>)
+state: {{<callee_locals_after_param_binding>}}
+line: <next_source_line_or_guard>
+state: {{<locals_after_effect_or_after_guard_eval>}}
+... (repeat for every executed line, including each re-check of while/if guards)
+line: return <expr>
+state: {{"f": "<callable_object f>", "output": <final_integer>}}
+[DONE]
+
+## Tracing rules (must follow exactly)
+- “line:” shows the exact source line being executed or the guard being evaluated (e.g., `while v4 > 0:`), logged EACH time it is checked.
+- “state:” is a JSON-like snapshot RIGHT AFTER that line’s effect (or after a guard is evaluated), with variables from the **current scope** only.
+- Scopes:
+  - Before the call (outer scope): show only {{"f":"<callable_object f>"}}.
+  - At the call line, switch to the callee scope and show only the callee’s locals (e.g., {{"v0": 6, "v4": 2}}).
+  - On `return`, switch back to outer scope and show {{"f":"<callable_object f>", "output": <value>}}.
+- While/if guards: log the guard line every time; its “state” reflects locals unchanged by the guard itself.
+- Aug-assignments (like `v0 += 2`) and assignments mutate the state immediately.
+- Preserve concrete values verbatim (e.g., lists, dicts, integers, strings); render function objects exactly as "<callable_object f>".
+- Output NOTHING except the trace block. No code fences, no prose.
 
 Examples:
-===============================================
-(1) Problem:
+
+==================================================================
+
+<|Problem|>:
 Minimum Vertex Cover (ILP): Given an undirected graph G=(V,E), choose the smallest set of vertices covering all edges. Return the cover size.
 V = {{0,1,2,3}}
 E = {{(0,1), (1,2), (2,3)}}
 
-Response:
+<|Response|>:
 ```python
 # ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
 def f(V, E):
@@ -448,26 +483,42 @@ output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
 print(output)
 ```
 
-Begin execution simulation
-
+<|Execution Simulation|>
 [BEGIN]
-state: []
+state: {{}}
 line: def f(V, E):
-state: ["f":"<callable_object f>"]
+state: {{"f": "<callable_object f>"}}
 line: output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
-state: ["V":{{0,1,2,3}}, "E":{{(0,1),(1,2),(2,3)}}]
-line: create binary vars x_0..x_3; set objective Σ x_v
-state: ["x":{{"0":bin,"1":bin,"2":bin,"3":bin}}]
-line: add constraints: x0+x1≥1, x1+x2≥1, x2+x3≥1
-state: ["constraints":3]
-line: solve with CBC
-state: ["x*":{{"0":0,"1":1,"2":1,"3":0}}]
-line: val = sum x* = 2
-state: ["val":2]
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}}}
+line: import pulp
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>"}}
+line: x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}}}
+line: prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
+line: prob += pulp.lpSum([x[v] for v in V])
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
+line: for (u, v) in E:
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
+line: prob += x[u] + x[v] >= 1
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
+line: for (u, v) in E:
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
+line: prob += x[u] + x[v] >= 1
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
+line: for (u, v) in E:
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
+line: prob += x[u] + x[v] >= 1
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
+line: prob.solve(pulp.PULP_CBC_CMD(msg=False))
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>"}}
+line: val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
+state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>", "val": 2}}
 line: return val
-state: ["output":2]
+state: {{"f": "<callable_object f>", "output": 2}}
 [DONE]
 
+<|Final Answer|>
 {{"rationale":"```python
 # ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
 def f(V, E):
@@ -486,13 +537,14 @@ output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
 print(output)
 ```","answer":2}}
 
-(2) Problem:
+============================================================================
+
+<|Problem|>:
 Coin Change (DP, min coins): Given coin denominations and a target amount, compute the minimum number of coins to make the amount (use -1 if impossible).
-coins = [1, 3, 4]
-amount = 6
+coins = [1, 2]
+amount = 3
 
-Response:
-
+<|Response|>:
 ```python
 # Copy code
 def f(coins, amount):
@@ -507,36 +559,78 @@ def f(coins, amount):
         dp[a] = best
     return -1 if dp[amount] >= INF else dp[amount]
 
-output = f([1,3,4], 6)
+output = f([1,2], 3)
 print(output)
 ```
 
-Begin execution simulation
-
+<|Execution Simulation|>
 [BEGIN]
-state: []
+state: {{}}
 line: def f(coins, amount):
-state: ["f":"<callable_object f>"]
-line: output = f([1,3,4], 6)
-state: ["coins":[1,3,4], "amount":6]
-line: init dp[0]=0, others INF
-state: ["dp":[0,INF,INF,INF,INF,INF,INF]]
-line: a=1 → best=min(dp[0]+1)=1 → dp[1]=1
-state: ["dp":[0,1,INF,INF,INF,INF,INF]]
-line: a=2 → from c=1: dp[1]+1=2 → dp[2]=2
-state: ["dp":[0,1,2,INF,INF,INF,INF]]
-line: a=3 → min(dp[2]+1=3, dp[0]+1=1 with c=3) → dp[3]=1
-state: ["dp":[0,1,2,1,INF,INF,INF]]
-line: a=4 → min(dp[3]+1=2, dp[0]+1=1 with c=4) → dp[4]=1
-state: ["dp":[0,1,2,1,1,INF,INF]]
-line: a=5 → min(dp[4]+1=2, dp[2]+1=3, dp[1]+1=2) → dp[5]=2
-state: ["dp":[0,1,2,1,1,2,INF]]
-line: a=6 → min(dp[5]+1=3, dp[3]+1=2, dp[2]+1=3) → dp[6]=2
-state: ["dp":[0,1,2,1,1,2,2]]
-line: return dp[6]
-state: ["output":2]
+state: {{"f": "<callable_object f>"}}
+line: output = f([1,2], 3)
+state: {{"coins": [1,2], "amount": 3}}
+line: INF = 10**9
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000}}
+line: dp = [INF] * (amount + 1)
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [1000000000,1000000000,1000000000,1000000000]}}
+line: dp[0] = 0
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000]}}
+line: for a in range(1, amount + 1):
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1}}
+line: best = INF
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1, "best": 1000000000}}
+line: for c in coins:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1, "best": 1000000000, "c": 1}}
+line: if a - c >= 0 and dp[a - c] + 1 < best:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1, "best": 1000000000, "c": 1}}
+line: best = dp[a - c] + 1
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1, "best": 1, "c": 1}}
+line: for c in coins:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1, "best": 1, "c": 2}}
+line: if a - c >= 0 and dp[a - c] + 1 < best:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1000000000,1000000000,1000000000], "a": 1, "best": 1, "c": 2}}
+line: dp[a] = best
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 1, "best": 1}}
+line: for a in range(1, amount + 1):
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2}}
+line: best = INF
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 1000000000}}
+line: for c in coins:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 1000000000, "c": 1}}
+line: if a - c >= 0 and dp[a - c] + 1 < best:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 1000000000, "c": 1}}
+line: best = dp[a - c] + 1
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 2, "c": 1}}
+line: for c in coins:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 2, "c": 2}}
+line: if a - c >= 0 and dp[a - c] + 1 < best:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 2, "c": 2}}
+line: best = dp[a - c] + 1
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1000000000,1000000000], "a": 2, "best": 1, "c": 2}}
+line: dp[a] = best
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 2, "best": 1}}
+line: for a in range(1, amount + 1):
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3}}
+line: best = INF
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3, "best": 1000000000}}
+line: for c in coins:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3, "best": 1000000000, "c": 1}}
+line: if a - c >= 0 and dp[a - c] + 1 < best:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3, "best": 1000000000, "c": 1}}
+line: best = dp[a - c] + 1
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3, "best": 2, "c": 1}}
+line: for c in coins:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3, "best": 2, "c": 2}}
+line: if a - c >= 0 and dp[a - c] + 1 < best:
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,1000000000], "a": 3, "best": 2, "c": 2}}
+line: dp[a] = best
+state: {{"coins": [1,2], "amount": 3, "INF": 1000000000, "dp": [0,1,1,2], "a": 3, "best": 2}}
+line: return -1 if dp[amount] >= INF else dp[amount]
+state: {{"f": "<callable_object f>", "output": 2}}
 [DONE]
 
+<|Final Answer|>
 {{"rationale":"```python
 def f(coins, amount):
     INF = 10**9
@@ -553,11 +647,12 @@ output = f([1,3,4], 6)
 print(output)
 ```","answer":2}}
 
-(3) Problem:
+============================================================================
+
+<|Problem|>:
 Compute: 84 ÷ 6
 
-Response:
-
+<|Response|>:
 ```python
 def f(a, b):
     # integer division
@@ -567,18 +662,18 @@ output = f(84, 6)
 print(output)
 ```
 
-Begin execution simulation
-
+<|Execution Simulation|>
 [BEGIN]
-state: []
+state: {{}}
 line: def f(a, b):
-state: ["f":"<callable_object f>"]
+state: {{"f": "<callable_object f>"}}
 line: output = f(84, 6)
-state: ["a":84, "b":6]
-line: return a // b → 14
-state: ["output":14]
+state: {{"a": 84, "b": 6}}
+line: return a // b
+state: {{"f": "<callable_object f>", "output": 14}}
 [DONE]
 
+<|Final Answer|>
 {{"rationale":"```python
 def f(a, b):
     # integer division
@@ -587,10 +682,12 @@ output = f(84, 6)
 print(output)
 ```","answer":14}}
 
-Problem:
+============================================================================
+
+<|Problem|>:
 {problem}
 
-Response:
+<|Response|>:
 
 """
 )
@@ -666,7 +763,6 @@ class VLLMClient(LLMClient):
             trust_remote_code=bool(trust_remote_code),
             download_dir=download_dir,
             seed=seed, 
-            # use_flash_attn=False
         )
         # Use HF tokenizer to format chat prompts if available
         self.tok = AutoTokenizer.from_pretrained(
@@ -1212,25 +1308,24 @@ def parse_args():
     p.add_argument('--hf_device_map', type=str, default='auto')
     p.add_argument('--hf_trust_remote_code', action='store_true')
 
-    p.add_argument('--max_tokens', type=int, default=2048)
-    p.add_argument('--temperature', type=int, default=0.7)
-    p.add_argument('--top_p', type=int, default=0.95)
+    p.add_argument('--max_tokens', type=int, default=4192)
+    p.add_argument('--temperature', type=int, default=0.1)
+    p.add_argument('--top_p', type=int, default=0.90)
 
     p.add_argument('--exec_code', action='store_true', help='execute code-CoT in sandboxed subprocess (imports allowed)')
     p.add_argument('--outdir', type=str, default='out')
     p.add_argument('--log_every', type=int, default=50)
 
     # TensorBoard text limits
-    p.add_argument('--tb_text_chars', type=int, default=6000)
+    p.add_argument('--tb_text_chars', type=int, default=10000)
     p.add_argument('--tb_disable', action='store_true')
     
-
     # vLLM options (kept minimal; defaults are conservative)
     p.add_argument('--batch_size', type=int, default=8, help='Batch size for backends that support chat_many (vLLM).')
     p.add_argument('--vllm_dtype', type=str, default='float16',
                    choices=['auto','float16','bfloat16'])
     p.add_argument('--vllm_tensor_parallel', type=int, default=8)
-    p.add_argument('--vllm_gpu_mem_util', type=float, default=0.90)
+    p.add_argument('--vllm_gpu_mem_util', type=float, default=0.80)
     p.add_argument('--vllm_max_model_len', type=int, default=None)
     p.add_argument('--vllm_download_dir', type=str, default='../models')
     return p.parse_args()

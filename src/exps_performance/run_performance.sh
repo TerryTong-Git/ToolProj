@@ -31,21 +31,21 @@ seeds=(1)
 #   --outdir execution_pythia --exec_code --batch_size 64
 # done
 
-# for seed in ${seeds[@]}; do
-#   pixi run python cot.py \
-#   --backend vllm \
-#   --model mistralai/Ministral-8B-Instruct-2410 \
-#   --hf_dtype float16 \
-#   --hf_device_map auto \
-#   --vllm_tensor_parallel 8 \
-#   --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-#   --outdir execution_ministral_smoke --exec_code --batch_size 64
-# done
+for seed in ${seeds[@]}; do
+  pixi run python cot.py \
+  --backend vllm \
+  --model mistralai/Ministral-8B-Instruct-2410 \
+  --hf_dtype float16 \
+  --hf_device_map auto \
+  --vllm_tensor_parallel 8 \
+  --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+  --outdir execution_ministral_smoke --exec_code --batch_size 64
+done
 
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
     --backend vllm \
-    --model deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
+    --model deepseek-ai/deepseek-coder-7b-instruct-v1.5 \
     --hf_dtype float16 \
     --hf_device_map auto \
     --vllm_tensor_parallel 8 \
@@ -53,6 +53,7 @@ for seed in ${seeds[@]}; do
     --outdir deepseek2_smoke --exec_code --batch_size 64 --seed ${seed}
 done
 
+# deepseek-ai/DeepSeek-Coder-V2-Instruct
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
     --backend vllm \
@@ -73,17 +74,16 @@ for seed in ${seeds[@]}; do
     --outdir llamadeepseek --exec_code --batch_size 64 --seed ${seed}
 done
 
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-    --backend vllm \
-    --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
-    --vllm_tensor_parallel 1 \
-    --hf_dtype float16 \
-    --hf_device_map auto \
-    --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-    --outdir deepseekqween --exec_code --batch_size 64 --seed ${seed}
-done
-
+# for seed in ${seeds[@]}; do
+#   pixi run python cot.py \
+#     --backend vllm \
+#     --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
+#     --vllm_tensor_parallel 1 \
+#     --hf_dtype float16 \
+#     --hf_device_map auto \
+#     --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+#     --outdir deepseekqween --exec_code --batch_size 64 --seed ${seed}
+# done
 
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
@@ -95,25 +95,25 @@ for seed in ${seeds[@]}; do
     --outdir deepseekqween32b --exec_code --batch_size 8 --seed ${seed}
 done
 
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-    --backend vllm \
-    --model google/gemma-3-12b-it \
-    --hf_dtype float16 \
-    --hf_device_map auto \
-    --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-    --outdir gemma3 --exec_code --batch_size 16 --seed ${seed}
-done
+# for seed in ${seeds[@]}; do
+#   pixi run python cot.py \
+#     --backend vllm \
+#     --model google/gemma-3-12b-it \
+#     --hf_dtype float16 \
+#     --hf_device_map auto \
+#     --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+#     --outdir gemma3_12b --exec_code --batch_size 1 --seed ${seed}
+# done
 
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-    --backend vllm \
-    --model google/gemma-3-27b-it \
-    --hf_dtype float16 \
-    --hf_device_map auto \
-    --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-    --outdir gemma327b --exec_code --batch_size 8 --seed ${seed}
-done
+# for seed in ${seeds[@]}; do
+#   pixi run python cot.py \
+#     --backend vllm \
+#     --model google/gemma-3-27b-it \
+#     --hf_dtype float16 \
+#     --hf_device_map auto \
+#     --n 100 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+#     --outdir gemma3_27b --exec_code --batch_size 1 --seed ${seed}
+# done
 
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
