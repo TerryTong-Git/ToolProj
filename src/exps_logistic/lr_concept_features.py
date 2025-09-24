@@ -516,37 +516,16 @@ class HFCLSFeaturizer(Featurizer):
             enc_full = {k: v.to(self.device) for k,v in enc_full.items()}
             reps = []
             enc = {}
-            for i in range(bs):
+            for i in range(len(chunk_texts)):
                 enc['input_ids'] = enc_full['input_ids'][i, :,:]
                 enc['attention_mask'] = enc_full['attention_mask'][i, :,:]
                 out = self.model(**enc)
                 hid = out.last_hidden_state
                 rep = self._pool(hid, enc['attention_mask'])
                 reps.append(rep.mean(dim=0)) # Mean across seq len
-            pooled_batch = torch.stack(reps, dim=0).mean(dim=0)
+            pooled_batch = torch.stack(reps, dim=0)
             OUT.append(pooled_batch.cpu().numpy())
         return np.vstack(OUT)
-            
-
-        #     pooled_batch = []
-        #     for a, ids in enumerate(enc_full["input_ids"]):
-        #         # chunk into windows of size self._max_len
-        #         L = self._max_len
-        #         windows = [ids[j:j+L] for j in range(0, len(ids), L)] or [ids]
-        #         attention_masks = enc_full["attention_mask"][a]
-        #         attn_mask_window = [attention_masks[j:j+L] for j in range(0, len(attention_masks), L)] or [attention_masks]
-        #         reps = []
-        #         # Batchify this. 
-        #         for b, w in enumerate(windows):
-        #             enc = {"input_ids": torch.tensor(w), "attention_mask": torch.tensor(attn_mask_window[b])}
-        #             enc = {k: v.to(self.device) for k,v in enc.items()}
-        #             out = self.model(enc['input_ids'][None,:], enc['attention_mask'][None,:])
-        #             hid = out.last_hidden_state
-        #             rep = self._pool(hid, enc["attention_mask"])
-        #             reps.append(rep.squeeze(0))
-        #         pooled_batch.append(torch.stack(reps, dim=0).mean(dim=0))
-        #     OUT.append(torch.stack(pooled_batch, dim=0).cpu().numpy())
-        # return np.vstack(OUT)
 
 class SentenceTransformersFeaturizer(Featurizer):
     def __init__(self, model_name: str, device: Optional[str] = None):
