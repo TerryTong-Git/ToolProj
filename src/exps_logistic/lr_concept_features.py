@@ -15,34 +15,38 @@ Embedding backends (choose with --feats):
   - openai             : OpenAI embeddings API (batch)
 """
 
-import argparse, os, math, re, json
-from typing import Dict, Any, Tuple, Optional, List
+import argparse
+import json
+import math
+import os
+import re
 from collections import Counter
-import torch
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from torch import tensor
-from jaxtyping import Float
-
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.preprocessing import LabelEncoder
+import torch
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import log_loss, accuracy_score, f1_score
-
+from sklearn.metrics import accuracy_score, f1_score, log_loss
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.preprocessing import LabelEncoder
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 # ------------------------------------------------------------------------------
 # Utilities
 # ------------------------------------------------------------------------------
 
+
 def empirical_entropy_bits(labels: List[str]) -> float:
     cnt = Counter(labels)
     n = sum(cnt.values())
-    ps = np.array([c/n for c in cnt.values() if c > 0], dtype=float)
-    return float(-(ps * (np.log(ps)/np.log(2))).sum())
+    ps = np.array([c / n for c in cnt.values() if c > 0], dtype=float)
+    return float(-(ps * (np.log(ps) / np.log(2))).sum())
+
 
 def maybe_strip_fences(text: str) -> str:
     return (text or "").replace("```python", " ").replace("```", " ")
+
 
 def stratified_split_robust(df, y_col="label", test_size=0.2, seed=0, min_count=2, verbose=True):
     y = df[y_col].astype(str).values
@@ -70,6 +74,7 @@ def stratified_split_robust(df, y_col="label", test_size=0.2, seed=0, min_count=
         print("[split] Falling back to non-stratified split.")
     return train_test_split(df, test_size=test_size, random_state=seed, shuffle=True)
 
+
 # ------------------------------------------------------------------------------
 # Robust problem slicing from NL/CODE prompts
 # ------------------------------------------------------------------------------
@@ -83,14 +88,17 @@ _PROBLEM_SLICE_RE = re.compile(
 # Code-fence stripper (keeps inner text)
 _FENCE_RE = re.compile(r"```(?:[a-zA-Z0-9_-]+)?\s*\n([\s\S]*?)\n```", re.MULTILINE)
 
+
 def _strip_md_code_fences(s: str) -> str:
-    if not s: return ""
+    if not s:
+        return ""
     return _FENCE_RE.sub(lambda m: m.group(1), s)
+
 
 # Known per-kind headers emitted by Problem.text()
 _KNOWN_KIND_HEADERS = [
-    r"^Compute:\s*\(",                                  # mix
-    r"^Compute:\s*\d+\s*[\+\-\*]\s*\d+",               # add/sub/mul
+    r"^Compute:\s*\(",  # mix
+    r"^Compute:\s*\d+\s*[\+\-\*]\s*\d+",  # add/sub/mul
     r"^Compute the length of the Longest Common Subsequence",
     r"^0/1 Knapsack:",
     r"^Rod cutting:",
@@ -99,6 +107,7 @@ _KNOWN_KIND_HEADERS = [
     r"^Partition:",
 ]
 _KIND_START_RE = re.compile("|".join(_KNOWN_KIND_HEADERS), re.MULTILINE)
+
 
 def extract_problem_text(full_prompt: str) -> str:
     """
@@ -129,31 +138,37 @@ def extract_problem_text(full_prompt: str) -> str:
     # Last resort: if the prompt is already just the problem, return it.
     return s
 
+
 # ------------------------------------------------------------------------------
 # TB parsing (unchanged except we prefer our slicing later)
 # ------------------------------------------------------------------------------
 
 _TAG_RE = re.compile(
-    r'^(?:text_summary/)?'
-    r'(?P<model>.+?)/(?P<rep>nl|code)/'
-    r'd(?P<digits>\d+)/(?P<kind>[^/]+)/i(?P<idx>\d+)/'
-    r'(?P<leaf>prompt|rationale|raw_json|full|answer)'
-    r'(?:/text_summary)?$'
+    r"^(?:text_summary/)?"
+    r"(?P<model>.+?)/(?P<rep>nl|code)/"
+    r"d(?P<digits>\d+)/(?P<kind>[^/]+)/i(?P<idx>\d+)/"
+    r"(?P<leaf>prompt|rationale|raw_json|full|answer)"
+    r"(?:/text_summary)?$"
 )
+
 
 def _strip_md_block(s: str) -> str:
     m = re.search(r"```(?:[a-zA-Z0-9]+)?\s*\n([\s\S]*?)\n```", s, flags=re.S)
     return m.group(1).strip() if m else (s or "").strip()
 
+
 def _tb_text_from_event(ev) -> str:
     tp = ev.tensor_proto
     if tp.string_val:
         val = tp.string_val[0]
-        return val.decode("utf-8","replace") if isinstance(val,(bytes,bytearray)) else str(val)
+        return val.decode("utf-8", "replace") if isinstance(val, (bytes, bytearray)) else str(val)
     if tp.tensor_content:
-        try:    return tp.tensor_content.decode("utf-8","replace")
-        except: pass
+        try:
+            return tp.tensor_content.decode("utf-8", "replace")
+        except Exception:
+            pass
     return ""
+
 
 def _iter_event_dirs(root: str):
     if os.path.isdir(root) and any(fn.startswith("events") for fn in os.listdir(root)):
@@ -164,10 +179,12 @@ def _iter_event_dirs(root: str):
             if os.path.isdir(p) and any(fn.startswith("events") for fn in os.listdir(p)):
                 yield p
 
+
 def _parse_raw_json(s: str):
     try:
-        start = s.index('{'); end = s.rindex('}')
-        frag = s[start:end+1]
+        start = s.index("{")
+        end = s.rindex("}")
+        frag = s[start : end + 1]
         obj = json.loads(frag)
         rat = obj.get("rationale")
         ans = obj.get("answer")
@@ -179,12 +196,14 @@ def _parse_raw_json(s: str):
         return rat, ans
     except Exception:
         return None, None
-def load_from_tb(tbdir: str, prefer_tag_rationale: bool=False) -> pd.DataFrame:
+
+
+def load_from_tb(tbdir: str, prefer_tag_rationale: bool = False) -> pd.DataFrame:
     """
     Read *full* text from TB without trimming or stripping code fences.
     Do not perform any markdown/code-fence manipulation here—store raw.
     """
-    rows: Dict[Tuple[str,str,int,str,int], Dict[str,Any]] = {}
+    rows: Dict[Tuple[str, str, int, str, int], Dict[str, Any]] = {}
 
     for ed in _iter_event_dirs(tbdir):
         # allow very large text payloads
@@ -196,14 +215,17 @@ def load_from_tb(tbdir: str, prefer_tag_rationale: bool=False) -> pd.DataFrame:
         tags += [t for t in ea.Tags().get("text", []) if t not in tags]
 
         # cache leaf -> raw (unmodified) text
-        cache: Dict[Tuple[str,str,int,str,int,str], str] = {}
+        cache: Dict[Tuple[str, str, int, str, int, str], str] = {}
 
         for tag in tags:
             m = _TAG_RE.match(tag)
             if not m:
                 continue
-            model = m["model"]; rep = m["rep"]
-            digits = int(m["digits"]); kind = m["kind"]; idx = int(m["idx"])
+            model = m["model"]
+            rep = m["rep"]
+            digits = int(m["digits"])
+            kind = m["kind"]
+            idx = int(m["idx"])
             leaf = m["leaf"]
 
             evs = ea.Tensors(tag) or []
@@ -213,26 +235,32 @@ def load_from_tb(tbdir: str, prefer_tag_rationale: bool=False) -> pd.DataFrame:
             # DO NOT strip code fences here—keep raw
             raw_txt = _tb_text_from_event(evs[-1])
             # Normalize to str
-            raw_txt = raw_txt.decode("utf-8","replace") if isinstance(raw_txt, (bytes, bytearray)) else str(raw_txt)
-            cache[(model,rep,digits,kind,idx,leaf)] = raw_txt
+            # raw_txt = raw_txt.decode("utf-8", "replace") if isinstance(raw_txt, (bytes, bytearray)) else str(raw_txt)
+            cache[(model, rep, digits, kind, idx, leaf)] = raw_txt
 
         # assemble rows
-        for (model,rep,digits,kind,idx,_) in list(cache.keys()):
-            key = (model,rep,digits,kind,idx)
+        for model, rep, digits, kind, idx, _ in list(cache.keys()):
+            key = (model, rep, digits, kind, idx)
             if key not in rows:
                 rows[key] = dict(
-                    model=model, rep=rep, kind=kind, digits=digits, idx=idx,
-                    prompt="", rationale="", answer=None, raw_json=""
+                    model=model,
+                    rep=rep,
+                    kind=kind,
+                    digits=digits,
+                    idx=idx,
+                    prompt="",
+                    rationale="",
+                    answer=None,
+                    raw_json="",
                 )
 
             # full, unstripped prompt
-            prompt = cache.get((model,rep,digits,kind,idx,"prompt"))
+            prompt = cache.get((model, rep, digits, kind, idx, "prompt"))
             if prompt:
                 rows[key]["prompt"] = prompt
 
             # raw_json / full: keep entire blob; parse later
-            rj = cache.get((model,rep,digits,kind,idx,"raw_json")) or \
-                 cache.get((model,rep,digits,kind,idx,"full"))
+            rj = cache.get((model, rep, digits, kind, idx, "raw_json")) or cache.get((model, rep, digits, kind, idx, "full"))
             if rj:
                 rows[key]["raw_json"] = rj
                 rj_rat, rj_ans = _parse_raw_json(rj)
@@ -243,20 +271,18 @@ def load_from_tb(tbdir: str, prefer_tag_rationale: bool=False) -> pd.DataFrame:
                     rows[key]["rationale"] = rj_rat
 
             # rationale from explicit tag, if available / preferred
-            tag_rat = cache.get((model,rep,digits,kind,idx,"rationale"))
+            tag_rat = cache.get((model, rep, digits, kind, idx, "rationale"))
             if tag_rat and (prefer_tag_rationale or not rows[key]["rationale"]):
                 rows[key]["rationale"] = tag_rat
 
             # optional explicit answer tag
-            tag_ans = cache.get((model,rep,digits,kind,idx,"answer"))
+            tag_ans = cache.get((model, rep, digits, kind, idx, "answer"))
             if tag_ans and rows[key]["answer"] is None:
                 nums = re.findall(r"[-+]?\d+", tag_ans)
                 if nums:
                     rows[key]["answer"] = int(nums[-1])
 
-    df = pd.DataFrame(
-        [rows[k] for k in sorted(rows.keys(), key=lambda t:(t[0],t[1],t[2],t[3],t[4]))]
-    )
+    df = pd.DataFrame([rows[k] for k in sorted(rows.keys(), key=lambda t: (t[0], t[1], t[2], t[3], t[4]))])
 
     # Keep rows even if rationale is empty; you parse prompts later.
     # If you really want to filter, do it downstream after harvesting problem text.
@@ -268,56 +294,71 @@ def load_from_tb(tbdir: str, prefer_tag_rationale: bool=False) -> pd.DataFrame:
 # gamma construction: strict parsers tied to Problem.text()
 # ------------------------------------------------------------------------------
 
-_INT_RE = re.compile(r'[-+]?\d+')
+_INT_RE = re.compile(r"[-+]?\d+")
+
 
 def _ew_bin_lohi(x: int, lo: int, hi: int, K: int) -> int:
     """Equal-width binning for CLOSED interval [lo, hi], returns in {0..K-1}."""
     if K <= 1:
         return 0
-    lo = int(lo); hi = int(hi)
+    lo = int(lo)
+    hi = int(hi)
     if lo > hi:
         lo, hi = hi, lo
     x = int(x)
-    if x < lo: x = lo
-    if x > hi: x = hi
+    if x < lo:
+        x = lo
+    if x > hi:
+        x = hi
     span = hi - lo + 1
     idx = ((x - lo) * K) // span
-    return max(0, min(K-1, int(idx)))
+    return max(0, min(K - 1, int(idx)))
+
 
 def _safe_len(x):
-    try: return len(x)
-    except: return 0
+    try:
+        return len(x)
+    except Exception:
+        return 0
+
 
 def _parse_list_of_ints(s: str) -> List[int]:
     return [int(x) for x in _INT_RE.findall(s or "")]
 
+
 def _parse_list_of_list_ints(s: str) -> List[List[int]]:
     rows = []
-    for row in re.findall(r'\[([^\[\]]*)\]', s or ""):
+    for row in re.findall(r"\[([^\[\]]*)\]", s or ""):
         vals = [int(x) for x in _INT_RE.findall(row)]
         if vals:
             rows.append(vals)
     return rows
 
+
 # Arithmetic lines (strictly on the sliced problem text)
-_AR_ADD = re.compile(r'^\s*Compute:\s*(\d+)\s*\+\s*(\d+)\s*$', re.MULTILINE | re.IGNORECASE)
-_AR_SUB = re.compile(r'^\s*Compute:\s*(\d+)\s*-\s*(\d+)\s*$', re.MULTILINE | re.IGNORECASE)
-_AR_MUL = re.compile(r'^\s*Compute:\s*(\d+)\s*\*\s*(\d+)\s*$', re.MULTILINE | re.IGNORECASE)
-_AR_MIX = re.compile(r'^\s*Compute:\s*\(\s*(\d+)\s*\+\s*(\d+)\s*\)\s*\*\s*(\d+)\s*$', re.MULTILINE | re.IGNORECASE)
+_AR_ADD = re.compile(r"^\s*Compute:\s*(\d+)\s*\+\s*(\d+)\s*$", re.MULTILINE | re.IGNORECASE)
+_AR_SUB = re.compile(r"^\s*Compute:\s*(\d+)\s*-\s*(\d+)\s*$", re.MULTILINE | re.IGNORECASE)
+_AR_MUL = re.compile(r"^\s*Compute:\s*(\d+)\s*\*\s*(\d+)\s*$", re.MULTILINE | re.IGNORECASE)
+_AR_MIX = re.compile(r"^\s*Compute:\s*\(\s*(\d+)\s*\+\s*(\d+)\s*\)\s*\*\s*(\d+)\s*$", re.MULTILINE | re.IGNORECASE)
+
 
 def _parse_arithmetic_operands(kind: str, text: str, d: int) -> Optional[tuple]:
     if kind == "add":
-        m = _AR_ADD.search(text);  return (int(m.group(1)), int(m.group(2))) if m else None
+        m = _AR_ADD.search(text)
+        return (int(m.group(1)), int(m.group(2))) if m else None
     if kind == "sub":
-        m = _AR_SUB.search(text);  return (int(m.group(1)), int(m.group(2))) if m else None
+        m = _AR_SUB.search(text)
+        return (int(m.group(1)), int(m.group(2))) if m else None
     if kind == "mul":
-        m = _AR_MUL.search(text);  return (int(m.group(1)), int(m.group(2))) if m else None
+        m = _AR_MUL.search(text)
+        return (int(m.group(1)), int(m.group(2))) if m else None
     if kind == "mix":
         m = _AR_MIX.search(text)
         if m:
             a, b, _a2 = map(int, m.groups())
             return a, b
     return None
+
 
 def _parse_lcs_lengths(text: str, d: int) -> tuple:
     Sm = re.search(r'S\s*=\s*"([^"]*)"', text)
@@ -326,13 +367,13 @@ def _parse_lcs_lengths(text: str, d: int) -> tuple:
     Lt = len(Tm.group(1)) if Tm else max(2, d)
     return Ls, Lt
 
+
 def _parse_knap_stats(text: str, d: int) -> tuple:
-    Wm = re.search(r'W\s*=\s*\[([^\]]*)\]', text)
-    Vm = re.search(r'V\s*=\s*\[([^\]]*)\]', text)
-    Cm = re.search(r'C\s*=\s*([0-9]+)', text)
+    Wm = re.search(r"W\s*=\s*\[([^\]]*)\]", text)
+    Vm = re.search(r"V\s*=\s*\[([^\]]*)\]", text)
+    Cm = re.search(r"C\s*=\s*([0-9]+)", text)
     if Wm and Vm:
         W = _parse_list_of_ints(Wm.group(1))
-        V = _parse_list_of_ints(Vm.group(1))
         n_items = len(W)
         C = int(Cm.group(1)) if Cm else max(1, int(0.5 * sum(W)))
         cap_ratio = C / max(1, sum(W))
@@ -341,26 +382,29 @@ def _parse_knap_stats(text: str, d: int) -> tuple:
         cap_ratio = 0.5
     return n_items, cap_ratio
 
+
 def _parse_rod_N(text: str, d: int) -> int:
-    Nm = re.search(r'\bN\s*=\s*([0-9]+)', text)
+    Nm = re.search(r"\bN\s*=\s*([0-9]+)", text)
     if Nm:
         return int(Nm.group(1))
-    Pm = re.search(r'P\s*=\s*\[([^\]]*)\]', text)
+    Pm = re.search(r"P\s*=\s*\[([^\]]*)\]", text)
     if Pm:
         return len(_parse_list_of_ints(Pm.group(1)))
     return max(2, d)
 
+
 def _parse_ilp_assign_n(text: str, d: int) -> int:
-    Cm = re.search(r'C\s*=\s*(\[[\s\S]*\])\s*$', text, re.MULTILINE)
+    Cm = re.search(r"C\s*=\s*(\[[\s\S]*\])\s*$", text, re.MULTILINE)
     if Cm:
         mat = _parse_list_of_list_ints(Cm.group(1))
         if _safe_len(mat) > 0:
             return len(mat)
     return min(max(2, d), 7)
 
+
 def _parse_ilp_prod_PR(text: str, d: int) -> tuple:
-    Pm = re.search(r'profit\s*=\s*\[([^\]]*)\]', text)
-    Cm = re.search(r'consumption\s*\(rows=resources\)\s*=\s*(\[[\s\S]*\])', text)
+    Pm = re.search(r"profit\s*=\s*\[([^\]]*)\]", text)
+    Cm = re.search(r"consumption\s*\(rows=resources\)\s*=\s*(\[[\s\S]*\])", text)
     if Pm:
         P = len(_parse_list_of_ints(Pm.group(1)))
     else:
@@ -372,17 +416,15 @@ def _parse_ilp_prod_PR(text: str, d: int) -> tuple:
         R = min(2 + d // 4, 4)
     return int(P), int(R)
 
+
 def _parse_ilp_partition_n(text: str, d: int) -> int:
-    Wm = re.search(r'weights\s*=\s*\[([^\]]*)\]', text)
+    Wm = re.search(r"weights\s*=\s*\[([^\]]*)\]", text)
     if Wm:
         return len(_parse_list_of_ints(Wm.group(1)))
     return min(max(4, d), 24)
 
-def make_gamma_label(kind: str,
-                     digits: int,
-                     problem_text: str,
-                     K_bins: int = 8,
-                     use_joint_id: bool = True) -> str:
+
+def make_gamma_label(kind: str, digits: int, problem_text: str, K_bins: int = 8, use_joint_id: bool = True) -> str:
     """
     γ = (kind, digits, value-bin), where the value-bin is derived from fields
     parsed *exactly* from Problem.text() for each kind.
@@ -392,9 +434,10 @@ def make_gamma_label(kind: str,
     t = problem_text or ""
 
     # Arithmetic: operands in [10^(d-1), 10^d - 1]
-    if k in {"add","sub","mul","mix"}:
+    if k in {"add", "sub", "mul", "mix"}:
         parsed = _parse_arithmetic_operands(k, t, d)
-        lo = 10**(d-1); hi = 10**d - 1
+        lo = 10 ** (d - 1)
+        hi = 10**d - 1
         if parsed is None:
             return f"{k}|d{d}|bNA"
         A, B = parsed
@@ -406,21 +449,21 @@ def make_gamma_label(kind: str,
     # LCS: (|S|, |T|)
     if k == "lcs":
         Ls, Lt = _parse_lcs_lengths(t, d)
-        bLs = _ew_bin_lohi(Ls, 1, max(2, 2*d), K_bins)
-        bLt = _ew_bin_lohi(Lt, 1, max(2, 2*d), K_bins)
+        bLs = _ew_bin_lohi(Ls, 1, max(2, 2 * d), K_bins)
+        bLt = _ew_bin_lohi(Lt, 1, max(2, 2 * d), K_bins)
         return f"{k}|d{d}|b{bLs*K_bins + bLt}"
 
     # Knapsack: (#items, capacity-ratio)
     if k == "knap":
         n_items, cap_ratio = _parse_knap_stats(t, d)
-        bN = _ew_bin_lohi(n_items, 1, max(3, 2*d), K_bins)
+        bN = _ew_bin_lohi(n_items, 1, max(3, 2 * d), K_bins)
         bR = _ew_bin_lohi(int(round(cap_ratio * 1000)), 0, 1000, K_bins)  # 0..1 -> 0..1000
         return f"{k}|d{d}|b{bN*K_bins + bR}"
 
     # Rod: N
     if k == "rod":
         N = _parse_rod_N(t, d)
-        bN = _ew_bin_lohi(N, 1, max(2, 2*d), K_bins)
+        bN = _ew_bin_lohi(N, 1, max(2, 2 * d), K_bins)
         return f"{k}|d{d}|b{bN}"
 
     # ILP assignment: n
@@ -444,35 +487,64 @@ def make_gamma_label(kind: str,
 
     return f"{k}|d{d}|bNA"
 
+
 # ------------------------------------------------------------------------------
 # Featurizers
 # ------------------------------------------------------------------------------
 
+
 class Featurizer:
-    def fit(self, texts: List[str]): return self
-    def transform(self, texts: List[str]) -> np.ndarray: raise NotImplementedError
+    def fit(self, texts: List[str]):
+        return self
+
+    def transform(self, texts: List[str]) -> np.ndarray:
+        raise NotImplementedError
+
 
 class TfidfFeaturizer(Featurizer):
     def __init__(self, strip_fences: bool):
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.pipeline import FeatureUnion as FU
+
         word_vec = TfidfVectorizer(
-            analyzer="word", ngram_range=(1,2), min_df=3, max_df=0.9, max_features=200_000,
-            lowercase=True, token_pattern=r"(?u)\b\w+\b",
+            analyzer="word",
+            ngram_range=(1, 2),
+            min_df=3,
+            max_df=0.9,
+            max_features=200_000,
+            lowercase=True,
+            token_pattern=r"(?u)\b\w+\b",
             preprocessor=maybe_strip_fences if strip_fences else None,
         )
         char_vec = TfidfVectorizer(
-            analyzer="char", ngram_range=(3,5), min_df=3, max_df=0.98, lowercase=False,
+            analyzer="char",
+            ngram_range=(3, 5),
+            min_df=3,
+            max_df=0.98,
+            lowercase=False,
             preprocessor=maybe_strip_fences if strip_fences else None,
         )
         self.vec = FU([("w", word_vec), ("c", char_vec)])
-    def fit(self, texts): self.vec.fit(texts); return self
-    def transform(self, texts): return self.vec.transform(texts)
+
+    def fit(self, texts):
+        self.vec.fit(texts)
+        return self
+
+    def transform(self, texts):
+        return self.vec.transform(texts)
+
 
 class HFCLSFeaturizer(Featurizer):
-    def __init__(self, model_name: str, pool: str = "mean", device: Optional[str] = None, trust_remote_code: bool=False):
-        from transformers import AutoTokenizer, AutoModel
+    def __init__(
+        self,
+        model_name: str,
+        pool: str = "mean",
+        device: Optional[str] = None,
+        trust_remote_code: bool = False,
+    ):
         import torch
+        from transformers import AutoModel, AutoTokenizer
+
         self.tok = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
         self.model = AutoModel.from_pretrained(model_name, trust_remote_code=trust_remote_code)
         self.model.eval()
@@ -504,41 +576,47 @@ class HFCLSFeaturizer(Featurizer):
         bs = 16
         L = self._max_len
         for i in range(0, len(texts), bs):
-            chunk_texts = texts[i:i+bs]
+            chunk_texts = texts[i : i + bs]
             enc_full = self.tok(chunk_texts, padding=True, truncation=False, return_tensors="pt")
-            seq_len = enc_full['input_ids'].shape[-1]
+            seq_len = enc_full["input_ids"].shape[-1]
             if seq_len >= L:
-                enc_full['input_ids'] = enc_full['input_ids'].unfold(1, L, 1)
-                enc_full['attention_mask'] = enc_full['attention_mask'].unfold(1, L, 1)
+                enc_full["input_ids"] = enc_full["input_ids"].unfold(1, L, 1)
+                enc_full["attention_mask"] = enc_full["attention_mask"].unfold(1, L, 1)
             else:
-                enc_full['input_ids'] = enc_full['input_ids'][:, None, :]
-                enc_full['attention_mask'] = enc_full['attention_mask'][:, None, :]
-            enc_full = {k: v.to(self.device) for k,v in enc_full.items()}
+                enc_full["input_ids"] = enc_full["input_ids"][:, None, :]
+                enc_full["attention_mask"] = enc_full["attention_mask"][:, None, :]
+            enc_full = {k: v.to(self.device) for k, v in enc_full.items()}
             reps = []
             enc = {}
             for i in range(len(chunk_texts)):
-                enc['input_ids'] = enc_full['input_ids'][i, :,:]
-                enc['attention_mask'] = enc_full['attention_mask'][i, :,:]
+                enc["input_ids"] = enc_full["input_ids"][i, :, :]
+                enc["attention_mask"] = enc_full["attention_mask"][i, :, :]
                 out = self.model(**enc)
                 hid = out.last_hidden_state
-                rep = self._pool(hid, enc['attention_mask'])
-                reps.append(rep.mean(dim=0)) # Mean across seq len
+                rep = self._pool(hid, enc["attention_mask"])
+                reps.append(rep.mean(dim=0))  # Mean across seq len
             pooled_batch = torch.stack(reps, dim=0)
             OUT.append(pooled_batch.cpu().numpy())
         return np.vstack(OUT)
 
+
 class SentenceTransformersFeaturizer(Featurizer):
     def __init__(self, model_name: str, device: Optional[str] = None):
         from sentence_transformers import SentenceTransformer
+
         self.model = SentenceTransformer(model_name, device=(device or ("cuda" if self._has_cuda() else "cpu")))
+
     def _has_cuda(self):
         try:
             import torch
+
             return torch.cuda.is_available()
         except Exception:
             return False
+
     def transform(self, texts: List[str]) -> np.ndarray:
         return np.asarray(self.model.encode(texts, normalize_embeddings=False, show_progress_bar=False))
+
 
 class OpenAIEmbeddingFeaturizer(Featurizer):
     def __init__(self, model_name: str, batch: int = 128):
@@ -549,16 +627,25 @@ class OpenAIEmbeddingFeaturizer(Featurizer):
         self.client = OpenAI()
         self.model = model_name or "text-embedding-3-large"
         self.batch = int(batch)
+
     def transform(self, texts: List[str]) -> np.ndarray:
         OUT = []
         for i in range(0, len(texts), self.batch):
-            chunk = texts[i:i+self.batch]
+            chunk = texts[i : i + self.batch]
             resp = self.client.embeddings.create(model=self.model, input=chunk)
             vecs = [np.array(d.embedding, dtype=np.float32) for d in resp.data]
             OUT.append(np.stack(vecs, axis=0))
         return np.vstack(OUT)
 
-def build_featurizer(kind: str, embed_model: Optional[str], pool: str, strip_fences: bool, device: Optional[str], batch: int):
+
+def build_featurizer(
+    kind: str,
+    embed_model: Optional[str],
+    pool: str,
+    strip_fences: bool,
+    device: Optional[str],
+    batch: int,
+):
     kind = kind.lower()
     if kind == "tfidf":
         return TfidfFeaturizer(strip_fences=strip_fences)
@@ -574,9 +661,11 @@ def build_featurizer(kind: str, embed_model: Optional[str], pool: str, strip_fen
         return OpenAIEmbeddingFeaturizer(embed_model or "text-embedding-3-large", batch=batch)
     raise ValueError(f"Unknown --feats {kind}")
 
+
 # ------------------------------------------------------------------------------
 # Train / Eval
 # ------------------------------------------------------------------------------
+
 
 def run(args):
     # Load
@@ -588,7 +677,7 @@ def run(args):
         raise SystemExit("Provide either --tbdir or --csv")
 
     print("Loaded data")
-    need = {"rationale","kind","digits"}
+    need = {"rationale", "kind", "digits"}
     if not need.issubset(df.columns):
         raise ValueError(f"Data must contain columns {need}. Got: {df.columns.tolist()}")
 
@@ -604,7 +693,7 @@ def run(args):
         df["prompt"] = ""
 
     # Prefer prompt; else 'problem' if present; else empty
-    src_text = df["prompt"].astype(str) if "prompt" in df.columns else pd.Series([""]*len(df))
+    src_text = df["prompt"].astype(str) if "prompt" in df.columns else pd.Series([""] * len(df))
 
     # θ_new and γ
     df["theta_new"] = df["kind"].astype(str) + "__d" + df["digits"].astype(int).astype(str)
@@ -615,8 +704,7 @@ def run(args):
     print("Created Columns")
 
     # Sanity: γ diversity per (kind,d)
-    gb = (df.assign(kd=df["kind"].astype(str) + "|d" + df["digits"].astype(str))
-            .groupby("kd")["gamma"].nunique().sort_values())
+    gb = df.assign(kd=df["kind"].astype(str) + "|d" + df["digits"].astype(str)).groupby("kd")["gamma"].nunique().sort_values()
     print("[gamma sanity] distinct bins per (kind,d):")
     print(gb.value_counts().sort_index())
     print(gb.head(20))
@@ -624,16 +712,14 @@ def run(args):
     print(f"[gamma sanity] empty prompt rows: {n_empty} / {len(df)}")
 
     # Choose label
-    label_col = {"theta_new":"theta_new", "gamma":"gamma", "kind":"kind"}[args.label]
+    label_col = {"theta_new": "theta_new", "gamma": "gamma", "kind": "kind"}[args.label]
     df = df[df[label_col].astype(str).str.len() > 0].reset_index(drop=True)
     df = df[df["rationale"].astype(str).str.len() > 0].reset_index(drop=True)
 
     # Split
     df = df.copy()
     df["label"] = df[label_col].astype(str)
-    train_df, test_df = stratified_split_robust(
-        df, y_col="label", test_size=args.test_size, seed=args.seed, min_count=2, verbose=True
-    )
+    train_df, test_df = stratified_split_robust(df, y_col="label", test_size=args.test_size, seed=args.seed, min_count=2, verbose=True)
 
     # Features
     texts_tr = train_df["rationale"].astype(str).tolist()
@@ -655,8 +741,13 @@ def run(args):
 
     # Classifier
     clf = LogisticRegression(
-        penalty="l2", C=args.C, solver="saga", multi_class="multinomial",
-        max_iter=args.max_iter, n_jobs=-1, verbose=1
+        penalty="l2",
+        C=args.C,
+        solver="saga",
+        multi_class="multinomial",
+        max_iter=args.max_iter,
+        n_jobs=-1,
+        verbose=1,
     )
     clf.fit(Xtr, ytr)
     print("Finish Fit")
@@ -688,7 +779,7 @@ def run(args):
 
     # Save predictions (optional)
     if args.save_preds:
-        out = test_df[["rationale","kind","digits","prompt"]].copy()
+        out = test_df[["rationale", "kind", "digits", "prompt"]].copy()
         out["true_label"] = test_df["label"].values
         out["pred_label"] = le.inverse_transform(yhat)
         out["neglogp_true_nat"] = -np.log(P[np.arange(len(P)), yte] + 1e-15)
@@ -704,46 +795,82 @@ def run(args):
         X_all_text = df["rationale"].astype(str).values
         for k, (tr, te) in enumerate(skf.split(X_all_text, y_all), 1):
             fz = build_featurizer(args.feats, args.embed_model, args.pool, args.strip_fences, args.device, args.batch)
-            tr_texts = X_all_text[tr].tolist(); te_texts = X_all_text[te].tolist()
-            if hasattr(fz, "fit"): fz.fit(tr_texts)
-            Xtr = fz.transform(tr_texts); Xte = fz.transform(te_texts)
-            lr = LogisticRegression(penalty="l2", C=args.C, solver="saga", multi_class="multinomial",
-                                    max_iter=args.max_iter, n_jobs=-1)
+            tr_texts = X_all_text[tr].tolist()
+            te_texts = X_all_text[te].tolist()
+            if hasattr(fz, "fit"):
+                fz.fit(tr_texts)
+            Xtr = fz.transform(tr_texts)
+            Xte = fz.transform(te_texts)
+            lr = LogisticRegression(
+                penalty="l2",
+                C=args.C,
+                solver="saga",
+                multi_class="multinomial",
+                max_iter=args.max_iter,
+                n_jobs=-1,
+            )
             lr.fit(Xtr, y_all[tr])
             Pte = lr.predict_proba(Xte)
             ce = log_loss(y_all[te], Pte, labels=np.arange(len(le.classes_)))
             ac = accuracy_score(y_all[te], Pte.argmax(1))
-            ce_list.append(ce); acc_list.append(ac)
+            ce_list.append(ce)
+            acc_list.append(ac)
             print(f"  fold {k}: CE={(ce*to_bits):.4f} {unit} | acc={ac:.4f}")
-        print(f"CV mean CE={(np.mean(ce_list)*to_bits):.4f} {unit} (±{np.std(ce_list)*to_bits:.4f}), "
-              f"acc={np.mean(acc_list):.4f} (±{np.std(acc_list):.4f})")
+        print(
+            f"CV mean CE={(np.mean(ce_list)*to_bits):.4f} {unit} (±{np.std(ce_list)*to_bits:.4f}), "
+            f"acc={np.mean(acc_list):.4f} (±{np.std(acc_list):.4f})"
+        )
+
 
 # ------------------------------------------------------------------------------
 # CLI
 # ------------------------------------------------------------------------------
 
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--tbdir", type=str, default=None, help="Read rationales directly from TensorBoard logs")
-    p.add_argument("--csv", type=str, default=None, help="CSV with columns: rationale, kind, digits, [prompt], [rep], [split]")
-    p.add_argument("--rep", choices=["nl","code","all"], default="all")
+    p.add_argument(
+        "--csv",
+        type=str,
+        default=None,
+        help="CSV with columns: rationale, kind, digits, [prompt], [rep], [split]",
+    )
+    p.add_argument("--rep", choices=["nl", "code", "all"], default="all")
 
     # Labels
-    p.add_argument("--label", choices=["theta_new","gamma","kind"], default="gamma",
-                   help="Classification target: θ_new=(kind,digits) or γ=(kind,digits,value-bin) or concept only.")
-    p.add_argument("--value-bins", type=int, default=8, help="Number of equal-width bins per operand for gamma.")
+    p.add_argument(
+        "--label",
+        choices=["theta_new", "gamma", "kind"],
+        default="gamma",
+        help="Classification target: θ_new=(kind,digits) or γ=(kind,digits,value-bin) or concept only.",
+    )
+    p.add_argument(
+        "--value-bins",
+        type=int,
+        default=8,
+        help="Number of equal-width bins per operand for gamma.",
+    )
     p.add_argument("--test-size", type=float, default=0.2)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--cv", type=int, default=0)
 
     # Embeddings
-    p.add_argument("--feats", choices=["tfidf","hf-cls","st","openai"], default="tfidf")
-    p.add_argument("--embed-model", type=str, default=None,
-                   help="hf-cls: HF repo; st: ST repo; openai: embedding model.")
-    p.add_argument("--pool", choices=["mean","cls"], default="mean", help="Pooling for hf-cls.")
+    p.add_argument("--feats", choices=["tfidf", "hf-cls", "st", "openai"], default="tfidf")
+    p.add_argument(
+        "--embed-model",
+        type=str,
+        default=None,
+        help="hf-cls: HF repo; st: ST repo; openai: embedding model.",
+    )
+    p.add_argument("--pool", choices=["mean", "cls"], default="mean", help="Pooling for hf-cls.")
     p.add_argument("--device", type=str, default=None, help="Force device for hf-cls/st (e.g. cuda, cpu).")
     p.add_argument("--batch", type=int, default=128, help="Batch size for OpenAI embeddings.")
-    p.add_argument("--strip-fences", action="store_true", help="Strip ``` code fences before embedding (tfidf & hf-cls/st).")
+    p.add_argument(
+        "--strip-fences",
+        action="store_true",
+        help="Strip ``` code fences before embedding (tfidf & hf-cls/st).",
+    )
 
     # Classifier
     p.add_argument("--C", type=float, default=2.0)
@@ -753,6 +880,7 @@ def parse_args():
     p.add_argument("--bits", action="store_true", help="Report CE in bits and print MI lower bound.")
     p.add_argument("--save-preds", type=str, default=None, help="Optional path to save test predictions CSV.")
     return p.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_args()
