@@ -1,0 +1,2 @@
+model,coding_humaneval_pass1,coding_mbpp_pass1,coding_avg,tool_gsm8k_acc,pearson_code_tool,spearman_code_tool
+mistralai/Ministral-8B-Instruct-2410,0.9939024390243902,0.08,0.5369512195121952,0.316,,

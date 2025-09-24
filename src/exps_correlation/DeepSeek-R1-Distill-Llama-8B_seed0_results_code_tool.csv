@@ -1,0 +1,2 @@
+model,coding_humaneval_pass1,coding_mbpp_pass1,coding_avg,tool_gsm8k_acc,pearson_code_tool,spearman_code_tool
+deepseek-ai/DeepSeek-R1-Distill-Llama-8B,0.03048780487804878,0.0,0.01524390243902439,0.508,,
