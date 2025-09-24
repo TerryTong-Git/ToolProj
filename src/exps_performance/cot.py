@@ -355,7 +355,7 @@ JSON_SCHEMA = (
 # IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = (
 """
-You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail. The problem is given after <|Problem|>. You should fill in <|Response|>. You are never allowed to use code. After fully reasoning through the problem in natural language, output <|Final Answer|> and consolidate your final thoughts into a JSON dictionary containing two keys:
+You are tasked with solving an algorithmic problem by reasoning through it step by step using a chain-of-thought approach expressed in clear, natural language. Begin by thoroughly analyzing the problem, breaking it down into manageable parts, and explaining your thought process in detail. The problem is given after <|Problem|>. You should fill in <|Response|>. You are never allowed to use code. After fully reasoning through the problem in natural language, output a JSON dictionary containing two keys:
 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
 - "answer": give the final requested answer as an integer.
@@ -364,24 +364,36 @@ Ensure your explanation is clear, logically structured, and leads naturally to t
 
 Examples:
 
-===========================================================================
+================ ONE-SHOT EXAMPLE ================
 
 <|Problem|>
-Minimum Vertex Cover: Given an undirected graph G=(V,E), choose the smallest set of vertices that touches every edge. Return the cover size.
-V = {{0,1,2,3}}
-E = {{(0,1), (1,2), (2,3)}}
+Compute the GCD of 48 and 18.
 
 <|Response|>
-The edges form a simple path: (0 1 2 3). To cover every edge, choose vertices so that each edge has at least one endpoint selected. Picking {{1,2}} covers (0,1) via 1, (1,2) via either 1 or 2, and (2,3) via 2. That uses 2 vertices. Any single vertex cannot cover all three edges, so 2 is minimal.
+ChatGPT said:
 
-<|Final Answer|>
+I will use the Euclidean algorithm, which repeatedly replaces a and b with b and a modulo b until the remainder is zero. The last nonzero remainder is the greatest common divisor.
+
+Start with forty eight and eighteen. Compute forty eight modulo eighteen which is twelve, so update to eighteen and twelve. Next, eighteen modulo twelve is six, so update to twelve and six. Then, twelve modulo six is zero, so update to six and zero. When the second number becomes zero, the greatest common divisor is the first number, which is six.
+
+rationale is I will use the Euclidean algorithm, repeatedly replacing a and b with b and a modulo b until the remainder is zero. Start with forty eight and eighteen. Forty eight modulo eighteen is twelve, so update to eighteen and twelve. Then eighteen modulo twelve is six, so update to twelve and six. Then twelve modulo six is zero, so update to six and zero. When the second number becomes zero, the greatest common divisor is six.
+
+answer is six
+
 {{
-\"rationale\": \"The graph is a path of length 3. Selecting the middle two vertices {{1,2}} covers all edges, and a cover of size 1 is impossible, so the minimum cover size is 2.\",
-\"answer\": 2
+\"rationale\": \"ChatGPT said:
+
+I will use the Euclidean algorithm, which repeatedly replaces a and b with b and a modulo b until the remainder is zero. The last nonzero remainder is the greatest common divisor.
+
+Start with forty eight and eighteen. Compute forty eight modulo eighteen which is twelve, so update to eighteen and twelve. Next, eighteen modulo twelve is six, so update to twelve and six. Then, twelve modulo six is zero, so update to six and zero. When the second number becomes zero, the greatest common divisor is the first number, which is six.
+
+rationale is I will use the Euclidean algorithm, repeatedly replacing a and b with b and a modulo b until the remainder is zero. Start with forty eight and eighteen. Forty eight modulo eighteen is twelve, so update to eighteen and twelve. Then eighteen modulo twelve is six, so update to twelve and six. Then twelve modulo six is zero, so update to six and zero. When the second number becomes zero, the greatest common divisor is six.
+
+answer is six\",
+\"answer\": 6
 }}
 
-============================================================================
-
+================= YOUR TASK =================
 <|Problem|>
 {problem}
 
@@ -389,266 +401,66 @@ The edges form a simple path: (0 1 2 3). To cover every edge, choose vertices so
 """
 )
 
-# CODE_PROMPT = (
-# """
-# You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. You will:
-
-# 1) Read the task after <|Problem|>.
-# 2) In <|Response|>, produce:
-#    (A) a SHORT NL plan (as comment lines starting with `# PLAN:`),
-#    (B) a COMPLETE Python program that:
-#        - Defines ONE function `f(<params>)` and returns an **int**.
-#        - Calls it exactly once as `output = f(<args>)`.
-#        - Prints the final integer result on the very last line via `print(output)`.
-#        - Uses only deterministic logic (no randomness, no I/O beyond the final print).
-#        - You may use Math, NumPy, Torch, PuLP, SciPy, and Pandas if helpful.
-#    (C) <|Execution Simulation|> — a precise execution trace (text only) in the exact format below.
-#    (D) <|Final Answer|> — a JSON with:
-#          - "rationale": the complete Python code solution (inside a code block)
-#          - "answer": the integer result obtained by executing the program
-
-# STRICT OUTPUT ORDER inside <|Response|>:
-# 1) Python code block (with `# PLAN:` comments FIRST, then the program)
-# 2) <|Execution Simulation|> block
-# 3) <|Final Answer|> block
-
-# ==================== REQUIRED TRACE FORMAT ====================
-# In <|Execution Simulation|>, output ONLY the trace, nothing else:
-
-# [BEGIN]
-# state: {{}}
-# line: def f(<params>):
-# state: {{"f": "<callable_object f>"}}
-# line: output = f(<args>)
-# state: {{<callee_locals_after_param_binding>}}
-# line: <next_source_line_or_guard>
-# state: {{<locals_after_effect_or_after_guard_eval>}}
-# ... (repeat for every executed line, including EACH re-check of while/if guards and each loop body line)
-# line: return <expr>
-# state: {{"f": "<callable_object f>", "output": <final_integer>}}
-# [DONE]
-
-# TRACEING RULES (must follow EXACTLY):
-# - “line:” is the exact source line being executed or the exact guard being evaluated (e.g., `while k > 0:`). Log guards every time they are checked.
-# - “state:” is a JSON-like snapshot of the **current scope only** RIGHT AFTER the line’s effect (or after the guard evaluation). 
-# - Scopes:
-#   • Before the call (outer scope): show only {{"f":"<callable_object f>"}}.
-#   • At the call line, switch to the callee’s scope and show only the callee’s locals (e.g., {{"n": 6, "coins": [1,2,5]}}).
-#   • On `return`, switch back to outer scope and show {{"f":"<callable_object f>", "output": <value>}}.
-# - Always reflect assignments and aug-assignments immediately in “state:”.
-# - Preserve concrete values verbatim (lists, dicts, ints, strings). Render the function object exactly as "<callable_object f>".
-# - Do NOT include modules or globals in callee scope unless bound as locals.
-# - Do NOT output code fences or prose inside the trace. Only the trace lines listed above.
-
-# ROBUSTNESS GUIDELINES:
-# - Keep the program concise and directly targeted to the task.
-# - Ensure `f(...)` returns an int, and the printed `output` equals that int.
-# - Avoid mutation of arguments unless needed; use local variables.
-# - For loops: log each guard check and every body line in order.
-# - For if/elif/else: log the guard line checked; the “state:” after a guard reflects locals unchanged by the guard itself.
-# - If using libraries, still provide a correct, deterministic simulation (you may symbolize external objects minimally, e.g., "<LpProblem>").
-# - Never skip the `return` line in the trace.
-
-# ==================== EXAMPLE (abbreviated) ====================
-# <|Problem|>:
-# Minimum Vertex Cover (ILP): Given an undirected graph G=(V,E), choose the smallest set of vertices covering all edges. Return the cover size.
-# V = {{0,1,2,3}}
-# E = {{(0,1), (1,2), (2,3)}}
-
-# <|Response|>:
-# ```python
-# # ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
-# def f(V, E):
-#     import pulp
-#     x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
-#     prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
-#     # objective
-#     prob += pulp.lpSum([x[v] for v in V])
-#     # cover constraints
-#     for (u, v) in E:
-#         prob += x[u] + x[v] >= 1
-#     prob.solve(pulp.PULP_CBC_CMD(msg=False))
-#     val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
-#     return val
-
-# output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
-# print(output)
-# ```
-
-# <|Execution Simulation|>
-# [BEGIN]
-# state: {{}}
-# line: def f(V, E):
-# state: {{"f": "<callable_object f>"}}
-# line: output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}}}
-# line: import pulp
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>"}}
-# line: x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}}}
-# line: prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
-# line: prob += pulp.lpSum([x[v] for v in V])
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
-# line: for (u, v) in E:
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
-# line: prob += x[u] + x[v] >= 1
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
-# line: for (u, v) in E:
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
-# line: prob += x[u] + x[v] >= 1
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
-# line: for (u, v) in E:
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
-# line: prob += x[u] + x[v] >= 1
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
-# line: prob.solve(pulp.PULP_CBC_CMD(msg=False))
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>"}}
-# line: val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
-# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>", "val": 2}}
-# line: return val
-# state: {{"f": "<callable_object f>", "output": 2}}
-# [DONE]
-
-# <|Final Answer|>
-# {{"rationale":"```python
-# # ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
-# def f(V, E):
-#     import pulp
-#     x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
-#     prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
-#     # objective
-#     prob += pulp.lpSum([x[v] for v in V])
-#     # cover constraints
-#     for (u, v) in E:
-#         prob += x[u] + x[v] >= 1
-#     prob.solve(pulp.PULP_CBC_CMD(msg=False))
-#     val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
-#     return val
-# output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
-# print(output)
-# ```","answer":2}}
-
-# ============================================================================
-
-# <|Problem|>:
-# {problem}
-
-# <|Response|>:
-
-# """
-# )
-
 CODE_PROMPT = """
-You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. You MUST generate a code solution AND an execution simulation trace. 
-!!! IMPORTANT GRADING RULE !!!
-- If <|Execution Simulation|> is missing, malformed, or doesn’t include both [BEGIN] and [DONE], you receive ZERO credit, even if the JSON is correct.
-- JSON without a valid trace = 0 points.
+You are an expert algorithm problem solver who reasons primarily in Python, but you may mix brief natural language and math. Think step by step.
 
-WHAT TO OUTPUT (in <|Response|>), IN THIS EXACT ORDER:
-1) A Python code block that:
-   - Starts with a few `# PLAN:` lines (brief NL plan).
-   - Defines exactly ONE function `f(<params>)` that returns an INT.
-   - Calls it exactly once as `output = f(<args>)`.
-   - Prints the result on the final line via `print(output)`.
-   - Uses deterministic logic only (no randomness or external I/O).
-2) <|Execution Simulation|> — a STRICT line-by-line trace (format below). Output ONLY the trace in this section.
-3) <|Final Answer|> — a JSON with:
-     - "rationale": the full code in a code block
-     - "answer": the integer result
+What to produce in <|Response|> (in this order):
+1) A SHORT plan (2–5 bullet points) explaining your approach.
+2) A single Python code block that:
+   - Defines all variables correctly, indents correctly, and computes the answer
+   - Ends by printing the final integer result on the last line via print(...).
+   - Uses only deterministic logic (no external I/O or randomness).
+   - You MAY use: math, numpy, torch, pulp, scipy, pandas (but prefer pure Python if possible).
+3) An **Execution Attempt** section where you mentally simulate the main steps of your program:
+   - You should attempt to simulate the execution of the program in natural language. 
+4) A JSON object with two keys:
+   - "rationale": the complete Python code solution, inside a code block.
+   - "answer": the integer result printed by your program.
 
-TRACE FORMAT (must match exactly):
-[BEGIN]
-state: {{}}
-line: def f(<params>):
-state: {{"f": "<callable_object f>"}}
-line: output = f(<args>)
-state: {{<callee_locals_after_param_binding>}}
-line: <next_source_line_or_guard>
-state: {{<locals_after_effect_or_after_guard_eval>}}
-... (repeat for every executed line and each re-check of while/if guards)
-line: return <expr>
-state: {{"f": "<callable_object f>", "output": <final_integer>}}
-[DONE]
+================ ONE-SHOT EXAMPLE ================
 
-TRACE RULES (strict):
-- “line:” is the exact source line about to run (or the exact guard being checked).
-- “state:” is the callee’s current locals immediately after that line’s effect (or after the guard evaluation); at outer scope only show {{"f":"<callable_object f>"}} before the call and {{"f":"<callable_object f>", "output": <int>}} after return.
-- On the call line, switch to callee scope and show ONLY callee locals (e.g., {{"arr":[1,2,3],"i":0}}).
-- Reflect assignments and aug-assignments immediately in “state:”.
-- Render the function object as "<callable_object f>" verbatim.
-- Do NOT include modules/globals in callee scope unless bound as locals.
-- No prose, no code fences inside the trace — only the exact trace lines.
-
-WHY THIS MATTERS:
-- Your score is based on producing a correct trace. Even if you’re unsure, ATTEMPT the trace carefully — partial but well-structured traces often earn partial credit. JSON alone does not.
-
-==================== ONE-SHOT EXAMPLE (TINY) ====================
 <|Problem|>:
-Compute: Sum of a list. Return the sum of numbers in arr.
-arr = [1,2,3]
+Compute the GCD of 48 and 18.
 
 <|Response|>:
-```python
-# PLAN: Iterate over arr and accumulate total.
-# PLAN: Return the final integer sum.
-def f(arr):
-    total = 0
-    for x in arr:
-        total = total + x
-    return total
+Plan:
+- Use Euclid’s algorithm: repeatedly replace (a, b) with (b, a % b) until b == 0.
+- Return a.
+- Print the result.
 
-output = f([1,2,3])
-print(output)
+```python
+def gcd(a, b):
+    while b != 0:
+        a, b = b, a % b
+    return a
+res = gcd(48, 18)
+print(res)
 ```
 
-<|Execution Simulation|>
-[BEGIN]
-state: {{}}
-line: def f(arr):
-state: {{"f": "<callable_object f>"}}
-line: output = f([1,2,3])
-state: {{"arr": [1,2,3]}}
-line: total = 0
-state: {{"arr": [1,2,3], "total": 0}}
-line: for x in arr:
-state: {{"arr": [1,2,3], "total": 0, "x": 1}}
-line: total = total + x
-state: {{"arr": [1,2,3], "total": 1, "x": 1}}
-line: for x in arr:
-state: {{"arr": [1,2,3], "total": 1, "x": 2}}
-line: total = total + x
-state: {{"arr": [1,2,3], "total": 3, "x": 2}}
-line: for x in arr:
-state: {{"arr": [1,2,3], "total": 3, "x": 3}}
-line: total = total + x
-state: {{"arr": [1,2,3], "total": 6, "x": 3}}
-line: for x in arr:
-state: {{"arr": [1,2,3], "total": 6}}
-line: return total
-state: {{"f": "<callable_object f>", "output": 6}}
-[DONE]
+Execution Attempt:
+I will use the Euclidean algorithm, which repeatedly replaces (a, b) with (b, a mod b) until the remainder is 0; the last nonzero remainder is the GCD.
+Start with (48, 18). Compute 48 mod 18 = 12, so update to (18, 12).
+Next, 18 mod 12 = 6, so update to (12, 6).
+Then, 12 mod 6 = 0, so update to (6, 0).
+When the second number becomes 0, the GCD is the first number, which is 6.
 
-<|Final Answer|>
-{{"rationale":"
-```python
-def f(arr):
-    total = 0
-    for x in arr:
-        total = total + x
-    return total
-output = f([1,2,3])
-print(output)
-```
-","answer":6}}
+{{
+"rationale": "```python
+def gcd(a, b):
+    while b != 0:
+        a, b = b, a % b
+    return a
+res = gcd(48, 18)
+print(res)
+```",
+"answer": 6
+}}
 
-============================================================================
-
+================= YOUR TASK =================
 <|Problem|>:
 {problem}
 
 <|Response|>:
-
 """
 # ------------------------------- LLM Clients --------------------------------
 
@@ -722,6 +534,7 @@ class VLLMClient(LLMClient):
             trust_remote_code=bool(trust_remote_code),
             download_dir=download_dir,
             seed=seed, 
+            tokenizer_mode="auto"
         )
         # Use HF tokenizer to format chat prompts if available
         self.tok = AutoTokenizer.from_pretrained(
@@ -1284,7 +1097,7 @@ def parse_args():
     p.add_argument('--vllm_dtype', type=str, default='float16',
                    choices=['auto','float16','bfloat16'])
     p.add_argument('--vllm_tensor_parallel', type=int, default=8)
-    p.add_argument('--vllm_gpu_mem_util', type=float, default=0.80)
+    p.add_argument('--vllm_gpu_mem_util', type=float, default=0.90)
     p.add_argument('--vllm_max_model_len', type=int, default=None)
     p.add_argument('--vllm_download_dir', type=str, default='../models')
     return p.parse_args()
