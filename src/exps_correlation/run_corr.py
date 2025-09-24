@@ -46,8 +46,6 @@ def seed_everything(seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
 
 # ----------------------------
 # Sandboxed execution (unchanged structure, minor cleanup)
@@ -415,14 +413,14 @@ def main():
     ap.add_argument("--models", type=str, required=True, help="Comma-separated model names")
     ap.add_argument("--engine", type=str, default="vllm", choices=["mock","hf","vllm","openai"])
     ap.add_argument("--vllm-tp-size", type=int, default=8, help="Tensor parallel size for vLLM")
-    ap.add_argument("--batch-size", type=int, default=8, help="Batch size for prompt generation")
+    ap.add_argument("--batch-size", type=int, default=64, help="Batch size for prompt generation")
     ap.add_argument("--limit-humaneval", type=int, default=164)
     ap.add_argument("--limit-mbpp", type=int, default=100)
     ap.add_argument("--limit-gsm8k", type=int, default=250)
     ap.add_argument("--out", type=str, default="results_code_tool.csv")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--top_p", type=float, default=0.95)
-    ap.add_argument("--temperature", type=float, default=0.3)
+    ap.add_argument("--temperature", type=float, default=0.7)
 
 
     args = ap.parse_args()
@@ -481,3 +479,5 @@ def main():
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     main()
+    
+# Log results to tensorboard to inspect? 
