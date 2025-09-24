@@ -491,15 +491,16 @@ class DummyClient(LLMClient):
         return json.dumps(out)
 
 class OpenAIChatClient(LLMClient):
-    def __init__(self):
+    def __init__(self, seed):
         try:
             from openai import OpenAI  # type: ignore
         except Exception as e:
             raise RuntimeError("pip install openai>=1.0 required") from e
         self.client = OpenAI()
+        self.seed=seed
     def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int, temperature: float, top_p: float, stop: Optional[List[str]]=None) -> str:
         resp = self.client.chat.completions.create(
-            model=model, messages=messages, temperature=temperature, top_p=top_p, max_tokens=max_tokens, stop=stop,
+            model=model, messages=messages, top_p=top_p, max_completion_tokens=max_tokens, stop=stop, seed=self.seed,
         )
         return resp.choices[0].message.content
     
@@ -853,7 +854,7 @@ def run(args):
     if args.backend == 'dummy':
         client: LLMClient = DummyClient()
     elif args.backend == 'openai':
-        client = OpenAIChatClient()
+        client = OpenAIChatClient(seed=args.seed)
     elif args.backend == 'hf':
         client = HFLocalClient(
             model_name=args.model,
@@ -896,7 +897,7 @@ def run(args):
     def run_batch(messages_list):
         if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
             outs = []
-            for start in range(0, len(messages_list), args.batch_size):
+            for start in tqdm(range(0, len(messages_list), args.batch_size)):
                 chunk = messages_list[start:start+args.batch_size]
                 outs.extend(client.chat_many(args.model, chunk,
                                              max_tokens=args.max_tokens,
