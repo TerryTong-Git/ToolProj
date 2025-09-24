@@ -498,7 +498,10 @@ class OpenAIChatClient(LLMClient):
             raise RuntimeError("pip install openai>=1.0 required") from e
         self.client = OpenAI()
         self.seed=seed
+        print("Instantiated OPENAI!")
+        
     def chat(self, model: str, messages: List[Dict[str, str]], max_tokens: int, temperature: float, top_p: float, stop: Optional[List[str]]=None) -> str:
+        print("Currently Chatting OPENAI!")
         resp = self.client.chat.completions.create(
             model=model, messages=messages, top_p=top_p, max_completion_tokens=max_tokens, stop=stop, seed=self.seed,
         )
@@ -897,7 +900,7 @@ def run(args):
     def run_batch(messages_list):
         if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
             outs = []
-            for start in tqdm(range(0, len(messages_list), args.batch_size)):
+            for start in tqdm(range(0, len(messages_list), args.batch_size), desc="Chatting"):
                 chunk = messages_list[start:start+args.batch_size]
                 outs.extend(client.chat_many(args.model, chunk,
                                              max_tokens=args.max_tokens,
@@ -906,7 +909,7 @@ def run(args):
         else:
             return [
                 client.chat(args.model, m, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None)
-                for m in messages_list
+                for m in tqdm(messages_list)
             ]
 
     # === Generate all NL outputs, then all Code outputs (order preserved) ===

@@ -14,8 +14,7 @@ it = load_dataset(
     name=SUBSET,
     split="train",
     streaming=True,
-    trust_remote_code=True,   # important for this dataset’s loader
-)
+    trust_remote_code=True)
 
 rows = [r for r in tqdm(islice(it, N), total=N, desc=f"Taking {N} from {SUBSET}")]
 ds = Dataset.from_list(rows)
