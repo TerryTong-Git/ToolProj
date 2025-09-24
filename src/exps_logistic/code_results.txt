@@ -8,3 +8,4 @@ Accuracy:         0.5883
 Macro F1:         0.0572
 H(gamma):  7.3249 bits  (empirical on test)
 I(gamma; Z_r) ≥ 3.9282 bits   (variational lower bound)
+
