@@ -1,7 +1,8 @@
 extra_examples = """
 
 <|Problem|>:
-Coin Change (DP, min coins): Given coin denominations and a target amount, compute the minimum number of coins to make the amount (use -1 if impossible).
+Coin Change (DP, min coins): Given coin denominations and a target amount, compute the minimum number of coins 
+to make the amount (use -1 if impossible).
 coins = [1, 2]
 amount = 3
 
@@ -153,7 +154,8 @@ coins = [1, 3, 4]
 amount = 6
 
 <|Response|>
-I consider the smallest number of coins to total 6. Using 4 first, the remainder is 2, which needs two 1s for a total of 3 coins. Using 3 first, the remainder is 3; another 3 makes 6 with 2 coins total. Using only 1s needs 6 coins. The best among these is 2 coins (3 + 3).
+I consider the smallest number of coins to total 6. Using 4 first, the remainder is 2, which needs two 1s for a total of 3 coins. 
+Using 3 first, the remainder is 3; another 3 makes 6 with 2 coins total. Using only 1s needs 6 coins. The best among these is 2 coins (3 + 3).
 
 <|Final Answer|>
 {{
@@ -180,7 +182,8 @@ Divide 84 by 6. Since 6 × 14 = 84, the quotient is 14.
 
 
 another_prompt_to_try = """
-You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. You MUST generate a code solution AND an execution simulation trace. 
+You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. 
+You MUST generate a code solution AND an execution simulation trace. 
 !!! IMPORTANT GRADING RULE !!!
 - If <|Execution Simulation|> is missing, malformed, or doesn’t include both [BEGIN] and [DONE], you receive ZERO credit, even if the JSON is correct.
 - JSON without a valid trace = 0 points.
@@ -213,7 +216,8 @@ state: {{"f": "<callable_object f>", "output": <final_integer>}}
 
 TRACE RULES (strict):
 - “line:” is the exact source line about to run (or the exact guard being checked).
-- “state:” is the callee’s current locals immediately after that line’s effect (or after the guard evaluation); at outer scope only show {{"f":"<callable_object f>"}} before the call and {{"f":"<callable_object f>", "output": <int>}} after return.
+- “state:” is the callee’s current locals immediately after that line’s effect (or after the guard evaluation); at outer scope 
+only show {{"f":"<callable_object f>"}} before the call and {{"f":"<callable_object f>", "output": <int>}} after return.
 - On the call line, switch to callee scope and show ONLY callee locals (e.g., {{}"arr":[1,2,3],"i":0}}).
 - Reflect assignments and aug-assignments immediately in “state:”.
 - Render the function object as "<callable_object f>" verbatim.
@@ -221,7 +225,8 @@ TRACE RULES (strict):
 - No prose, no code fences inside the trace — only the exact trace lines.
 
 WHY THIS MATTERS:
-- Your score is based on producing a correct trace. Even if you’re unsure, ATTEMPT the trace carefully — partial but well-structured traces often earn partial credit. JSON alone does not.
+- Your score is based on producing a correct trace. Even if you’re unsure, ATTEMPT the trace carefully —
+partial but well-structured traces often earn partial credit. JSON alone does not.
 
 ==================== ONE-SHOT EXAMPLE (TINY) ====================
 <|Problem|>:
