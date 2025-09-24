@@ -389,16 +389,175 @@ The edges form a simple path: (0 1 2 3). To cover every edge, choose vertices so
 """
 )
 
-CODE_PROMPT = (
-"""
-You are an expert algorithm problem solver who reasons entirely in Python code by generating a piece of code, then simulating its execution after <|Execution Simulation|>. When you generate code, write clear, executable code. You can use Math, Numpy, Torch, PuLP, Scipy, and Pandas. Ensure proper syntax, indentation, definitions, and variable instantiation. When simulating execution, write out the line number, the variable state, and behave like a single-cycle cpu.  The last line of the program must print the final result. The problem is given after <|Problem|>. You should fill in <|Response|>. After response, give a piece of code, then give <|Execution Simulation|> and try to simulate the code.  You MUST write out [BEGIN] and [DONE] before the execution simulation. Moreover, after simulating the program, report out the program that you attempted to simulate and the answer you got from simulation. Do this by first outputting <|Final Answer|>, then by producing a JSON dictionary with two keys:
+# CODE_PROMPT = (
+# """
+# You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. You will:
 
-- "rationale": the complete Python code solution, enclosed in a code block.
-- "answer": the result from executing the code, should be an integer.
+# 1) Read the task after <|Problem|>.
+# 2) In <|Response|>, produce:
+#    (A) a SHORT NL plan (as comment lines starting with `# PLAN:`),
+#    (B) a COMPLETE Python program that:
+#        - Defines ONE function `f(<params>)` and returns an **int**.
+#        - Calls it exactly once as `output = f(<args>)`.
+#        - Prints the final integer result on the very last line via `print(output)`.
+#        - Uses only deterministic logic (no randomness, no I/O beyond the final print).
+#        - You may use Math, NumPy, Torch, PuLP, SciPy, and Pandas if helpful.
+#    (C) <|Execution Simulation|> — a precise execution trace (text only) in the exact format below.
+#    (D) <|Final Answer|> — a JSON with:
+#          - "rationale": the complete Python code solution (inside a code block)
+#          - "answer": the integer result obtained by executing the program
 
-After generating a short Python program that defines a single function `f(...)` and then calls it as `output = f(<args>)`, produce ONLY the execution trace in the exact format below.
+# STRICT OUTPUT ORDER inside <|Response|>:
+# 1) Python code block (with `# PLAN:` comments FIRST, then the program)
+# 2) <|Execution Simulation|> block
+# 3) <|Final Answer|> block
 
-## Required format
+# ==================== REQUIRED TRACE FORMAT ====================
+# In <|Execution Simulation|>, output ONLY the trace, nothing else:
+
+# [BEGIN]
+# state: {{}}
+# line: def f(<params>):
+# state: {{"f": "<callable_object f>"}}
+# line: output = f(<args>)
+# state: {{<callee_locals_after_param_binding>}}
+# line: <next_source_line_or_guard>
+# state: {{<locals_after_effect_or_after_guard_eval>}}
+# ... (repeat for every executed line, including EACH re-check of while/if guards and each loop body line)
+# line: return <expr>
+# state: {{"f": "<callable_object f>", "output": <final_integer>}}
+# [DONE]
+
+# TRACEING RULES (must follow EXACTLY):
+# - “line:” is the exact source line being executed or the exact guard being evaluated (e.g., `while k > 0:`). Log guards every time they are checked.
+# - “state:” is a JSON-like snapshot of the **current scope only** RIGHT AFTER the line’s effect (or after the guard evaluation). 
+# - Scopes:
+#   • Before the call (outer scope): show only {{"f":"<callable_object f>"}}.
+#   • At the call line, switch to the callee’s scope and show only the callee’s locals (e.g., {{"n": 6, "coins": [1,2,5]}}).
+#   • On `return`, switch back to outer scope and show {{"f":"<callable_object f>", "output": <value>}}.
+# - Always reflect assignments and aug-assignments immediately in “state:”.
+# - Preserve concrete values verbatim (lists, dicts, ints, strings). Render the function object exactly as "<callable_object f>".
+# - Do NOT include modules or globals in callee scope unless bound as locals.
+# - Do NOT output code fences or prose inside the trace. Only the trace lines listed above.
+
+# ROBUSTNESS GUIDELINES:
+# - Keep the program concise and directly targeted to the task.
+# - Ensure `f(...)` returns an int, and the printed `output` equals that int.
+# - Avoid mutation of arguments unless needed; use local variables.
+# - For loops: log each guard check and every body line in order.
+# - For if/elif/else: log the guard line checked; the “state:” after a guard reflects locals unchanged by the guard itself.
+# - If using libraries, still provide a correct, deterministic simulation (you may symbolize external objects minimally, e.g., "<LpProblem>").
+# - Never skip the `return` line in the trace.
+
+# ==================== EXAMPLE (abbreviated) ====================
+# <|Problem|>:
+# Minimum Vertex Cover (ILP): Given an undirected graph G=(V,E), choose the smallest set of vertices covering all edges. Return the cover size.
+# V = {{0,1,2,3}}
+# E = {{(0,1), (1,2), (2,3)}}
+
+# <|Response|>:
+# ```python
+# # ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
+# def f(V, E):
+#     import pulp
+#     x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
+#     prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
+#     # objective
+#     prob += pulp.lpSum([x[v] for v in V])
+#     # cover constraints
+#     for (u, v) in E:
+#         prob += x[u] + x[v] >= 1
+#     prob.solve(pulp.PULP_CBC_CMD(msg=False))
+#     val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
+#     return val
+
+# output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+# print(output)
+# ```
+
+# <|Execution Simulation|>
+# [BEGIN]
+# state: {{}}
+# line: def f(V, E):
+# state: {{"f": "<callable_object f>"}}
+# line: output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}}}
+# line: import pulp
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>"}}
+# line: x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}}}
+# line: prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
+# line: prob += pulp.lpSum([x[v] for v in V])
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
+# line: for (u, v) in E:
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
+# line: prob += x[u] + x[v] >= 1
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
+# line: for (u, v) in E:
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
+# line: prob += x[u] + x[v] >= 1
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
+# line: for (u, v) in E:
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
+# line: prob += x[u] + x[v] >= 1
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
+# line: prob.solve(pulp.PULP_CBC_CMD(msg=False))
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>"}}
+# line: val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
+# state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>", "val": 2}}
+# line: return val
+# state: {{"f": "<callable_object f>", "output": 2}}
+# [DONE]
+
+# <|Final Answer|>
+# {{"rationale":"```python
+# # ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
+# def f(V, E):
+#     import pulp
+#     x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
+#     prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
+#     # objective
+#     prob += pulp.lpSum([x[v] for v in V])
+#     # cover constraints
+#     for (u, v) in E:
+#         prob += x[u] + x[v] >= 1
+#     prob.solve(pulp.PULP_CBC_CMD(msg=False))
+#     val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
+#     return val
+# output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+# print(output)
+# ```","answer":2}}
+
+# ============================================================================
+
+# <|Problem|>:
+# {problem}
+
+# <|Response|>:
+
+# """
+# )
+
+CODE_PROMPT = """
+You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. You MUST generate a code solution AND an execution simulation trace. 
+!!! IMPORTANT GRADING RULE !!!
+- If <|Execution Simulation|> is missing, malformed, or doesn’t include both [BEGIN] and [DONE], you receive ZERO credit, even if the JSON is correct.
+- JSON without a valid trace = 0 points.
+
+WHAT TO OUTPUT (in <|Response|>), IN THIS EXACT ORDER:
+1) A Python code block that:
+   - Starts with a few `# PLAN:` lines (brief NL plan).
+   - Defines exactly ONE function `f(<params>)` that returns an INT.
+   - Calls it exactly once as `output = f(<args>)`.
+   - Prints the result on the final line via `print(output)`.
+   - Uses deterministic logic only (no randomness or external I/O).
+2) <|Execution Simulation|> — a STRICT line-by-line trace (format below). Output ONLY the trace in this section.
+3) <|Final Answer|> — a JSON with:
+     - "rationale": the full code in a code block
+     - "answer": the integer result
+
+TRACE FORMAT (must match exactly):
 [BEGIN]
 state: {{}}
 line: def f(<params>):
@@ -407,105 +566,81 @@ line: output = f(<args>)
 state: {{<callee_locals_after_param_binding>}}
 line: <next_source_line_or_guard>
 state: {{<locals_after_effect_or_after_guard_eval>}}
-... (repeat for every executed line, including each re-check of while/if guards)
+... (repeat for every executed line and each re-check of while/if guards)
 line: return <expr>
 state: {{"f": "<callable_object f>", "output": <final_integer>}}
 [DONE]
 
-## Tracing rules (must follow exactly)
-- “line:” shows the exact source line being executed or the guard being evaluated (e.g., `while v4 > 0:`), logged EACH time it is checked.
-- “state:” is a JSON-like snapshot RIGHT AFTER that line’s effect (or after a guard is evaluated), with variables from the **current scope** only.
-- Scopes:
-  - Before the call (outer scope): show only {{"f":"<callable_object f>"}}.
-  - At the call line, switch to the callee scope and show only the callee’s locals (e.g., {{"v0": 6, "v4": 2}}).
-  - On `return`, switch back to outer scope and show {{"f":"<callable_object f>", "output": <value>}}.
-- While/if guards: log the guard line every time; its “state” reflects locals unchanged by the guard itself.
-- Aug-assignments (like `v0 += 2`) and assignments mutate the state immediately.
-- Preserve concrete values verbatim (e.g., lists, dicts, integers, strings); render function objects exactly as "<callable_object f>".
-- Output NOTHING except the trace block. No code fences, no prose.
+TRACE RULES (strict):
+- “line:” is the exact source line about to run (or the exact guard being checked).
+- “state:” is the callee’s current locals immediately after that line’s effect (or after the guard evaluation); at outer scope only show {{"f":"<callable_object f>"}} before the call and {{"f":"<callable_object f>", "output": <int>}} after return.
+- On the call line, switch to callee scope and show ONLY callee locals (e.g., {{}"arr":[1,2,3],"i":0}}).
+- Reflect assignments and aug-assignments immediately in “state:”.
+- Render the function object as "<callable_object f>" verbatim.
+- Do NOT include modules/globals in callee scope unless bound as locals.
+- No prose, no code fences inside the trace — only the exact trace lines.
 
-Examples:
+WHY THIS MATTERS:
+- Your score is based on producing a correct trace. Even if you’re unsure, ATTEMPT the trace carefully — partial but well-structured traces often earn partial credit. JSON alone does not.
 
-==================================================================
-
+==================== ONE-SHOT EXAMPLE (TINY) ====================
 <|Problem|>:
-Minimum Vertex Cover (ILP): Given an undirected graph G=(V,E), choose the smallest set of vertices covering all edges. Return the cover size.
-V = {{0,1,2,3}}
-E = {{(0,1), (1,2), (2,3)}}
+Compute: Sum of a list. Return the sum of numbers in arr.
+arr = [1,2,3]
 
 <|Response|>:
 ```python
-# ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
-def f(V, E):
-    import pulp
-    x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
-    prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
-    # objective
-    prob += pulp.lpSum([x[v] for v in V])
-    # cover constraints
-    for (u, v) in E:
-        prob += x[u] + x[v] >= 1
-    prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
-    return val
+# PLAN: Iterate over arr and accumulate total.
+# PLAN: Return the final integer sum.
+def f(arr):
+    total = 0
+    for x in arr:
+        total = total + x
+    return total
 
-output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+output = f([1,2,3])
 print(output)
 ```
 
 <|Execution Simulation|>
 [BEGIN]
 state: {{}}
-line: def f(V, E):
+line: def f(arr):
 state: {{"f": "<callable_object f>"}}
-line: output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}}}
-line: import pulp
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>"}}
-line: x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}}}
-line: prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
-line: prob += pulp.lpSum([x[v] for v in V])
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>"}}
-line: for (u, v) in E:
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
-line: prob += x[u] + x[v] >= 1
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 0, "v": 1}}
-line: for (u, v) in E:
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
-line: prob += x[u] + x[v] >= 1
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 1, "v": 2}}
-line: for (u, v) in E:
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
-line: prob += x[u] + x[v] >= 1
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": "<binvar>", "1": "<binvar>", "2": "<binvar>", "3": "<binvar>"}}, "prob": "<LpProblem>", "u": 2, "v": 3}}
-line: prob.solve(pulp.PULP_CBC_CMD(msg=False))
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>"}}
-line: val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
-state: {{"V": {{0,1,2,3}}, "E": {{(0,1),(1,2),(2,3)}}, "pulp": "<module pulp>", "x": {{"0": 0, "1": 1, "2": 1, "3": 0}}, "prob": "<LpProblem>", "val": 2}}
-line: return val
-state: {{"f": "<callable_object f>", "output": 2}}
+line: output = f([1,2,3])
+state: {{"arr": [1,2,3]}}
+line: total = 0
+state: {{"arr": [1,2,3], "total": 0}}
+line: for x in arr:
+state: {{"arr": [1,2,3], "total": 0, "x": 1}}
+line: total = total + x
+state: {{"arr": [1,2,3], "total": 1, "x": 1}}
+line: for x in arr:
+state: {{"arr": [1,2,3], "total": 1, "x": 2}}
+line: total = total + x
+state: {{"arr": [1,2,3], "total": 3, "x": 2}}
+line: for x in arr:
+state: {{"arr": [1,2,3], "total": 3, "x": 3}}
+line: total = total + x
+state: {{"arr": [1,2,3], "total": 6, "x": 3}}
+line: for x in arr:
+state: {{}"arr": [1,2,3], "total": 6}}
+line: return total
+state: {{"f": "<callable_object f>", "output": 6}}
 [DONE]
 
 <|Final Answer|>
-{{"rationale":"```python
-# ILP: minimize sum x_v, s.t. x_u + x_v >= 1 for each edge (u,v); x_v in {{0,1}}
-def f(V, E):
-    import pulp
-    x = {{v: pulp.LpVariable(f"x_{{v}}", lowBound=0, upBound=1, cat=pulp.LpBinary) for v in V}}
-    prob = pulp.LpProblem("min_vertex_cover", pulp.LpMinimize)
-    # objective
-    prob += pulp.lpSum([x[v] for v in V])
-    # cover constraints
-    for (u, v) in E:
-        prob += x[u] + x[v] >= 1
-    prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    val = int(round(pulp.value(pulp.lpSum([x[v] for v in V]))))
-    return val
-output = f({{0,1,2,3}}, {{(0,1),(1,2),(2,3)}})
+{{"rationale":"
+```python
+def f(arr):
+    total = 0
+    for x in arr:
+        total = total + x
+    return total
+output = f([1,2,3])
 print(output)
-```","answer":2}}
+```
+","answer":6}}
 
 ============================================================================
 
@@ -515,7 +650,6 @@ print(output)
 <|Response|>:
 
 """
-)
 # ------------------------------- LLM Clients --------------------------------
 
 class LLMClient:

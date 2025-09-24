@@ -177,3 +177,116 @@ Divide 84 by 6. Since 6 × 14 = 84, the quotient is 14.
 
 ============================================================================
 """
+
+
+another_prompt_to_try = """
+You are an expert algorithm solver. Think briefly in natural language, then fully in Python code. You MUST generate a code solution AND an execution simulation trace. 
+!!! IMPORTANT GRADING RULE !!!
+- If <|Execution Simulation|> is missing, malformed, or doesn’t include both [BEGIN] and [DONE], you receive ZERO credit, even if the JSON is correct.
+- JSON without a valid trace = 0 points.
+
+WHAT TO OUTPUT (in <|Response|>), IN THIS EXACT ORDER:
+1) A Python code block that:
+   - Starts with a few `# PLAN:` lines (brief NL plan).
+   - Defines exactly ONE function `f(<params>)` that returns an INT.
+   - Calls it exactly once as `output = f(<args>)`.
+   - Prints the result on the final line via `print(output)`.
+   - Uses deterministic logic only (no randomness or external I/O).
+2) <|Execution Simulation|> — a STRICT line-by-line trace (format below). Output ONLY the trace in this section.
+3) <|Final Answer|> — a JSON with:
+     - "rationale": the full code in a code block
+     - "answer": the integer result
+
+TRACE FORMAT (must match exactly):
+[BEGIN]
+state: {{}}
+line: def f(<params>):
+state: {{"f": "<callable_object f>"}}
+line: output = f(<args>)
+state: {{<callee_locals_after_param_binding>}}
+line: <next_source_line_or_guard>
+state: {{<locals_after_effect_or_after_guard_eval>}}
+... (repeat for every executed line and each re-check of while/if guards)
+line: return <expr>
+state: {{"f": "<callable_object f>", "output": <final_integer>}}
+[DONE]
+
+TRACE RULES (strict):
+- “line:” is the exact source line about to run (or the exact guard being checked).
+- “state:” is the callee’s current locals immediately after that line’s effect (or after the guard evaluation); at outer scope only show {{"f":"<callable_object f>"}} before the call and {{"f":"<callable_object f>", "output": <int>}} after return.
+- On the call line, switch to callee scope and show ONLY callee locals (e.g., {{}"arr":[1,2,3],"i":0}}).
+- Reflect assignments and aug-assignments immediately in “state:”.
+- Render the function object as "<callable_object f>" verbatim.
+- Do NOT include modules/globals in callee scope unless bound as locals.
+- No prose, no code fences inside the trace — only the exact trace lines.
+
+WHY THIS MATTERS:
+- Your score is based on producing a correct trace. Even if you’re unsure, ATTEMPT the trace carefully — partial but well-structured traces often earn partial credit. JSON alone does not.
+
+==================== ONE-SHOT EXAMPLE (TINY) ====================
+<|Problem|>:
+Compute: Sum of a list. Return the sum of numbers in arr.
+arr = [1,2,3]
+
+<|Response|>:
+```python
+# PLAN: Iterate over arr and accumulate total.
+# PLAN: Return the final integer sum.
+def f(arr):
+    total = 0
+    for x in arr:
+        total = total + x
+    return total
+
+output = f([1,2,3])
+print(output)
+```
+
+<|Execution Simulation|>
+[BEGIN]
+state: {{}}
+line: def f(arr):
+state: {{"f": "<callable_object f>"}}
+line: output = f([1,2,3])
+state: {{"arr": [1,2,3]}}
+line: total = 0
+state: {{"arr": [1,2,3], "total": 0}}
+line: for x in arr:
+state: {{"arr": [1,2,3], "total": 0, "x": 1}}
+line: total = total + x
+state: {{"arr": [1,2,3], "total": 1, "x": 1}}
+line: for x in arr:
+state: {{"arr": [1,2,3], "total": 1, "x": 2}}
+line: total = total + x
+state: {{"arr": [1,2,3], "total": 3, "x": 2}}
+line: for x in arr:
+state: {{"arr": [1,2,3], "total": 3, "x": 3}}
+line: total = total + x
+state: {{"arr": [1,2,3], "total": 6, "x": 3}}
+line: for x in arr:
+state: {{}"arr": [1,2,3], "total": 6}}
+line: return total
+state: {{"f": "<callable_object f>", "output": 6}}
+[DONE]
+
+<|Final Answer|>
+{{"rationale":"
+```python
+def f(arr):
+    total = 0
+    for x in arr:
+        total = total + x
+    return total
+output = f([1,2,3])
+print(output)
+```
+","answer":6}}
+
+============================================================================
+
+<|Problem|>:
+{problem}
+
+<|Response|>:
+
+"""
