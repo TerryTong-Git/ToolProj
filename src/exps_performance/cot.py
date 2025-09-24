@@ -574,7 +574,7 @@ state: {{"f": "<callable_object f>", "output": <final_integer>}}
 TRACE RULES (strict):
 - “line:” is the exact source line about to run (or the exact guard being checked).
 - “state:” is the callee’s current locals immediately after that line’s effect (or after the guard evaluation); at outer scope only show {{"f":"<callable_object f>"}} before the call and {{"f":"<callable_object f>", "output": <int>}} after return.
-- On the call line, switch to callee scope and show ONLY callee locals (e.g., {{}"arr":[1,2,3],"i":0}}).
+- On the call line, switch to callee scope and show ONLY callee locals (e.g., {{"arr":[1,2,3],"i":0}}).
 - Reflect assignments and aug-assignments immediately in “state:”.
 - Render the function object as "<callable_object f>" verbatim.
 - Do NOT include modules/globals in callee scope unless bound as locals.
@@ -624,7 +624,7 @@ state: {{"arr": [1,2,3], "total": 3, "x": 3}}
 line: total = total + x
 state: {{"arr": [1,2,3], "total": 6, "x": 3}}
 line: for x in arr:
-state: {{}"arr": [1,2,3], "total": 6}}
+state: {{"arr": [1,2,3], "total": 6}}
 line: return total
 state: {{"f": "<callable_object f>", "output": 6}}
 [DONE]
