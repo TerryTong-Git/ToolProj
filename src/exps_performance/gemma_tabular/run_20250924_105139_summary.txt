@@ -1,0 +1,62 @@
+N=100  exp_id=run_20250924_105139
+Accuracy NL-CoT (overall):   0.2800
+Accuracy Code-CoT (overall): 0.3100
+Execution condition (subprocess): acc=0.6700
+Discordant pairs b=code>nl: 10, c=nl>code: 7, McNemar exact p=0.6291
+Per-kind bins:
+
+Per-kind × digit bins:
+  kind=add
+    digits= 2: N=  2  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits= 4: N=  3  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits= 8: N=  3  NL=0.3333  Code=1.0000  Exec=1.0000
+    digits=16: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=32: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+  kind=ilp_assign
+    digits= 2: N=  2  NL=1.0000  Code=0.5000  Exec=0.0000
+    digits= 4: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits= 8: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits=16: N=  4  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits=32: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=ilp_partition
+    digits= 2: N=  2  NL=0.0000  Code=1.0000  Exec=0.5000
+    digits= 4: N=  2  NL=0.0000  Code=0.5000  Exec=0.0000
+    digits= 8: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits=16: N=  3  NL=0.3333  Code=0.3333  Exec=0.0000
+    digits=32: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=ilp_prod
+    digits= 2: N=  2  NL=0.5000  Code=0.0000  Exec=0.0000
+    digits= 4: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits= 8: N=  2  NL=0.0000  Code=0.5000  Exec=0.0000
+    digits=16: N=  2  NL=0.0000  Code=0.0000  Exec=0.0000
+    digits=32: N=  3  NL=0.0000  Code=0.0000  Exec=0.0000
+  kind=knap
+    digits= 2: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits= 4: N=  2  NL=0.0000  Code=0.5000  Exec=1.0000
+    digits= 8: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=16: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=32: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+  kind=lcs
+    digits= 2: N=  2  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits= 4: N=  2  NL=1.0000  Code=0.0000  Exec=1.0000
+    digits= 8: N=  2  NL=0.5000  Code=1.0000  Exec=1.0000
+    digits=16: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=32: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+  kind=mul
+    digits= 2: N=  2  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits= 4: N=  2  NL=0.5000  Code=0.0000  Exec=1.0000
+    digits= 8: N=  3  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=16: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=32: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+  kind=rod
+    digits= 2: N=  3  NL=0.6667  Code=0.3333  Exec=1.0000
+    digits= 4: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits= 8: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=16: N=  2  NL=0.0000  Code=0.0000  Exec=1.0000
+    digits=32: N=  3  NL=0.0000  Code=0.0000  Exec=1.0000
+  kind=sub
+    digits= 2: N=  2  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits= 4: N=  2  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits= 8: N=  3  NL=1.0000  Code=1.0000  Exec=1.0000
+    digits=16: N=  2  NL=0.5000  Code=0.5000  Exec=1.0000
+    digits=32: N=  2  NL=0.0000  Code=0.5000  Exec=1.0000
