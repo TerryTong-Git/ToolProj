@@ -25,14 +25,25 @@ seeds=(0)
 
 # deepseek-ai/DeepSeek-Coder-V2-Instruct
 
+# for seed in ${seeds[@]}; do
+#   pixi run python cot.py \
+#     --backend vllm \
+#     --model deepseek-ai/DeepSeek-R1-Distill-Llama-8B \
+#     --hf_dtype float16 \
+#     --hf_device_map auto \
+#     --n 1000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+#     --outdir llamadeepseek --exec_code --batch_size 64 --seed ${seed}
+# done
+
 for seed in ${seeds[@]}; do
   pixi run python cot.py \
-    --backend vllm \
-    --model deepseek-ai/DeepSeek-R1-Distill-Llama-8B \
-    --hf_dtype float16 \
-    --hf_device_map auto \
-    --n 1000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-    --outdir llamadeepseek --exec_code --batch_size 64 --seed ${seed}
+  --backend vllm \
+  --model mistralai/Ministral-8B-Instruct-2410 \
+  --hf_dtype float16 \
+  --hf_device_map auto \
+  --vllm_tensor_parallel 8 \
+  --n 1000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
+  --outdir execution_ministral_smoke --exec_code --batch_size 64
 done
 
 for seed in ${seeds[@]}; do
@@ -56,16 +67,7 @@ for seed in ${seeds[@]}; do
 done
 
 
-for seed in ${seeds[@]}; do
-  pixi run python cot.py \
-  --backend vllm \
-  --model mistralai/Ministral-8B-Instruct-2410 \
-  --hf_dtype float16 \
-  --hf_device_map auto \
-  --vllm_tensor_parallel 8 \
-  --n 1000 --digits 2 4 8 16 32 --kinds add sub mul lcs knap rod ilp_prod ilp_assign ilp_partition \
-  --outdir execution_ministral_smoke --exec_code --batch_size 64
-done
+
 
 # for seed in ${seeds[@]}; do
 #   pixi run python cot.py \

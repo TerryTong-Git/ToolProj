@@ -414,26 +414,6 @@ def strip_code_fence(txt: str) -> str:
     return txt.strip()
 
 
-def humaneval_prompt(ex: Dict[str, Any]) -> str:
-    return textwrap.dedent(f"""
-    Write a correct and efficient solution as Python code block for the following specification.
-    Return only a single ```python code block``` containing the full function implementation. No prose.
-
-    Specification:
-    {ex["prompt"]}
-    """).strip()
-
-
-def mbpp_prompt(ex: Dict[str, Any]) -> str:
-    return textwrap.dedent(f"""
-    Write a correct Python function that satisfies the description. Return only a single ```python code block``` 
-    with the function definition. No prose.
-
-    Description:
-    {ex["text"]}
-    """).strip()
-
-
 def gsm8k_tool_prompt(q: str) -> str:
     return textwrap.dedent(f"""
     Solve the problem step by step. When computation is needed, write Python between a single ```python code block``` 
@@ -457,51 +437,6 @@ def parse_gsm8k_gold(ans: str) -> Optional[int]:
 def _chunks(seq: List[Any], n: int) -> Iterable[List[Any]]:
     for i in range(0, len(seq), n):
         yield seq[i : i + n]
-
-
-def evaluate_humaneval_batched(
-    engine: LMEngine,
-    items: List[Dict[str, Any]],
-    batch_size: int,
-    temp: float = 0.0,
-    max_new: int = 512,
-    top_p: float = 1.0,
-    seed: int = 0,
-) -> float:
-    prompts = [humaneval_prompt(ex) for ex in items]
-    correct = 0
-    for batch_idx, batch_prompts in enumerate(tqdm(list(_chunks(prompts, batch_size)), desc="HumanEval (batched)")):
-        gens = engine.batch_generate(batch_prompts, max_new_tokens=max_new, temperature=temp, top_p=top_p, seed=seed)
-        for j, gen in enumerate(gens):
-            ex = items[batch_idx * batch_size + j]
-            code = strip_code_fence(gen)
-            payload_code = code + "\n\n" + ex["test"] + "\n"
-            ok, _, _ = _exec_in_subprocess(payload_code, {"code": payload_code}, timeout=5.0)
-            correct += int(ok)
-    return correct / max(1, len(items))
-
-
-def evaluate_mbpp_batched(
-    engine: LMEngine,
-    items: List[Dict[str, Any]],
-    batch_size: int,
-    temp: float = 0.0,
-    max_new: int = 384,
-    top_p: float = 1.0,
-    seed: int = 0,
-) -> float:
-    prompts = [mbpp_prompt(ex) for ex in items]
-    correct = 0
-    for batch_idx, batch_prompts in enumerate(tqdm(list(_chunks(prompts, batch_size)), desc="MBPP (batched)")):
-        gens = engine.batch_generate(batch_prompts, max_new_tokens=max_new, temperature=temp, top_p=top_p, seed=seed)
-        for j, gen in enumerate(gens):
-            ex = items[batch_idx * batch_size + j]
-            code = strip_code_fence(gen)
-            test_snippets = "\n".join(ex.get("test_list", []))
-            payload = code + "\n\n" + test_snippets + "\n"
-            ok, _, _ = _exec_in_subprocess(payload, {"code": payload}, timeout=5.0)
-            correct += int(ok)
-    return correct / max(1, len(items))
 
 
 def evaluate_gsm8k_batched(
@@ -560,9 +495,6 @@ def corr_spearman(x: List[float], y: List[float]) -> float:
 @dataclass
 class Scores:
     model: str
-    coding_humaneval: float
-    coding_mbpp: float
-    coding_avg: float
     tool_gsm8k: float
 
 
@@ -575,19 +507,11 @@ def evaluate_model(
     top_p: float = 1.0,
     seed: int = 0,
 ) -> Scores:
-    he = load_humaneval(limits.get("humaneval"))
-    mb = load_mbpp(limits.get("mbpp"))
     g8 = load_gsm8k(limits.get("gsm8k"))
-
-    he_pass1 = evaluate_humaneval_batched(engine, he, batch_size=batch_size, temp=temperature, max_new=512, top_p=top_p, seed=seed)
-    mb_pass1 = evaluate_mbpp_batched(engine, mb, batch_size=batch_size, temp=temperature, max_new=384, top_p=top_p, seed=seed)
     g8_acc = evaluate_gsm8k_batched(engine, g8, batch_size=batch_size, temp=temperature, max_new=512, top_p=top_p, seed=seed)
 
     return Scores(
         model=model_name,
-        coding_humaneval=he_pass1,
-        coding_mbpp=mb_pass1,
-        coding_avg=(he_pass1 + mb_pass1) / 2.0,
         tool_gsm8k=g8_acc,
     )
 
@@ -598,8 +522,6 @@ def main():
     ap.add_argument("--engine", type=str, default="vllm", choices=["mock", "hf", "vllm", "openai"])
     ap.add_argument("--vllm-tp-size", type=int, default=8, help="Tensor parallel size for vLLM")
     ap.add_argument("--batch-size", type=int, default=64, help="Batch size for prompt generation")
-    ap.add_argument("--limit-humaneval", type=int, default=164)
-    ap.add_argument("--limit-mbpp", type=int, default=100)
     ap.add_argument("--limit-gsm8k", type=int, default=250)
     ap.add_argument("--out", type=str, default="results_code_tool.csv")
     ap.add_argument("--seed", type=int, default=0)
@@ -610,12 +532,10 @@ def main():
 
     seed_everything(args.seed)
 
-    limits = {"humaneval": args.limit_humaneval, "mbpp": args.limit_mbpp, "gsm8k": args.limit_gsm8k}
+    limits = {"gsm8k": args.limit_gsm8k}
     model_names = [m.strip() for m in args.models.split(",") if m.strip()]
 
     rows = []
-    coding_scores = []
-    tool_scores = []
 
     for mname in model_names:
         eng = make_engine(args.engine, mname, vllm_tp_size=args.vllm_tp_size)
@@ -631,43 +551,13 @@ def main():
         rows.append(
             {
                 "model": s.model,
-                "coding_humaneval_pass1": s.coding_humaneval,
-                "coding_mbpp_pass1": s.coding_mbpp,
-                "coding_avg": s.coding_avg,
                 "tool_gsm8k_acc": s.tool_gsm8k,
             }
         )
         # Keep running partials per model
         partial_df = pd.DataFrame(rows)
-        if len(coding_scores) == len(tool_scores):  # in case of previous failure
-            pass
-        coding_scores.append(s.coding_avg)
-        tool_scores.append(s.tool_gsm8k)
-        try:
-            pear_tmp = corr_pearson(coding_scores, tool_scores)
-            spear_tmp = corr_spearman(coding_scores, tool_scores)
-            partial_df["pearson_code_tool"] = pear_tmp
-            partial_df["spearman_code_tool"] = spear_tmp
-            suffix = mname.split("/")[1]
-            partial_df.to_csv(f"{suffix}_seed{args.seed}_" + args.out, index=False)
-        except Exception:
-            partial_df.to_csv(f"{mname}_seed{args.seed}_" + args.out, index=False)
-
-    pear = corr_pearson(coding_scores, tool_scores)
-    spear = corr_spearman(coding_scores, tool_scores)
-
-    df = pd.DataFrame(rows)
-    df["pearson_code_tool"] = pear
-    df["spearman_code_tool"] = spear
-    df.to_csv(args.out, index=False)
-
-    print("\n=== Model-wise Scores ===")
-    print(df.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
-
-    print("\n=== Correlation Across Models ===")
-    print(f"Pearson(coding_avg, tool_gsm8k): {pear:.4f}")
-    print(f"Spearman(coding_avg, tool_gsm8k): {spear:.4f}")
-    print(f"Saved: {args.out}")
+        suffix = mname.split("/")[1]
+        partial_df.to_csv(f"{suffix}_seed{args.seed}_" + args.out, index=False)
 
 
 if __name__ == "__main__":
