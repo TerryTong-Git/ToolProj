@@ -37,6 +37,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
+from datasets import load_dataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import AutoTokenizer
@@ -169,6 +170,47 @@ class Problem:
         elif k == "ilp_partition":
             return partition_min_diff(self.data["weights"])
         raise ValueError("unknown kind")
+
+
+@dataclass
+class GSM8KProblem(Problem):
+    kind: str = "gsm8k"
+    digits: int = 0
+    a: int = 0
+    b: int = 0
+    data: Dict[str, Any] = field(default_factory=lambda: {})
+
+    def text(self) -> str:
+        return self.data["question"]
+
+    def ground_truth(self) -> int:
+        return parse_gsm8k_gold(self.data["answer"])
+
+
+def load_gsm8k() -> List[GSM8KProblem]:
+    ds = load_dataset("openai/gsm8k", "main", split="test")
+    items = []
+    for i, ex in enumerate(ds):
+        if check_parse_gsm8k_gold(ex["answer"]) is None:
+            continue
+        problem = GSM8KProblem(
+            data={
+                "question": ex["question"],
+                "answer": ex["answer"],
+            }
+        )
+        items.append(problem)
+    return items
+
+
+def parse_gsm8k_gold(ans: str) -> int:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1))  # type: ignore
+
+
+def check_parse_gsm8k_gold(ans: str) -> Optional[int]:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1)) if m else None
 
 
 # ---- DP helpers ----
@@ -383,10 +425,12 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int] = None) ->
     raise ValueError(f"unknown kind: {kind}")
 
 
-def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> List[Problem]:
+def make_dataset(n: int, digits_list: List[int], kinds: List[str] | str, seed: int = 1) -> List[Problem] | List[GSM8KProblem]:
     """
     Balance over (kind × digits) so MI/acc buckets are well-populated.
     """
+    if kinds == "gsm8k":
+        return load_gsm8k()
     rng = random.Random(seed)
     problems: List[Problem] = []
     K = max(1, len(kinds))
@@ -1365,6 +1409,7 @@ def parse_args():
             "ilp_assign",
             "ilp_prod",
             "ilp_partition",
+            "gsm8k",
         ],
     )
     p.add_argument("--seed", type=int, default=1)
