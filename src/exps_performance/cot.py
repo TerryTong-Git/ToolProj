@@ -33,7 +33,7 @@ import sys
 import tempfile
 import textwrap
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
@@ -88,7 +88,7 @@ class Problem:
     a: int = 0
     b: int = 0
     # general payload for DP/ILP
-    data: Dict[str, Any] = {}
+    data: Dict[str, Any] = field(default_factory=lambda: {})
 
     def text(self) -> str:
         k = self.kind
