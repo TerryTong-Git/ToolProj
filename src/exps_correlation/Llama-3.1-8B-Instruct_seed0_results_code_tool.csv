@@ -1,2 +1,0 @@
-model,coding_humaneval_pass1,coding_mbpp_pass1,coding_avg,tool_gsm8k_acc,pearson_code_tool,spearman_code_tool
-meta-llama/Llama-3.1-8B-Instruct,0.4695121951219512,0.08,0.2747560975609756,0.288,,
