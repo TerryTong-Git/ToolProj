@@ -425,11 +425,11 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int] = None) ->
     raise ValueError(f"unknown kind: {kind}")
 
 
-def make_dataset(n: int, digits_list: List[int], kinds: List[str] | str, seed: int = 1) -> List[Problem] | List[GSM8KProblem]:
+def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> List[Problem] | List[GSM8KProblem]:
     """
     Balance over (kind × digits) so MI/acc buckets are well-populated.
     """
-    if kinds == "gsm8k":
+    if kinds[0] == "gsm8k":
         return load_gsm8k()
     rng = random.Random(seed)
     problems: List[Problem] = []
@@ -1126,9 +1126,12 @@ def run(args):
     problems = make_dataset(args.n, args.digits, args.kinds, seed=args.seed)
 
     # TensorBoard
-    os.makedirs(args.outdir, exist_ok=True)
+    outdir: str = args.model.split("/")[1]
+    if args.kinds[0] == "gsm8k":
+        outdir += "_gsm8k"
+    os.makedirs(outdir, exist_ok=True)
     exp_id = time.strftime("run_%Y%m%d_%H%M%S")
-    tb = None if args.tb_disable else SummaryWriter(log_dir=os.path.join(args.outdir, "tb", exp_id))
+    tb = None if args.tb_disable else SummaryWriter(log_dir=os.path.join(outdir, "tb", exp_id))
 
     def tb_text(tag: str, title: str, body: str, step: int = 0):
         if tb is None:
@@ -1237,7 +1240,7 @@ def run(args):
     # CSV
     import csv
 
-    csv_path = os.path.join(args.outdir, f"{exp_id}_results_seed_{args.seed}.csv")
+    csv_path = os.path.join(outdir, f"{exp_id}_results_seed_{args.seed}.csv")
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(
@@ -1330,7 +1333,7 @@ def run(args):
                 tb.add_scalar(f"{args.model}/acc_code/{kind}/d{d}", acc_code)
                 if args.exec_code and not math.isnan(acc_exec):
                     tb.add_scalar(f"{args.model}/acc_exec/{kind}/d{d}", acc_exec)
-    csv_kd_path = os.path.join(args.outdir, f"{exp_id}_by_kind_digit.csv")
+    csv_kd_path = os.path.join(outdir, f"{exp_id}_by_kind_digit.csv")
     with open(csv_kd_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["kind", "digits", "N", "acc_nl", "acc_code", "acc_exec"])
@@ -1356,7 +1359,7 @@ def run(args):
                     ]
                 )
 
-    summary_path = os.path.join(args.outdir, f"{exp_id}_summary.txt")
+    summary_path = os.path.join(outdir, f"{exp_id}_summary.txt")
     with open(summary_path, "w") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -1439,7 +1442,6 @@ def parse_args():
         action="store_true",
         help="execute code-CoT in sandboxed subprocess (imports allowed)",
     )
-    p.add_argument("--outdir", type=str, default="out")
     p.add_argument("--log_every", type=int, default=50)
 
     # TensorBoard text limits
