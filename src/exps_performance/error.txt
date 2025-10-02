@@ -1,0 +1,226 @@
+cpu-bind=MASK - nlpgpu02, task  0  0 [25972]: mask 0x3f0fc0f03f0fc0f0 set
+`torch_dtype` is deprecated! Use `dtype` instead!
+/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+  warnings.warn(
+[1;36m(VllmWorkerProcess pid=26557)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26557)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=26556)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26556)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=26555)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26555)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=26554)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26554)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=26552)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26552)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=26553)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26553)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=26558)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=26558)[0;0m   warnings.warn(
+Loading safetensors checkpoint shards:   0% Completed | 0/5 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:  20% Completed | 1/5 [00:00<00:02,  1.70it/s]
+Loading safetensors checkpoint shards:  40% Completed | 2/5 [00:01<00:01,  1.75it/s]
+Loading safetensors checkpoint shards:  60% Completed | 3/5 [00:01<00:01,  1.63it/s]
+Loading safetensors checkpoint shards:  80% Completed | 4/5 [00:02<00:00,  1.68it/s]
+Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:03<00:00,  1.63it/s]
+Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:03<00:00,  1.65it/s]
+
+[1;36m(VllmWorkerProcess pid=26556)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 534.31it/s]
+[1;36m(VllmWorkerProcess pid=26556)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=26558)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 839.03it/s]
+[1;36m(VllmWorkerProcess pid=26558)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=26553)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 1560.09it/s]
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 753.63it/s]
+[1;36m(VllmWorkerProcess pid=26555)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 4181.76it/s]
+[1;36m(VllmWorkerProcess pid=26555)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=26557)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 3899.86it/s]
+[1;36m(VllmWorkerProcess pid=26557)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=26552)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 3896.24it/s]
+[1;36m(VllmWorkerProcess pid=26552)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=26554)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 1409.85it/s]
+[1;36m(VllmWorkerProcess pid=26554)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=26553)[0;0m Fast image processor class <class 'transformers.models.gemma3.image_processing_gemma3_fast.Gemma3ImageProcessorFast'> is available for this model. Using slow image processor class. To use the fast image processor class set `use_fast=True`.
+[1;36m(VllmWorkerProcess pid=26553)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 874.72it/s]
+Fast image processor class <class 'transformers.models.gemma3.image_processing_gemma3_fast.Gemma3ImageProcessorFast'> is available for this model. Using slow image processor class. To use the fast image processor class set `use_fast=True`.
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 833.20it/s]
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/src/exps_performance/cot.py", line 1468, in <module>
+[rank0]:     run(args)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/src/exps_performance/cot.py", line 1113, in run
+[rank0]:     client = VLLMClient(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/src/exps_performance/cot.py", line 679, in __init__
+[rank0]:     self.llm = VLLMEngine(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/utils.py", line 1031, in inner
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/entrypoints/llm.py", line 242, in __init__
+[rank0]:     self.llm_engine = LLMEngine.from_engine_args(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 520, in from_engine_args
+[rank0]:     return engine_cls.from_vllm_config(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 496, in from_vllm_config
+[rank0]:     return cls(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 283, in __init__
+[rank0]:     self._initialize_kv_caches()
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 432, in _initialize_kv_caches
+[rank0]:     self.model_executor.determine_num_available_blocks())
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/executor/executor_base.py", line 102, in determine_num_available_blocks
+[rank0]:     results = self.collective_rpc("determine_num_available_blocks")
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/executor/executor_base.py", line 316, in collective_rpc
+[rank0]:     return self._run_workers(method, *args, **(kwargs or {}))
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/executor/mp_distributed_executor.py", line 185, in _run_workers
+[rank0]:     driver_worker_output = run_method(self.driver_worker, sent_method,
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/utils.py", line 2216, in run_method
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/worker.py", line 229, in determine_num_available_blocks
+[rank0]:     self.model_runner.profile_run()
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/model_runner.py", line 1243, in profile_run
+[rank0]:     self._dummy_run(max_num_batched_tokens, max_num_seqs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/model_runner.py", line 1354, in _dummy_run
+[rank0]:     self.execute_model(model_input, kv_caches, intermediate_tensors)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/model_runner.py", line 1742, in execute_model
+[rank0]:     hidden_or_intermediate_states = model_executable(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 519, in forward
+[rank0]:     vision_embeddings = self.get_multimodal_embeddings(**kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 490, in get_multimodal_embeddings
+[rank0]:     vision_embeddings = self._process_image_input(image_input)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 479, in _process_image_input
+[rank0]:     vision_outputs = self._image_pixels_to_features(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 469, in _image_pixels_to_features
+[rank0]:     image_features = vision_tower(pixel_values.to(dtype=target_dtype))
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/siglip.py", line 478, in forward
+[rank0]:     return self.vision_model(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/siglip.py", line 420, in forward
+[rank0]:     hidden_states = self.embeddings(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/siglip.py", line 138, in forward
+[rank0]:     embeddings = embeddings + self.position_embedding(
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.25 GiB. GPU 0 has a total capacity of 10.57 GiB of which 447.06 MiB is free. Including non-PyTorch memory, this process has 10.13 GiB memory in use. Of the allocated memory 9.12 GiB is allocated by PyTorch, and 801.39 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]:[W925 21:20:49.575365162 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+`torch_dtype` is deprecated! Use `dtype` instead!
+[1;36m(VllmWorkerProcess pid=27973)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+  warnings.warn(
+[1;36m(VllmWorkerProcess pid=27973)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=27971)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=27971)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=27974)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=27974)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=27969)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=27969)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=27975)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=27975)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=27970)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=27970)[0;0m   warnings.warn(
+[1;36m(VllmWorkerProcess pid=27972)[0;0m /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/transformers/models/gemma3/configuration_gemma3.py:242: FutureWarning: The `sliding_window_pattern` attribute is deprecated and will be removed in v4.55.0.
+[1;36m(VllmWorkerProcess pid=27972)[0;0m   warnings.warn(
+Loading safetensors checkpoint shards:   0% Completed | 0/12 [00:00<?, ?it/s]
+Loading safetensors checkpoint shards:   8% Completed | 1/12 [00:42<07:51, 42.83s/it]
+Loading safetensors checkpoint shards:  17% Completed | 2/12 [01:26<07:11, 43.18s/it]
+Loading safetensors checkpoint shards:  25% Completed | 3/12 [02:09<06:30, 43.42s/it]
+Loading safetensors checkpoint shards:  33% Completed | 4/12 [02:53<05:49, 43.64s/it]
+Loading safetensors checkpoint shards:  42% Completed | 5/12 [02:57<03:25, 29.32s/it]
+Loading safetensors checkpoint shards:  50% Completed | 6/12 [03:41<03:24, 34.10s/it]
+Loading safetensors checkpoint shards:  58% Completed | 7/12 [04:25<03:06, 37.38s/it]
+Loading safetensors checkpoint shards:  67% Completed | 8/12 [05:09<02:37, 39.43s/it]
+Loading safetensors checkpoint shards:  75% Completed | 9/12 [05:53<02:02, 40.84s/it]
+Loading safetensors checkpoint shards:  83% Completed | 10/12 [06:35<01:22, 41.36s/it]
+Loading safetensors checkpoint shards:  92% Completed | 11/12 [07:18<00:41, 41.93s/it]
+Loading safetensors checkpoint shards: 100% Completed | 12/12 [08:02<00:00, 42.31s/it]
+Loading safetensors checkpoint shards: 100% Completed | 12/12 [08:02<00:00, 40.17s/it]
+
+[1;36m(VllmWorkerProcess pid=27975)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=27974)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=27973)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=27972)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=27970)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=27971)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 15.30it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 15.27it/s]
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 29.74it/s]
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 27.50it/s]
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 15.43it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 15.41it/s]
+[1;36m(VllmWorkerProcess pid=27972)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=27970)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=27975)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=27974)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 29.32it/s]
+[1;36m(VllmWorkerProcess pid=27971)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 15.48it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 15.46it/s]
+[1;36m(VllmWorkerProcess pid=27973)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][1;36m(VllmWorkerProcess pid=27969)[0;0m Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s]Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 4922.89it/s]
+Fetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 7307.15it/s]
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[1;36m(VllmWorkerProcess pid=27969)[0;0m Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/src/exps_performance/cot.py", line 1468, in <module>
+[rank0]:     run(args)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/src/exps_performance/cot.py", line 1113, in run
+[rank0]:     client = VLLMClient(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/src/exps_performance/cot.py", line 679, in __init__
+[rank0]:     self.llm = VLLMEngine(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/utils.py", line 1031, in inner
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/entrypoints/llm.py", line 242, in __init__
+[rank0]:     self.llm_engine = LLMEngine.from_engine_args(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 520, in from_engine_args
+[rank0]:     return engine_cls.from_vllm_config(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 496, in from_vllm_config
+[rank0]:     return cls(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 283, in __init__
+[rank0]:     self._initialize_kv_caches()
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/engine/llm_engine.py", line 432, in _initialize_kv_caches
+[rank0]:     self.model_executor.determine_num_available_blocks())
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/executor/executor_base.py", line 102, in determine_num_available_blocks
+[rank0]:     results = self.collective_rpc("determine_num_available_blocks")
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/executor/executor_base.py", line 316, in collective_rpc
+[rank0]:     return self._run_workers(method, *args, **(kwargs or {}))
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/executor/mp_distributed_executor.py", line 185, in _run_workers
+[rank0]:     driver_worker_output = run_method(self.driver_worker, sent_method,
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/utils.py", line 2216, in run_method
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/worker.py", line 229, in determine_num_available_blocks
+[rank0]:     self.model_runner.profile_run()
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/model_runner.py", line 1243, in profile_run
+[rank0]:     self._dummy_run(max_num_batched_tokens, max_num_seqs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/model_runner.py", line 1354, in _dummy_run
+[rank0]:     self.execute_model(model_input, kv_caches, intermediate_tensors)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/worker/model_runner.py", line 1742, in execute_model
+[rank0]:     hidden_or_intermediate_states = model_executable(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 519, in forward
+[rank0]:     vision_embeddings = self.get_multimodal_embeddings(**kwargs)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 490, in get_multimodal_embeddings
+[rank0]:     vision_embeddings = self._process_image_input(image_input)
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 479, in _process_image_input
+[rank0]:     vision_outputs = self._image_pixels_to_features(
+[rank0]:   File "/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/model_executor/models/gemma3_mm.py", line 469, in _image_pixels_to_features
+[rank0]:     image_features = vision_tower(pixel_values.to(dtype=target_dtype))
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.15 GiB. GPU 0 has a total capacity of 10.57 GiB of which 1.07 GiB is free. Including non-PyTorch memory, this process has 9.50 GiB memory in use. Of the allocated memory 9.04 GiB is allocated by PyTorch, and 234.95 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]:[W925 21:29:46.145786905 ProcessGroupNCCL.cpp:1496] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+`torch_dtype` is deprecated! Use `dtype` instead!
+slurmstepd: error: *** JOB 135319 ON nlpgpu02 CANCELLED AT 2025-09-25T21:30:19 ***

@@ -1,0 +1,10 @@
+N=1319  exp_id=run_20250925_152208
+Accuracy NL-CoT (overall):   0.4625
+Accuracy Code-CoT (overall): 0.4754
+Execution condition (subprocess): acc=0.6277
+Discordant pairs b=code>nl: 225, c=nl>code: 208, McNemar exact p=0.442
+Per-kind bins:
+
+Per-kind × digit bins:
+  kind=gsm8k
+    digits= 0: N=1319  NL=0.4625  Code=0.4754  Exec=0.6277

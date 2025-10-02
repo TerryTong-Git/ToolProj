@@ -33,10 +33,11 @@ import sys
 import tempfile
 import textwrap
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
+from datasets import load_dataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import AutoTokenizer
@@ -88,7 +89,7 @@ class Problem:
     a: int = 0
     b: int = 0
     # general payload for DP/ILP
-    data: Dict[str, Any] = {}
+    data: Dict[str, Any] = field(default_factory=lambda: {})
 
     def text(self) -> str:
         k = self.kind
@@ -169,6 +170,47 @@ class Problem:
         elif k == "ilp_partition":
             return partition_min_diff(self.data["weights"])
         raise ValueError("unknown kind")
+
+
+@dataclass
+class GSM8KProblem(Problem):
+    kind: str = "gsm8k"
+    digits: int = 0
+    a: int = 0
+    b: int = 0
+    data: Dict[str, Any] = field(default_factory=lambda: {})
+
+    def text(self) -> str:
+        return self.data["question"]
+
+    def ground_truth(self) -> int:
+        return parse_gsm8k_gold(self.data["answer"])
+
+
+def load_gsm8k() -> List[GSM8KProblem]:
+    ds = load_dataset("openai/gsm8k", "main", split="test")
+    items = []
+    for i, ex in enumerate(ds):
+        if check_parse_gsm8k_gold(ex["answer"]) is None:
+            continue
+        problem = GSM8KProblem(
+            data={
+                "question": ex["question"],
+                "answer": ex["answer"],
+            }
+        )
+        items.append(problem)
+    return items
+
+
+def parse_gsm8k_gold(ans: str) -> int:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1))  # type: ignore
+
+
+def check_parse_gsm8k_gold(ans: str) -> Optional[int]:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1)) if m else None
 
 
 # ---- DP helpers ----
@@ -383,10 +425,12 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int] = None) ->
     raise ValueError(f"unknown kind: {kind}")
 
 
-def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> List[Problem]:
+def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> List[Problem] | List[GSM8KProblem]:
     """
     Balance over (kind × digits) so MI/acc buckets are well-populated.
     """
+    if kinds[0] == "gsm8k":
+        return load_gsm8k()
     rng = random.Random(seed)
     problems: List[Problem] = []
     K = max(1, len(kinds))
@@ -1082,9 +1126,12 @@ def run(args):
     problems = make_dataset(args.n, args.digits, args.kinds, seed=args.seed)
 
     # TensorBoard
-    os.makedirs(args.outdir, exist_ok=True)
+    outdir: str = args.model.split("/")[1]
+    if args.kinds[0] == "gsm8k":
+        outdir += "_gsm8k"
+    os.makedirs(outdir, exist_ok=True)
     exp_id = time.strftime("run_%Y%m%d_%H%M%S")
-    tb = None if args.tb_disable else SummaryWriter(log_dir=os.path.join(args.outdir, "tb", exp_id))
+    tb = None if args.tb_disable else SummaryWriter(log_dir=os.path.join(outdir, "tb", exp_id))
 
     def tb_text(tag: str, title: str, body: str, step: int = 0):
         if tb is None:
@@ -1193,7 +1240,7 @@ def run(args):
     # CSV
     import csv
 
-    csv_path = os.path.join(args.outdir, f"{exp_id}_results_seed_{args.seed}.csv")
+    csv_path = os.path.join(outdir, f"{exp_id}_results_seed_{args.seed}.csv")
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(
@@ -1286,7 +1333,7 @@ def run(args):
                 tb.add_scalar(f"{args.model}/acc_code/{kind}/d{d}", acc_code)
                 if args.exec_code and not math.isnan(acc_exec):
                     tb.add_scalar(f"{args.model}/acc_exec/{kind}/d{d}", acc_exec)
-    csv_kd_path = os.path.join(args.outdir, f"{exp_id}_by_kind_digit.csv")
+    csv_kd_path = os.path.join(outdir, f"{exp_id}_by_kind_digit.csv")
     with open(csv_kd_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["kind", "digits", "N", "acc_nl", "acc_code", "acc_exec"])
@@ -1312,7 +1359,7 @@ def run(args):
                     ]
                 )
 
-    summary_path = os.path.join(args.outdir, f"{exp_id}_summary.txt")
+    summary_path = os.path.join(outdir, f"{exp_id}_summary.txt")
     with open(summary_path, "w") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -1365,6 +1412,7 @@ def parse_args():
             "ilp_assign",
             "ilp_prod",
             "ilp_partition",
+            "gsm8k",
         ],
     )
     p.add_argument("--seed", type=int, default=1)
@@ -1394,7 +1442,6 @@ def parse_args():
         action="store_true",
         help="execute code-CoT in sandboxed subprocess (imports allowed)",
     )
-    p.add_argument("--outdir", type=str, default="out")
     p.add_argument("--log_every", type=int, default=50)
 
     # TensorBoard text limits
