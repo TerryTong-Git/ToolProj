@@ -11,6 +11,7 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import ray
 from datasets import Dataset, load_dataset
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -18,16 +19,20 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 from pydantic import BaseModel
+from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from transformers import AutoTokenizer
+from transformers import logging as tlogging
+
+tlogging.set_verbosity_error()
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
+ray.init()
 BASE = "/nlpgpu/data/terry/ToolProj/src/exps_pret_corr/data/"
 
-dclm_path = os.path.join(BASE, "dclm/main/")
-starcoder_path = os.path.join(BASE, "starcoder/main/")
+dclm_path = os.path.join(BASE, "dclm_small/main/")
+starcoder_path = os.path.join(BASE, "starcoder_small/main/")
 
 MARKDOWN_SEPARATORS = [
     "\n#{1,6} ",
@@ -67,7 +72,7 @@ def add_task(text_splitter: RecursiveCharacterTextSplitter, doc: Document) -> Do
     return text_splitter.split_documents([doc])[0]
 
 
-def convert_to_docs(data, column_name, text_splitter) -> List[Document]:
+def convert_to_docs(data: Dataset, column_name, text_splitter) -> List[Document]:
     RAW_KNOWLEDGE_BASE: List[Document] = [
         Document(page_content=doc[column_name]) for doc in tqdm(data)
     ]  ## so far this is faster, what if we scale up?
@@ -85,6 +90,27 @@ def convert_to_docs(data, column_name, text_splitter) -> List[Document]:
     return processed_docs
 
 
+def convert_to_str(data: Dataset, column_name: str, *args) -> List[str]:
+    return data[column_name]
+
+
+def convert_to_ray(dataset: Dataset, column_name) -> ray.data.Dataset:
+    ds = ray.data.from_huggingface(dataset)
+    return ds.select_columns(column_name)
+
+
+class Embed:
+    def __init__(self):
+        model_name = "sentence-transformers/all-MiniLM-L6-v2"
+        self.transformer = SentenceTransformer(model_name, device="cuda", cache_folder="../models")
+
+    def __call__(self, text_batch: Dict[str, List[str]]):
+        assert isinstance(text_batch, Dict), f"not a dict, type {type(text_batch)}, with {text_batch}"
+        embedding: List[float] = self.transformer.encode(text_batch["content"], batch_size=64, show_progress_bar=True, device="cuda").tolist()
+
+        return dict(results=list(zip(text_batch["content"], embedding)))
+
+
 def dedup_docs(processed_docs: List[Document]) -> List[Document]:
     unique_texts = {}
     dedupped_docs = []
@@ -95,17 +121,7 @@ def dedup_docs(processed_docs: List[Document]) -> List[Document]:
     return dedupped_docs
 
 
-def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: bool = False) -> Dict[str, List[Document]]:
-    text_splitter: RecursiveCharacterTextSplitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
-        tokenizer=tokenizer,
-        chunk_size=1000,
-        chunk_overlap=100,
-        add_start_index=True,
-        strip_whitespace=True,
-        separators=MARKDOWN_SEPARATORS,
-    )
-
-    result: Dict[str, List[Document]] = {}
+def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: bool = False):
     for dataRecord in tqdm(to_load, desc="loading data"):
         dataset = load_dataset(dataRecord.file_type, data_dir=dataRecord.path)
 
@@ -113,8 +129,32 @@ def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: 
             pr = cProfile.Profile()
             pr.enable()
 
-        processed_docs: List[Document] = convert_to_docs(dataset["train"], dataRecord.column_name, text_splitter)
+        # processed_docs: List[str] = convert_to_docs(dataset["train"], dataRecord.column_name, text_splitter)
+        # processed_docs : List[str] = convert_to_str(dataset['train'], dataRecord.column_name)
+        logger.info("Beginning to convert to ray")
+        processed_docs: ray.data.Dataset = convert_to_ray(dataset["train"], dataRecord.column_name)
+        processed_docs = processed_docs.materialize()  # Pin to mem
+        processed_docs = processed_docs.repartition(8)
+        logger.info("Beginning to map batches")
+        ds_iter = processed_docs.map_batches(Embed, batch_size=8192, concurrency=16, num_gpus=1)
+        text_and_emb = [tne["results"] for tne in tqdm(ds_iter.iter_rows(), total=len(dataset["train"]), desc="Iterating Rows")]
+        logger.info(f"Example Result: {text_and_emb[0]}")
 
+        logger.info("Beginning Model Embedding")
+
+        model_name = "sentence-transformers/all-MiniLM-L6-v2"
+        EMBEDDING_MODEL = HuggingFaceEmbeddings(
+            model_name=model_name,
+            multi_process=True,
+            model_kwargs={"device": "cuda"},
+            encode_kwargs={"normalize_embeddings": True, "batch_size": 1024},
+        )
+        logger.info("Beginning Loading Embeddings into FAISS")
+
+        VECTORDB = FAISS.from_embeddings(text_and_emb, embedding=EMBEDDING_MODEL)
+        logger.info("Beginning saving VECTORDB to local")
+
+        VECTORDB.save_local("faiss_index")
         # import pdb; pdb.set_trace() # sus doc types
 
         # deduped_docs: List[Document] = dedup_docs(processed_docs)
@@ -122,7 +162,7 @@ def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: 
         #     f"Number of docs before dedup: {len(processed_docs)}, \
         #     Number of docs after dedup: {len(deduped_docs)} "
         # )
-        deduped_docs = processed_docs
+        # deduped_docs = processed_docs
 
         if profile:
             pr.disable()
@@ -134,8 +174,10 @@ def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: 
 
             with open(f"stats_{dataRecord.name}.txt", "w+") as f:
                 f.write(stats)
-        result[dataRecord.name] = deduped_docs
-    return result
+        logger.info("Finished Processing")
+
+        # result[dataRecord.name] = deduped_docs
+    # return result
 
 
 def serialize_filtered_datasets(data: Dataset, datapath: Path) -> None:
@@ -214,10 +256,10 @@ def query_viz(vectordb: FAISS, queries: List[str], processed_docs: List[Document
         {
             "x": proj_docs[len(processed_docs) + i, 0],
             "y": proj_docs[len(processed_docs) + i, 1],
-            "source": "User Query",
+            "source": queries[i],
             "extract": queries[i],
             "symbol": "star",
-            "size_col": 100,
+            "size_col": 25,
         }
         for i in range(len(queries))
     ]
@@ -229,7 +271,7 @@ def query_viz(vectordb: FAISS, queries: List[str], processed_docs: List[Document
         hover_data="extract",
         size="size_col",
         symbol="symbol",
-        color_discrete_map={"User Query": "black"},
+        color_discrete_map={x: "black" for x in queries},
         width=1000,
         height=700,
     )
@@ -268,16 +310,17 @@ def main() -> None:
         ),
     ]
     tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(model_name)
-    data: Dict[str, List[Document]] = load_datasets(to_load, tokenizer, profile=True)
-    plot_length_distribution(tokenizer, data)
+    load_datasets(to_load, tokenizer, profile=True)
 
-    EMBEDDING_MODEL = HuggingFaceEmbeddings(
-        model_name=model_name,
-        multi_process=True,
-        model_kwargs={"device": "cuda", "device_map": "auto"},
-        encode_kwargs={"normalize_embeddings": True, "batch_size": 1024},
-    )
-    search(EMBEDDING_MODEL, data)
+    # plot_length_distribution(tokenizer, data)
+
+    # EMBEDDING_MODEL = HuggingFaceEmbeddings(
+    #     model_name=model_name,
+    #     multi_process=True,
+    #     model_kwargs={"device": "cuda"},
+    #     encode_kwargs={"normalize_embeddings": True, "batch_size": 1024},
+    # )
+    # search(EMBEDDING_MODEL, data)
 
 
 if __name__ == "__main__":
