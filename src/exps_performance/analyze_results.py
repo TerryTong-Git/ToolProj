@@ -224,12 +224,19 @@ def main():
     res = []
     for file in csv_files:
         accs = get_csv_stats(args, file)  # ordered by seed anyway
+    for file in csv_files:
+        accs = get_csv_stats(args, file)  # ordered by seed anyway
         res.append(accs)
         return
 
     final = torch.stack(res, axis=0)  # 4D tensor Seed Kind Digit Res
     average_over_seeds = final.mean(dim=0)
     std = final.std(dim=0, unbiased=True)
+
+    total_avg = final.mean(dim=(0, 1, 2))
+    std_avg = final.std(dim=(0, 1, 2), unbiased=True)
+
+    print(f"Accuracy NL-CoT (overall):   {total_avg[2]:.4f}     STD: {std_avg[2]:.4f}")
 
     total_avg = final.mean(dim=(0, 1, 2))
     std_avg = final.std(dim=(0, 1, 2), unbiased=True)
@@ -251,6 +258,12 @@ def main():
     kinds = sorted({k for (_, k) in by_kd})
     digits = sorted({d for (d, _) in by_kd})
     for i, k in enumerate(kinds):
+        dig = int(r["digits"])
+        kind = r["kind"]
+        by_kd[(dig, kind)].append(r)
+    kinds = sorted({k for (_, k) in by_kd})
+    digits = sorted({d for (d, _) in by_kd})
+    for i, k in enumerate(kinds):
         print(f"Kind={k}")
         print(f"{'Digits':>8} {'NL':>8} {'NL_std':>8} {'Code':>8} {'Code_std':>8} {'Exec':>8} {'Exec_std':>8}")
         print("-" * 70)
@@ -261,8 +274,24 @@ def main():
             )
 
     for i, k in enumerate(kinds):
+        print("-" * 70)
+        for j, d in enumerate(digits):
+            print(
+                f"{d:>8} {average_over_seeds[i,j,2]:>8.4f} {std[i,j,2]:>8.4f} {average_over_seeds[i,j,0]:>8.4f} \
+                {std[i,j,0]:>8.4f} {average_over_seeds[i,j,1]:>8.4f} {std[i,j,1]:>8.4f}"
+            )
+
+    for i, k in enumerate(kinds):
         print(f"Kind={k}")
         print(f"{'NL':>8} {'NL_std':>8} {'Code':>8} {'Code_std':>8} {'Exec':>8} {'Exec_std':>8}")
+        print("-" * 70)
+        average_over_digits = final.mean(dim=(0, 2))
+        avg_std = final.std(dim=(0, 2), unbiased=True)
+        print(
+            f"{average_over_digits[i,2]:>8.4f} {avg_std[i,2]:>8.4f} {average_over_digits[i,0]:>8.4f} \
+            {avg_std[i,0]:>8.4f} {average_over_digits[i,1]:>8.4f} {avg_std[i,1]:>8.4f}"
+        )
+
         print("-" * 70)
         average_over_digits = final.mean(dim=(0, 2))
         avg_std = final.std(dim=(0, 2), unbiased=True)

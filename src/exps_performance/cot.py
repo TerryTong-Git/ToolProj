@@ -1438,7 +1438,6 @@ def parse_args():
     p.add_argument("--top_p", type=int, default=0.90)
 
     p.add_argument("--sim_code_only", action="store_true", help="Simulate only the generated code, not any NL input for fair comparison with arm 3")
-
     p.add_argument(
         "--exec_code",
         action="store_true",
