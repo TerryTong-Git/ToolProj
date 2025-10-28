@@ -1,4 +1,3 @@
-export HF_TOKEN=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
 pixi run python download_hf_manual.py \
   --hf_dataset_id mlfoundations/dclm-baseline-1.0 \
   --revision main \
