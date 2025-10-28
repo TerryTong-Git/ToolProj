@@ -1,2 +1,0 @@
-model,coding_humaneval_pass1,coding_mbpp_pass1,coding_avg,tool_gsm8k_acc,pearson_code_tool,spearman_code_tool
-google/gemma-2-9b-it,0.5670731707317073,0.06,0.3135365853658536,0.34,,
