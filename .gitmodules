@@ -1,0 +1,9 @@
+[submodule "src/exps_benchmarks/ToolBench"]
+	path = src/exps_benchmarks/ToolBench
+	url = https://github.com/OpenBMB/ToolBench/
+[submodule "src/exps_benchmarks/toolbench"]
+	path = src/exps_benchmarks/toolbench
+	url = https://github.com/sambanova/toolbench
+[submodule "src/exps_benchmarks/gorilla"]
+	path = src/exps_benchmarks/gorilla
+	url = https://github.com/ShishirPatil/gorilla
