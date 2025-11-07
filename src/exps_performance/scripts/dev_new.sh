@@ -2,7 +2,7 @@ seeds=(0)
 
 
 for seed in ${seeds[@]}; do
-  pixi run python cot.py \
+  pixi run python runner.py \
     --backend vllm \
     --model google/gemma-2-9b-it \
     --hf_dtype float16 \
