@@ -572,6 +572,14 @@ print(res)
 
 <|Response|>:
 """
+
+SIM_PROMPT = """ 
+Simulate the code. Give your final answer in json format. For example, if the answer is "6", respond like this: {{"answer": 6
+}}
+
+Code:
+{problem}
+"""
 # ------------------------------- LLM Clients --------------------------------
 
 
@@ -906,6 +914,7 @@ def parse_response(raw: str) -> Parsed:
                     None
         else:
             ans = -float("inf")
+
     return Parsed(
         raw,
         ans is not None,
@@ -1062,6 +1071,9 @@ class Record:
     correct_code_exec: int
     raw_nl: str
     raw_code: str
+    raw_sim: str
+    answer_sim: Optional[int]
+    correct_sim_ans: int
 
     exec_ok: Optional[int] = None
     exec_retcode: Optional[int] = None
@@ -1218,6 +1230,17 @@ def run(args):
                 ok={ans_code_exec.get('ok')} value={ans_code_exec.get('value')}",
             )
         correct_code_exec = int(ans_code_exec.get("value") == truth) if ans_code_exec is not None else 0
+        correct_sim_ans = 0
+        answer_sim = 0
+        sim_raw = ""
+        if args.controlled_sim:
+            message = [{"role": "user", "content": SIM_PROMPT.format(problem=code_parsed.rationale)}]
+            llm_output = client.chat(args.model, message, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None)
+            parsed_output = parse_response(llm_output)
+            # import pdb; pdb.set_trace()
+            answer_sim = parsed_output.answer
+            sim_raw = parsed_output.raw
+            correct_sim_ans = int(answer_sim == truth)
 
         records.append(
             Record(
@@ -1234,6 +1257,9 @@ def run(args):
                 correct_code_exec=correct_code_exec,
                 raw_nl=nl_raw,
                 raw_code=code_raw,
+                raw_sim=sim_raw,
+                answer_sim=answer_sim,
+                correct_sim_ans=correct_sim_ans,
             )
         )
 
@@ -1255,6 +1281,8 @@ def run(args):
                 "correct_code",
                 "answer_code_exec",
                 "correct_code_exec",
+                "answer_sim",
+                "correct_sim",
                 "problem",
             ]
         )
@@ -1271,6 +1299,8 @@ def run(args):
                     r.correct_code,
                     r.answer_code_exec,
                     r.correct_code_exec,
+                    r.answer_sim,
+                    r.correct_sim_ans,
                     r.problem,
                 ]
             )
@@ -1283,10 +1313,11 @@ def run(args):
     acc_code = acc([r.correct_code for r in records])
     has_exec = any(r.answer_code_exec is not None for r in records)
     acc_exec = acc([r.correct_code_exec for r in records if r.answer_code_exec is not None]) if has_exec else float("nan")
+    acc_sim = acc([r.correct_sim_ans for r in records])
 
-    b = sum(1 for r in records if r.correct_code == 1 and r.correct_nl == 0)
-    c = sum(1 for r in records if r.correct_code == 0 and r.correct_nl == 1)
-    p_mc = mcnemar_exact_p(b, c)
+    # b = sum(1 for r in records if r.correct_code == 1 and r.correct_nl == 0)
+    # c = sum(1 for r in records if r.correct_code == 0 and r.correct_nl == 1)
+    # p_mc = mcnemar_exact_p(b, c)
 
     by_kind: Dict[str, List[Record]] = {}
     for r in records:
@@ -1298,7 +1329,9 @@ def run(args):
     lines.append(f"Accuracy Code-CoT (overall): {acc_code:.4f}")
     if has_exec:
         lines.append(f"Execution condition (subprocess): acc={acc_exec:.4f}")
-    lines.append(f"Discordant pairs b=code>nl: {b}, c=nl>code: {c}, McNemar exact p={p_mc:.4g}")
+    lines.append(f"Accuracy Sim (overall): {acc_sim:.4f}")
+
+    # lines.append(f"Discordant pairs b=code>nl: {b}, c=nl>code: {c}, McNemar exact p={p_mc:.4g}")
     lines.append("Per-kind bins:")
     # --- Per-kind × digit breakdown (printed) ---
     by_kd: Dict[Tuple[str, int], List[Record]] = {}
@@ -1317,6 +1350,7 @@ def run(args):
             N = len(grp)
             acc_nl = _acc([x.correct_nl for x in grp])
             acc_code = _acc([x.correct_code for x in grp])
+            acc_sim = _acc([x.correct_sim_ans for x in grp])
 
             # Exec accuracy only for items that actually executed (and if exec requested)
             if args.exec_code:
@@ -1325,39 +1359,33 @@ def run(args):
             else:
                 acc_exec = float("nan")
 
-            lines.append(f"    digits={d:2d}: N={N:3d}  NL={acc_nl:.4f}  Code={acc_code:.4f}  Exec={acc_exec:.4f}")
+            lines.append(f"    digits={d:2d}: N={N:3d}  NL={acc_nl:.4f}  Code={acc_code:.4f}  Exec={acc_exec:.4f} Sim={acc_sim}")
 
             # Optional: log to TensorBoard as kind/digit tags
             if tb is not None:
                 tb.add_scalar(f"{args.model}/acc_nl/{kind}/d{d}", acc_nl)
                 tb.add_scalar(f"{args.model}/acc_code/{kind}/d{d}", acc_code)
+                tb.add_scalar(f"{args.model}/acc_sim/{kind}/d{d}", acc_sim)
                 if args.exec_code and not math.isnan(acc_exec):
                     tb.add_scalar(f"{args.model}/acc_exec/{kind}/d{d}", acc_exec)
     csv_kd_path = os.path.join(outdir, f"{exp_id}_by_kind_digit.csv")
     with open(csv_kd_path, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["kind", "digits", "N", "acc_nl", "acc_code", "acc_exec"])
+        w.writerow(["kind", "digits", "N", "acc_nl", "acc_code", "acc_exec", "acc_sim"])
         for kind in sorted({k for (k, _) in by_kd.keys()}):
             for d in sorted({d for (k, d) in by_kd.keys() if k == kind}):
                 grp = by_kd[(kind, d)]
                 N = len(grp)
                 acc_nl = sum(x.correct_nl for x in grp) / N if N else float("nan")
                 acc_code = sum(x.correct_code for x in grp) / N if N else float("nan")
+                acc_sim = sum(x.correct_sim_ans for x in grp) / N if N else float("nan")
+
                 if args.exec_code:
                     exec_vals = [x.correct_code_exec for x in grp if x.answer_code_exec is not None]
                     acc_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float("nan")
                 else:
                     acc_exec = float("nan")
-                w.writerow(
-                    [
-                        kind,
-                        d,
-                        N,
-                        f"{acc_nl:.6f}",
-                        f"{acc_code:.6f}",
-                        "" if math.isnan(acc_exec) else f"{acc_exec:.6f}",
-                    ]
-                )
+                w.writerow([kind, d, N, f"{acc_nl:.6f}", f"{acc_code:.6f}", "" if math.isnan(acc_exec) else f"{acc_exec:.6f}", f"{acc_sim:.6f}"])
 
     summary_path = os.path.join(outdir, f"{exp_id}_summary.txt")
     with open(summary_path, "w") as f:
@@ -1442,6 +1470,11 @@ def parse_args():
         "--exec_code",
         action="store_true",
         help="execute code-CoT in sandboxed subprocess (imports allowed)",
+    )
+    p.add_argument(
+        "--controlled_sim",
+        action="store_true",
+        help="do fair controlled simulation w/o prompt",
     )
     p.add_argument("--log_every", type=int, default=50)
 

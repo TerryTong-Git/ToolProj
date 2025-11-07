@@ -62,6 +62,21 @@ def analyze_contingency_table(df, col1: str, col2: str, name: str):
     plt.close()
 
 
+def plot_df(summary, df):
+    import pdb
+
+    import plotly.graph_objects as go
+
+    pdb.set_trace()
+    x = df["digits"]
+    y = df["mean"]
+    df.groupby()
+
+    # confidence_interval =
+    go.Figure(go.Scatter(x=x, y=y, mode="lines", name="Mean", line=dict(color="blue")))
+    plt.show()
+
+
 def get_csv_stats(df: pd.DataFrame, name: str):
     """
     Get the mean and the variance
@@ -87,6 +102,16 @@ def get_csv_stats(df: pd.DataFrame, name: str):
             ("correct_code_sim", "std"),
         ]
     ]
+    another = df[["kind", "executable_code", "correct_code_sim", "correct_code_exec", "seed"]].groupby(["seed", "kind"]).describe().reset_index()
+    import pdb
+
+    pdb.set_trace()
+    another[[("kind", ""), ("seed", ""), ("executable_code", "mean"), ("correct_code_exec", "mean"), ("correct_code_sim", "mean")]].boxplot(
+        by=("kind", "")
+    )
+    plt.savefig("boxplot")
+    plt.close()  # plot boxplots w/ standard deviations across the seeds.
+
     print(digit_summary.to_latex())
     # with open('digit_summary.txt', 'w+') as f:
     #     f.write(digit_summary.to_latex())
