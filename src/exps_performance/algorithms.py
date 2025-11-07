@@ -4,16 +4,8 @@ from typing import Any, Dict, List
 
 import torch
 
-try:
-    from vllm import LLM as VLLMEngine
-    from vllm import SamplingParams
-except Exception as _vllm_import_err:
-    VLLMEngine = None
-    SamplingParams = None
-
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.deterministic = True
-
 try:
     torch.set_float32_matmul_precision("high")
 except Exception:
