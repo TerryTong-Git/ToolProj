@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import os
-import random
-import re
 import subprocess
 import sys
 import tempfile
@@ -11,6 +9,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 import torch
+from utils import INT_RE, extract_fenced_code
 
 try:
     from vllm import LLM as VLLMEngine
@@ -26,26 +25,7 @@ try:
     torch.set_float32_matmul_precision("high")
 except Exception:
     pass
-
 # ----------------------- Code execution (subprocess sandbox) ----------------
-INT_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
-
-FENCE_RE = re.compile(r"```[a-zA-Z0-9]*\s*\n([\s\S]*?)\n```", re.MULTILINE)
-
-
-def rand_string(rng: random.Random, alpha="abcd", n: Optional[int] = None, lo=5, hi=12) -> str:
-    if n is None:
-        n = rng.randint(lo, hi)
-    return "".join(rng.choice(alpha) for _ in range(n))
-
-
-def extract_fenced_code(rationale: Optional[str]) -> Optional[str]:
-    if not rationale:
-        return None
-    m = FENCE_RE.search(rationale)
-    if not m:
-        return None
-    return m.group(1).strip()
 
 
 def run_code_subprocess(

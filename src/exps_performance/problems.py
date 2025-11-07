@@ -1,36 +1,11 @@
 from __future__ import annotations
 
-import random
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence
 
-import torch
 from algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
 from datasets import load_dataset
-
-try:
-    from vllm import LLM as VLLMEngine
-    from vllm import SamplingParams
-except Exception as _vllm_import_err:
-    VLLMEngine = None
-    SamplingParams = None
-
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.deterministic = True
-
-try:
-    torch.set_float32_matmul_precision("high")
-except Exception:
-    pass
-
-
-def sample_int(digits: int, rng: random.Random) -> int:
-    if digits <= 0:
-        raise ValueError("digits must be >=1")
-    lo = 10 ** (digits - 1)
-    hi = 10**digits - 1
-    return rng.randint(lo, hi)
 
 
 @dataclass

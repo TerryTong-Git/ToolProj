@@ -4,8 +4,8 @@ import random
 from typing import List, MutableSequence, Optional, Sequence
 
 import torch
-from code_exec import rand_string
 from problems import Problem, load_CLRS30, load_gsm8k, load_NPHARDEVAL
+from utils import rand_string
 
 try:
     from vllm import LLM as VLLMEngine

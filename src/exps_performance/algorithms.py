@@ -2,15 +2,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-import torch
-
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.deterministic = True
-try:
-    torch.set_float32_matmul_precision("high")
-except Exception:
-    pass
-
 
 def _try_import_pulp():
     try:

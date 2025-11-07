@@ -5,24 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-import torch
-from code_exec import INT_RE, extract_fenced_code
-
-try:
-    from vllm import LLM as VLLMEngine
-    from vllm import SamplingParams
-except Exception as _vllm_import_err:
-    VLLMEngine = None
-    SamplingParams = None
-
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.deterministic = True
-
-try:
-    torch.set_float32_matmul_precision("high")
-except Exception:
-    pass
-
+from utils import INT_RE, extract_fenced_code
 
 # ------------------------------- Parsing ------------------------------------
 
