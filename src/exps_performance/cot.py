@@ -34,7 +34,7 @@ import tempfile
 import textwrap
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, MutableSequence, Optional, Sequence, Tuple
 
 import torch
 from datasets import load_dataset
@@ -187,7 +187,7 @@ class GSM8KProblem(Problem):
         return parse_gsm8k_gold(self.data["answer"])
 
 
-def load_gsm8k() -> List[GSM8KProblem]:
+def load_gsm8k() -> Sequence[Problem]:
     ds = load_dataset("openai/gsm8k", "main", split="test")
     items = []
     for i, ex in enumerate(ds):
@@ -209,6 +209,88 @@ def parse_gsm8k_gold(ans: str) -> int:
 
 
 def check_parse_gsm8k_gold(ans: str) -> Optional[int]:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1)) if m else None
+
+
+@dataclass
+class CLRS30(Problem):
+    kind: str = "gsm8k"
+    digits: int = 0
+    a: int = 0
+    b: int = 0
+    data: Dict[str, Any] = field(default_factory=lambda: {})
+
+    def text(self) -> str:
+        return self.data["question"]
+
+    def ground_truth(self) -> int:
+        return parse_gsm8k_gold(self.data["answer"])
+
+
+def load_CLRS30() -> Sequence[Problem]:
+    ds = load_dataset("openai/gsm8k", "main", split="test")
+    items = []
+    for i, ex in enumerate(ds):
+        if check_parse_gsm8k_gold(ex["answer"]) is None:
+            continue
+        problem = CLRS30(
+            data={
+                "question": ex["question"],
+                "answer": ex["answer"],
+            }
+        )
+        items.append(problem)
+    return items
+
+
+def parse_CLRS30_gold(ans: str) -> int:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1))  # type: ignore
+
+
+def check_parse_CLRS30_gold(ans: str) -> Optional[int]:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1)) if m else None
+
+
+@dataclass
+class NPHARDEVALProblem(Problem):
+    kind: str = "NPHARDEVAL"
+    digits: int = 0
+    a: int = 0
+    b: int = 0
+    data: Dict[str, Any] = field(default_factory=lambda: {})
+
+    def text(self) -> str:
+        return self.data["question"]
+
+    def ground_truth(self) -> int:
+        return parse_NPHARDEVAL_gold(self.data["answer"])
+
+
+def load_NPHARDEVAL() -> Sequence[Problem]:
+    ds = load_dataset("openai/NPHARDEVAL", "main", split="test")
+    items = []
+    for i, ex in enumerate(ds):
+        if check_parse_NPHARDEVAL_gold(ex["answer"]) is None:
+            continue
+        problem = NPHARDEVALProblem(
+            data={
+                "question": ex["question"],
+                "answer": ex["answer"],
+            }
+        )
+        items.append(problem)
+    return items
+
+
+def parse_NPHARDEVAL_gold(ans: str) -> int:
+    m = re.search(r"####\s*(-?\d+)", ans)
+    return int(m.group(1))  # type: ignore
+
+
+def check_parse_NPHARDEVAL_gold(ans: str) -> Optional[int]:
     m = re.search(r"####\s*(-?\d+)", ans)
     return int(m.group(1)) if m else None
 
@@ -425,14 +507,18 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int] = None) ->
     raise ValueError(f"unknown kind: {kind}")
 
 
-def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> List[Problem] | List[GSM8KProblem]:
+def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> Sequence[Problem]:
     """
     Balance over (kind × digits) so MI/acc buckets are well-populated.
     """
     if kinds[0] == "gsm8k":
         return load_gsm8k()
+    if kinds[0] == "nphardeval":
+        return load_NPHARDEVAL()
+    if kinds[0] == "clrs30":
+        return load_CLRS30()
     rng = random.Random(seed)
-    problems: List[Problem] = []
+    problems: MutableSequence[Problem] = []
     K = max(1, len(kinds))
     D = max(1, len(digits_list))
     per = max(1, n // (K * D))
@@ -1141,6 +1227,7 @@ def run(args):
     outdir: str = args.model.split("/")[1]
     if args.kinds[0] == "gsm8k":
         outdir += "_gsm8k"
+
     os.makedirs(outdir, exist_ok=True)
     exp_id = time.strftime("run_%Y%m%d_%H%M%S")
     tb = None if args.tb_disable else SummaryWriter(log_dir=os.path.join(outdir, "tb", exp_id))
@@ -1441,6 +1528,8 @@ def parse_args():
             "ilp_prod",
             "ilp_partition",
             "gsm8k",
+            "nphardeval",
+            "clrs30",
         ],
     )
     p.add_argument("--seed", type=int, default=1)
