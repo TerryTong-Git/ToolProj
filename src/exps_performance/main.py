@@ -177,12 +177,11 @@ def run(args):
     records: List[Record] = []
     for i, pb in enumerate(tqdm(problems, total=len(problems), desc="eval")):
         problem_text = pb.text()
-        truth = pb.ground_truth()
 
         nl_raw = nl_raw_all[i]
         nl_parsed = parse_response(nl_raw)
         ans_nl = nl_parsed.answer
-        correct_nl = int(ans_nl == truth)
+        correct_nl = pb.decision_check(ans_nl, problem_text)  # have their own decision check
 
         base_nl = f"{args.model}/nl/d{pb.digits}/{pb.kind}/i{i}"
         tb_text(f"{base_nl}/prompt", "Prompt (NL-CoT)", NL_PROMPT.format(problem=problem_text))
@@ -193,7 +192,7 @@ def run(args):
         code_raw = code_raw_all[i]
         code_parsed = parse_response(code_raw)
         ans_code = code_parsed.answer
-        correct_code = int(ans_code == truth)
+        correct_code = pb.decision_check(ans_code, problem_text)
 
         base_code = f"{args.model}/code/d{pb.digits}/{pb.kind}/i{i}"
         tb_text(f"{base_code}/prompt", "Prompt (Code-CoT)", CODE_PROMPT.format(problem=problem_text))
@@ -225,7 +224,7 @@ def run(args):
                 f"retcode={ans_code_exec.get('retcode')} timeout={ans_code_exec.get('timeout')} \
                 ok={ans_code_exec.get('ok')} value={ans_code_exec.get('value')}",
             )
-        correct_code_exec = int(ans_code_exec.get("value") == truth) if ans_code_exec is not None else 0
+        correct_code_exec = pb.decision_check(ans_code_exec.get("value"), problem_text) if ans_code_exec is not None else 0
         correct_sim_ans = 0
         answer_sim = 0
         sim_raw = ""
@@ -236,8 +235,8 @@ def run(args):
             # import pdb; pdb.set_trace()
             answer_sim = parsed_output.answer
             sim_raw = parsed_output.raw
-            correct_sim_ans = int(answer_sim == truth)
-
+            correct_sim_ans = pb.decision_check(answer_sim, problem_text)
+        truth = pb.ground_truth()
         records.append(
             Record(
                 idx=i,

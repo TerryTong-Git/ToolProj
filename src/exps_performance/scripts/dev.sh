@@ -1,12 +1,12 @@
 SEEDS=(0 1 2 3 4)
 MODELS=( #7B Models
- "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
+#  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
 #  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
  "google/gemma-2-9b-it"
 )
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do
-    pixi run python cot.py \
+    pixi run python main.py \
       --backend vllm \
       --model ${MODEL} \
       --hf_dtype float16 \

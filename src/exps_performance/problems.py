@@ -1,18 +1,21 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence
 
+import networkx as nx
 from algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
 from datasets import load_dataset
 from prompts import bspPrompts, edpPrompts, gcp_dPrompts, gcpPrompts, kspPrompts, mfpPrompts, mspPrompts, sppPrompts, tsp_dPrompts
 from tqdm import tqdm
+from utils import read_dimacs_format
 
 
 @dataclass
 class Problem:
-    kind: str
+    kind: str = "null"
     digits: int = 0
     a: int = 0
     b: int = 0
@@ -98,6 +101,9 @@ class Problem:
         elif k == "ilp_partition":
             return partition_min_diff(self.data["weights"])
         raise ValueError("unknown kind")
+
+    def decision_check(self, answer, problem_text=None):
+        return int(answer == self.ground_truth())
 
 
 @dataclass
@@ -198,19 +204,9 @@ class NPHARDEVALProblem(Problem):
 
 
 def load_NPHARDEVAL() -> Sequence[Problem]:
-    ds = load_dataset("openai/NPHARDEVAL", "main", split="test")
-    items = []
-    for i, ex in enumerate(ds):
-        if check_parse_NPHARDEVAL_gold(ex["answer"]) is None:
-            continue
-        problem = NPHARDEVALProblem(
-            data={
-                "question": ex["question"],
-                "answer": ex["answer"],
-            }
-        )
-        items.append(problem)
-    return items
+    gcp_d = GCP_D()
+    data = gcp_d.load_data("/nlpgpu/data/terry/ToolProj/src/exps_performance/Data_V2/GCP_Decision/")  # smoke this
+    return data
 
 
 def parse_NPHARDEVAL_gold(ans: str) -> int:
@@ -224,6 +220,15 @@ def check_parse_NPHARDEVAL_gold(ans: str) -> Optional[int]:
 
 
 # NPHARD EVAL PROBLEMS #
+class GCP_Problem(Problem):  # to conform to Problem interface
+    def __init__(self, text):
+        self.text_data = text
+
+    def text(self):
+        return self.text_data
+
+    def ground_truth(self):  # dummy
+        return None
 
 
 class NPHardEvalProblem:
@@ -231,9 +236,8 @@ class NPHardEvalProblem:
         all_prompts = []
         for q in tqdm(qs):
             prompt_text = self.format_one(q)
-            all_prompts.append(prompt_text)
-        # output = run_opensource_models(args, MODEL, all_prompts)
-        # return output
+            all_prompts.append(GCP_Problem(prompt_text))
+        return all_prompts
 
     def instantiate_prompt(self, kwargs):
         return self.p["Intro"] + "\n" + self.p["Initial_question"].format(**kwargs) + "\n" + self.p["Output_format"] + "\n"
@@ -249,6 +253,16 @@ class GCP_D(NPHardEvalProblem):
     def __init__(self):
         self.p = gcp_dPrompts
 
+    def load_data(self, data_path):
+        all_data = []
+        n = 10
+        start = n - 9
+        for file_num in range(start, n):
+            with open(data_path + "decision_data_GCP_{}.txt".format(file_num)) as f:
+                data = f.read()
+            all_data += data.split("\n\n")[:-1]
+        return self.format(all_data)
+
     def format_one(self, q):
         number_of_colors = q.split("\n")[0].split()[-2]  # last character of the first line
         number_of_vertices = q.split("\n")[1].split(" ")[2]  # third word of the second line
@@ -260,6 +274,48 @@ class GCP_D(NPHardEvalProblem):
             this_line = "Vertex {} is connected to vertex {}.".format(vertex_list[1], vertex_list[2])
             prompt_text += this_line + "\n"
         return prompt_text
+
+    def decision_check(self, q, output):
+        number_of_colors = int(q.split("\n")[0].split()[-2])
+        return self.gcp_decision_check(q, output, number_of_colors)
+
+    def gcp_greedy_solution(self, adjacency_list):
+        """Provides a greedy solution to the GCP problem.
+
+        :param adjacency_list: A dictionary of the adjacency list.
+        :return: A tuple of (num_colors, coloring).
+        """
+        G = nx.Graph()
+        G.add_nodes_from(adjacency_list.keys())
+        for vertex, neighbors in adjacency_list.items():
+            for neighbor in neighbors:
+                G.add_edge(vertex, neighbor)
+        coloring = nx.coloring.greedy_color(G, strategy="largest_first")
+        num_colors = max(coloring.values()) + 1
+        return num_colors, coloring
+
+    def gcp_decision_check(self, dimacs_str, answer, k_colors):
+        """
+        Check if the given GCP instance is feasible with k_colors.
+
+        :param dimacs_str: The DIMACS format string of the GCP instance.
+        :param answer: The answer returned by the model.
+        :param k_colors: The target number of colors.
+        :return: A tuple of (is_correct, message).
+        """
+        num_vertices, adjacency_list = read_dimacs_format(dimacs_str)
+        try:
+            is_feasible = answer.get("Feasible", "no").lower() == "yes"
+        except ValueError:
+            return False, "Feasible key not found"
+        num_colors, coloring = self.gcp_greedy_solution(adjacency_list)
+        exist_optimal = num_colors <= k_colors
+        if is_feasible != exist_optimal:
+            if exist_optimal:
+                return False, f"Feasibility mismatch: {coloring}"
+            else:
+                return False, f"Feasibility mismatch: {is_feasible} vs {exist_optimal}"
+        return True, "Feasible" if is_feasible else "Infeasible"
 
 
 class KSP(NPHardEvalProblem):
@@ -274,6 +330,83 @@ class KSP(NPHardEvalProblem):
             this_line = f"Item {item['id']} has weight {item['weight']} and value {item['value']}."
             prompt_text += this_line + "\n"
         return prompt_text
+
+    def load_data(self, data_path):
+        with open(data_path + "ksp_instances.json", "r") as f:
+            all_data = json.load(f)
+        return all_data
+
+    def decision_check(self, q, output):
+        return self.kspCheck(q, output)
+
+    def ksp_optimal_solution(self, knapsacks, capacity):
+        """Provides the optimal solution for the KSP instance with dynamic programming.
+
+        :param knapsacks: A dictionary of the knapsacks.
+        :param capacity: The capacity of the knapsack.
+        :return: The optimal value.
+        """
+        # Create a one-dimensional array to store intermediate solutions
+        dp = [0] * (capacity + 1)
+        for itemId, (weight, value) in knapsacks.items():
+            for w in range(capacity, weight - 1, -1):
+                dp[w] = max(dp[w], value + dp[w - weight])
+
+        return dp[capacity]
+
+    # KSP
+    def kspCheck(self, instance, solution):
+        """Validates the solution for the KSP instance.
+
+        :param instance: A dictionary of the KSP instance.
+        :param solution: A dictionary of the solution.
+        :return: A tuple of (is_correct, message).
+        """
+        # Change string key to integer key and value to boolean
+        items = instance.get("items", [])
+        knapsacks = {item["id"]: (item["weight"], item["value"]) for item in items}
+
+        ksp_optimal_value = self.ksp_optimal_solution(knapsacks, instance["knapsack_capacity"])
+
+        try:
+            is_feasible = solution.get("Feasible", "").lower() == "yes"
+        except ValueError:
+            return False, "Output format is incorrect."
+        if is_feasible != (ksp_optimal_value > 0):
+            return False, f"The solution is {is_feasible} but the optimal solution is {ksp_optimal_value > 0}."
+
+        try:
+            total_value = int(solution.get("TotalValue", -1))
+            selectedItems = list(map(int, solution.get("SelectedItemIds", [])))
+        except ValueError:
+            return False, "Output format is incorrect."
+
+        if len(set(selectedItems)) != len(selectedItems):
+            return False, "Duplicate items are selected."
+
+        total_weight = 0
+        cum_value = 0
+
+        # Calculate total weight and value of selected items
+        for item in selectedItems:
+            if knapsacks.get(item, False):
+                weight, value = knapsacks[item]
+                total_weight += weight
+                cum_value += value
+            else:
+                return False, f"Item {item} does not exist."
+
+        # Check if the item weight exceeds the knapsack capacity
+        if total_weight > instance["knapsack_capacity"]:
+            return False, f"Total weight {total_weight} exceeds knapsack capacity {instance['knapsack_capacity']}."
+
+        if total_value != cum_value:
+            return False, f"The total value {total_value} does not match the cumulative value {cum_value} of the selected items."
+
+        if total_value != ksp_optimal_value:
+            return False, f"The total value {total_value} does not match the optimal value {ksp_optimal_value}."
+
+        return True, f"The solution is valid with total weight {total_weight} and total value {total_value}."
 
 
 class TSP(NPHardEvalProblem):

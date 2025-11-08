@@ -1,6 +1,10 @@
 # ------------------------------- Prompts ------------------------------------
 
-JSON_SCHEMA = "Return only JSON with keys 'rationale' and 'answer'. " "'answer' must be a single integer. No extra keys, no text outside JSON."
+JSON_SCHEMA = (
+    "Return only JSON with keys 'rationale' and 'answer'. "
+    + "'answer' is the final answer in valid json format, e.g. an int, dictionary etc. No extra keys, no text outside JSON."
+)
+
 
 # IMPORTANT: double braces {{ }} for format literals
 NL_PROMPT = """
@@ -10,7 +14,7 @@ thought process in detail. The problem is given after <|Problem|>. You should fi
 After fully reasoning through the problem in natural language, output a JSON dictionary containing two keys:
 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
-- "answer": give the final requested answer as an integer.
+- "answer": give the final requested answer.
 
 Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. 
 
@@ -67,14 +71,14 @@ What to produce in <|Response|> (in this order):
 1) A SHORT plan (2–5 bullet points) explaining your approach.
 2) A single Python code block that:
    - Defines all variables correctly, indents correctly, and computes the answer
-   - Ends by printing the final integer result on the last line via print(...).
+   - Ends by printing the final result on the last line via print(...).
    - Uses only deterministic logic (no external I/O or randomness).
    - You MAY use: math, numpy, torch, pulp, scipy, pandas (but prefer pure Python if possible).
 3) An **Execution Attempt** section where you mentally simulate the main steps of your program:
    - You should attempt to simulate the execution of the program in natural language. 
 4) A JSON object with two keys:
    - "rationale": the complete Python code solution, inside a code block.
-   - "answer": the integer result printed by your program.
+   - "answer": the result printed by your program.
 
 ================ ONE-SHOT EXAMPLE ================
 

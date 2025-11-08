@@ -28,3 +28,21 @@ def sample_int(digits: int, rng: random.Random) -> int:
     lo = 10 ** (digits - 1)
     hi = 10**digits - 1
     return rng.randint(lo, hi)
+
+
+def read_dimacs_format(dimacs_str):
+    lines = dimacs_str.strip().split("\n")
+    p_line = next(line for line in lines if line.startswith("p"))
+    _, _, num_vertices, num_edges = p_line.split()
+    num_vertices, num_edges = int(num_vertices), int(num_edges)
+
+    adjacency_list = {i: set() for i in range(1, num_vertices + 1)}
+    for line in lines:
+        if line.startswith("e"):
+            _, vertex1, vertex2 = line.split()
+            vertex1, vertex2 = int(vertex1), int(vertex2)
+            if vertex1 in adjacency_list and vertex2 in adjacency_list:
+                adjacency_list[vertex1].add(vertex2)
+                adjacency_list[vertex2].add(vertex1)
+
+    return num_vertices, adjacency_list
