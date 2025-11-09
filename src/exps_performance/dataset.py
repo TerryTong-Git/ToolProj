@@ -4,7 +4,7 @@ import random
 from typing import List, MutableSequence, Optional, Sequence
 
 import torch
-from problems import Problem, load_CLRS30, load_gsm8k, load_NPHARDEVAL
+from problems import Problem, load_CLRS30, load_gsm8k, load_NPHardEval
 from utils import rand_string
 
 try:
@@ -118,7 +118,7 @@ def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1
     if kinds[0] == "gsm8k":
         return load_gsm8k()
     if kinds[0] == "nphardeval":
-        return load_NPHARDEVAL()
+        return load_NPHardEval()
     if kinds[0] == "clrs30":
         return load_CLRS30()
     rng = random.Random(seed)

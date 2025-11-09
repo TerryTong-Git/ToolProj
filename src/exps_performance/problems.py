@@ -7,12 +7,40 @@ from typing import Any, Dict, Optional, Sequence
 
 import networkx as nx
 from algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
+from clrs.huggingface_generators import clrs_generator
 from datasets import load_dataset
 from prompts import bspPrompts, edpPrompts, gcp_dPrompts, gcpPrompts, kspPrompts, mfpPrompts, mspPrompts, sppPrompts, tsp_dPrompts
 from tqdm import tqdm
 from utils import read_dimacs_format
 
 
+def load_NPHardEval() -> Sequence[Problem]:
+    gcp_d = GCP_D()
+    return gcp_d.load_data("/nlpgpu/data/terry/ToolProj/src/exps_performance/Data_V2/GCP_Decision/")
+
+
+def load_gsm8k() -> Sequence[Problem]:
+    ds = load_dataset("openai/gsm8k", "main", split="test")
+    items = []
+    for i, ex in enumerate(ds):
+        if check_parse_gsm8k_gold(ex["answer"]) is None:
+            continue
+        problem = GSM8KProblem(
+            data={
+                "question": ex["question"],
+                "answer": ex["answer"],
+            }
+        )
+        items.append(problem)
+    return items
+
+
+def load_CLRS30() -> Sequence[Problem]:
+    clrs = CLRS()
+    return clrs.load_data()
+
+
+# make this an ABC.
 @dataclass
 class Problem:
     kind: str = "null"
@@ -120,21 +148,28 @@ class GSM8KProblem(Problem):
     def ground_truth(self) -> int:
         return parse_gsm8k_gold(self.data["answer"])
 
+    def decision_check(self, answer, problem_text=None):
+        return int(answer == self.ground_truth())
 
-def load_gsm8k() -> Sequence[Problem]:
-    ds = load_dataset("openai/gsm8k", "main", split="test")
-    items = []
-    for i, ex in enumerate(ds):
-        if check_parse_gsm8k_gold(ex["answer"]) is None:
-            continue
-        problem = GSM8KProblem(
-            data={
-                "question": ex["question"],
-                "answer": ex["answer"],
-            }
-        )
-        items.append(problem)
-    return items
+
+@dataclass
+class CLRSProblem:
+    kind: str = "clrs"
+    digits: int = 0
+    answer: str = ""
+    text_data: str = ""
+
+    def text(
+        self,
+    ):
+        return self.text_data
+
+    def decision_check(self, computed_ans, problem_text=None):
+        str_ans = str(computed_ans)
+        return int(str_ans == self.answer)
+
+    def ground_truth(self):
+        return self.answer
 
 
 def parse_gsm8k_gold(ans: str) -> int:
@@ -147,80 +182,49 @@ def check_parse_gsm8k_gold(ans: str) -> Optional[int]:
     return int(m.group(1)) if m else None
 
 
-@dataclass
-class CLRS30(Problem):
-    kind: str = "gsm8k"
-    digits: int = 0
-    a: int = 0
-    b: int = 0
-    data: Dict[str, Any] = field(default_factory=lambda: {})
-
-    def text(self) -> str:
-        return self.data["question"]
-
-    def ground_truth(self) -> int:
-        return parse_gsm8k_gold(self.data["answer"])
-
-
-def load_CLRS30() -> Sequence[Problem]:
-    ds = load_dataset("openai/gsm8k", "main", split="test")
-    items = []
-    for i, ex in enumerate(ds):
-        if check_parse_gsm8k_gold(ex["answer"]) is None:
-            continue
-        problem = CLRS30(
-            data={
-                "question": ex["question"],
-                "answer": ex["answer"],
-            }
-        )
-        items.append(problem)
-    return items
-
-
-def parse_CLRS30_gold(ans: str) -> int:
-    m = re.search(r"####\s*(-?\d+)", ans)
-    return int(m.group(1))  # type: ignore
-
-
-def check_parse_CLRS30_gold(ans: str) -> Optional[int]:
-    m = re.search(r"####\s*(-?\d+)", ans)
-    return int(m.group(1)) if m else None
-
-
-@dataclass
-class NPHARDEVALProblem(Problem):
-    kind: str = "NPHARDEVAL"
-    digits: int = 0
-    a: int = 0
-    b: int = 0
-    data: Dict[str, Any] = field(default_factory=lambda: {})
-
-    def text(self) -> str:
-        return self.data["question"]
-
-    def ground_truth(self) -> int:
-        return parse_NPHARDEVAL_gold(self.data["answer"])
-
-
-def load_NPHARDEVAL() -> Sequence[Problem]:
-    gcp_d = GCP_D()
-    data = gcp_d.load_data("/nlpgpu/data/terry/ToolProj/src/exps_performance/Data_V2/GCP_Decision/")  # smoke this
-    return data
-
-
-def parse_NPHARDEVAL_gold(ans: str) -> int:
-    m = re.search(r"####\s*(-?\d+)", ans)
-    return int(m.group(1))  # type: ignore
-
-
-def check_parse_NPHARDEVAL_gold(ans: str) -> Optional[int]:
-    m = re.search(r"####\s*(-?\d+)", ans)
-    return int(m.group(1)) if m else None
+class CLRS:
+    def load_data(self):
+        _DEFAULT_VAL_ALGOS_AND_LENGTHS = {
+            "activity_selector": list(range(4, 41)),
+            "articulation_points": list(range(4, 20)),
+            "bellman_ford": list(range(4, 33)),
+            "bfs": list(range(4, 42)),
+            "binary_search": list(range(4, 65)),
+            "bridges": list(range(4, 8)),
+            "bubble_sort": list(range(4, 12)),
+            "dag_shortest_paths": list(range(4, 20)),
+            "dfs": list(range(4, 21)),
+            "dijkstra": list(range(4, 26)),
+            "find_maximum_subarray_kadane": list(range(4, 65)),
+            "floyd_warshall": list(range(4, 12)),
+            "graham_scan": list(range(4, 32)),
+            "heapsort": list(range(4, 12)),
+            "insertion_sort": list(range(4, 26)),
+            "jarvis_march": list(range(4, 14)),
+            "kmp_matcher": list(range(4, 65)),
+            "lcs_length": list(range(4, 13)),
+            "matrix_chain_order": list(range(4, 13)),
+            "minimum": list(range(4, 65)),
+            "mst_kruskal": list(range(4, 11)),
+            "mst_prim": list(range(4, 27)),
+            "naive_string_matcher": list(range(4, 65)),
+            "optimal_bst": list(range(4, 11)),
+            "quickselect": list(range(4, 65)),
+            "quicksort": list(range(4, 13)),
+            "segments_intersect": list(range(4, 65)),
+            "strongly_connected_components": list(range(4, 17)),
+            "task_scheduling": list(range(4, 42)),
+            "topological_sort": list(range(4, 22)),
+        }
+        _DEFAULT_VAL_NUMBER_OF_SAMPLES = 2000
+        _DEFAULT_VAL_SEEDS = [0]
+        for seed in _DEFAULT_VAL_SEEDS:
+            data = clrs_generator(_DEFAULT_VAL_ALGOS_AND_LENGTHS, _DEFAULT_VAL_NUMBER_OF_SAMPLES, use_hints=False, seed=seed)
+        return [CLRSProblem(d["algo_name"], d["length"], answer=re.sub(r"\s+", "", d["answer"]), text_data=d["question"]) for d in data]
 
 
 # NPHARD EVAL PROBLEMS #
-class GCP_Problem(Problem):  # to conform to Problem interface
+class NPHardProblem(Problem):  # to conform to Problem interface
     def __init__(self, text):
         self.text_data = text
 
@@ -236,7 +240,7 @@ class NPHardEvalProblem:
         all_prompts = []
         for q in tqdm(qs):
             prompt_text = self.format_one(q)
-            all_prompts.append(GCP_Problem(prompt_text))
+            all_prompts.append(NPHardProblem(prompt_text))
         return all_prompts
 
     def instantiate_prompt(self, kwargs):

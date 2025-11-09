@@ -14,7 +14,8 @@ thought process in detail. The problem is given after <|Problem|>. You should fi
 After fully reasoning through the problem in natural language, output a JSON dictionary containing two keys:
 
 - "rationale": a comprehensive explanation summarizing your reasoning and approach to the problem.
-- "answer": give the final requested answer.
+- "answer":  Follow the same format specified in the question, default is an integer if not specified
+
 
 Ensure your explanation is clear, logically structured, and leads naturally to the final answer provided in the JSON output. 
 
@@ -78,7 +79,9 @@ What to produce in <|Response|> (in this order):
    - You should attempt to simulate the execution of the program in natural language. 
 4) A JSON object with two keys:
    - "rationale": the complete Python code solution, inside a code block.
-   - "answer": the result printed by your program.
+   - "answer": the expected result printed by your program.
+   Note that the rationale printed answer and expected answer should follow the same format 
+   specified in the question. Default is an integer if not specified. 
 
 ================ ONE-SHOT EXAMPLE ================
 
