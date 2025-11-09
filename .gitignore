@@ -5,4 +5,13 @@
 /src/models/
 /src/**/out*
 /data/*
+/src/exps_performance/**/tb/
+/src/exps_performance/**/run*
+/src/exps_performance/Data*
+/src/exps_performance/Open/
+/NPHardEval/
+
+/src/exps_pret_corr/data/
+/src/exps_pret_corr/faiss_index/
+/src/exps_code_analysis/
 .env
