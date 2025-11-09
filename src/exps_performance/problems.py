@@ -1,22 +1,35 @@
 from __future__ import annotations
 
+import ast
 import json
+import os
 import re
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Sequence
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
 
 import networkx as nx
+import numpy as np
+import pandas as pd
 from algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
 from clrs.huggingface_generators import clrs_generator
 from datasets import load_dataset
-from prompts import bspPrompts, edpPrompts, gcp_dPrompts, gcpPrompts, kspPrompts, mfpPrompts, mspPrompts, sppPrompts, tsp_dPrompts
+from prompts import bspPrompts, edpPrompts, gcp_dPrompts, gcpPrompts, kspPrompts, mfpPrompts, mspPrompts, sppPrompts, tsp_dPrompts, tspPrompts
 from tqdm import tqdm
 from utils import read_dimacs_format
 
 
 def load_NPHardEval() -> Sequence[Problem]:
-    gcp_d = GCP_D()
-    return gcp_d.load_data("/nlpgpu/data/terry/ToolProj/src/exps_performance/Data_V2/GCP_Decision/")
+    all_subclasses = NPHardEvalProblem.__subclasses__()
+    file_path = os.path.join(Path(__name__).parent, "Data_V2")
+    all_data: List[Problem] = []
+    for CLASS in all_subclasses:
+        if CLASS is NPHardEvalProblem:
+            continue
+        data = CLASS().load_data(os.path.join(file_path, CLASS.folder_name))  # type: ignore[abstract]
+        all_data += data
+    return all_data
 
 
 def load_gsm8k() -> Sequence[Problem]:
@@ -166,6 +179,9 @@ class CLRSProblem:
 
     def decision_check(self, computed_ans, problem_text=None):
         str_ans = str(computed_ans)
+        import pdb
+
+        pdb.set_trace()
         return int(str_ans == self.answer)
 
     def ground_truth(self):
@@ -220,7 +236,7 @@ class CLRS:
         _DEFAULT_VAL_SEEDS = [0]
         for seed in _DEFAULT_VAL_SEEDS:
             data = clrs_generator(_DEFAULT_VAL_ALGOS_AND_LENGTHS, _DEFAULT_VAL_NUMBER_OF_SAMPLES, use_hints=False, seed=seed)
-        return [CLRSProblem(d["algo_name"], d["length"], answer=re.sub(r"\s+", "", d["answer"]), text_data=d["question"]) for d in data]
+        return [CLRSProblem(d["algo_name"], d["length"], answer=re.sub(r"\s+", "", d["answer"]), text_data=d["question"]) for d in data][:100]
 
 
 # NPHARD EVAL PROBLEMS #
@@ -235,25 +251,35 @@ class NPHardProblem(Problem):  # to conform to Problem interface
         return None
 
 
-class NPHardEvalProblem:
-    def format(self, qs):
+class NPHardEvalProblem(ABC):
+    folder_name: str
+
+    def format(self, qs) -> Sequence[Problem]:
         all_prompts = []
         for q in tqdm(qs):
             prompt_text = self.format_one(q)
             all_prompts.append(NPHardProblem(prompt_text))
         return all_prompts
 
+    @abstractmethod
+    def load_data(self, data_path: str) -> Sequence[Problem]:
+        raise NotImplementedError
+
     def instantiate_prompt(self, kwargs):
         return self.p["Intro"] + "\n" + self.p["Initial_question"].format(**kwargs) + "\n" + self.p["Output_format"] + "\n"
 
+    @abstractmethod
     def format_one(self, q):
         raise NotImplementedError
 
-    def check(self):
+    @abstractmethod
+    def decision_check(self, q, output):
         raise NotImplementedError
 
 
 class GCP_D(NPHardEvalProblem):
+    folder_name = "GCP_Decision"
+
     def __init__(self):
         self.p = gcp_dPrompts
 
@@ -413,9 +439,19 @@ class KSP(NPHardEvalProblem):
         return True, f"The solution is valid with total weight {total_weight} and total value {total_value}."
 
 
-class TSP(NPHardEvalProblem):
+class TSP_D(NPHardEvalProblem):
     def __init__(self):
         self.p = tsp_dPrompts
+
+    def load_data(self, data_path):
+        n = 11
+        start = n - 10
+        all_data = []
+        for level in range(start, n):
+            for file_num in range(10):
+                df = pd.read_csv(data_path + "decision_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1), header=None, index_col=False)
+                all_data.append(df)
+        return all_data
 
     def format_one(self, q):
         threshold = q.iloc[-1, 0]  # therashold is the last row
@@ -431,6 +467,166 @@ class TSP(NPHardEvalProblem):
                     this_line = "The distance between City {} and City {} is {}.".format(i, j, adj_matrix[i, j])
                     prompt_text += this_line + "\n"
         return prompt_text
+
+    def tsp_approx(self, distance_matrix):
+        """Returns an approximate solution to the TSP problem.
+
+        :param distance_matrix: A 2D numpy array representing the distance matrix.
+        :return: A list of the cities in the order they were visited.
+        """
+        G = nx.from_numpy_array(distance_matrix)
+        return nx.approximation.traveling_salesman_problem(G)
+
+    def tsp_decision_check(self, distance_matrix, threshold, tour):
+        """
+        Checks if a given TSP tour is valid and within the threshold distance.
+
+        :param distance_matrix: A 2D numpy array representing the distance matrix.
+        :param threshold: The maximum distance allowed.
+        :param tour: A dictionary containing the feasibility.
+        """
+        try:
+            is_feasible = tour.get("Feasible", "no").lower() == "yes"
+        except:  # noqa: E722
+            return False, "Output format incorrect"
+
+        # Calculate the approxed distance of the tour
+        tours = self.tsp_approx(distance_matrix)
+        tour_distance = sum(distance_matrix[tours[i], tours[i + 1]] for i in range(len(tours) - 1)) + distance_matrix[tours[-1], tours[0]]
+
+        if is_feasible != (tour_distance <= threshold):
+            return False, f"Feasibility mismatch: {is_feasible} vs {tour_distance} > {threshold}"
+        return True, "Feasible: {} <= {}".format(tour_distance, threshold)
+
+    def decision_check(self, q, output):
+        threshold = q.iloc[-1, 0]  # therashold is the last row
+        distance_matrix = q.iloc[:-1].values  # distance matrix is the rest of the rows
+        return self.tsp_decision_check(distance_matrix, threshold, output)
+
+
+class TSP(NPHardEvalProblem):
+    def __init__(self):
+        self.p = tspPrompts
+
+    def format_one(self, q):
+        total_cities = q.shape[0]
+        prompt_text = self.instantiate_prompt(dict(total_cities=total_cities)) + "The distances between cities are below: \n"
+
+        for i in range(q.shape[0]):
+            for j in range(q.shape[1]):
+                if i < j:  # only use the upper triangle
+                    this_line = "The path between City {} and City {} is with distance {}.".format(i, j, q.iloc[i, j])
+                    prompt_text += this_line + "\n"
+
+        return prompt_text
+
+    def load_data(self, data_path):
+        n = 11
+        all_data = []
+        start = n - 10
+        for level in range(start, n):
+            for file_num in range(10):
+                # read np arrary
+                df = pd.read_csv(
+                    data_path + "synthesized_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1), header=None, index_col=False
+                )
+                # transform df to
+                all_data.append(df)
+        return all_data
+
+    def greedy_tsp(self, distance_matrix):
+        """
+        Solve the Traveling Salesman Problem using a greedy algorithm.
+
+        :param distance_matrix: 2D numpy array where the element at [i, j] is the distance between city i and j
+        :return: A tuple containing a list of the cities in the order they were visited and the total distance
+        """
+        num_cities = distance_matrix.shape[0]
+        unvisited_cities = set(range(num_cities))
+        current_city = np.random.choice(list(unvisited_cities))
+        tour = [current_city]
+        total_distance = 0
+
+        while unvisited_cities:
+            unvisited_cities.remove(current_city)
+            if unvisited_cities:
+                # Find the nearest unvisited city
+                distances_to_unvisited = distance_matrix[current_city][list(unvisited_cities)]
+                nearest_city = list(unvisited_cities)[np.argmin(distances_to_unvisited)]
+                tour.append(nearest_city)
+                # Update the total distance
+                total_distance += distance_matrix[current_city, nearest_city]
+                current_city = nearest_city
+
+        # Return to start
+        total_distance += distance_matrix[current_city, tour[0]]
+        tour.append(tour[0])
+
+        return tour, total_distance
+
+    def tspCheck(self, distance_matrix, final_answer_element):
+        """
+        Check if the TSP solution is complete and if the distance matches the greedy solution.
+
+        :param tour_string: String representing the TSP tour in the format "0->1->2->...->N->0"
+        :param distance_matrix: 2D numpy array representing the distances between cities
+        :return: Boolean indicating whether the tour is complete and matches the greedy distance
+        """
+        # convert distance_matrix to numpy array
+        distance_matrix = np.array(distance_matrix)
+
+        # Convert the tour string to a list of integers
+        # convert solution to dictionary
+        if final_answer_element == "":
+            return False
+        elif final_answer_element is None:
+            return False
+        else:
+            if isinstance(final_answer_element, str):
+                try:
+                    tour_string = ast.literal_eval(final_answer_element)["Path"]
+                    if tour_string is None:
+                        return False
+                except:  # noqa: E722
+                    try:
+                        tour_string = ast.literal_eval("{" + final_answer_element + "}")["Path"]
+                        if tour_string is None:
+                            return False
+                    except:  # noqa: E722
+                        return False
+            else:
+                try:
+                    tour_string = ast.literal_eval(final_answer_element.text)["Path"]
+                    if tour_string is None:
+                        return False
+                except:  # noqa: E722
+                    return False
+        try:
+            tour = list(map(int, tour_string.split("->")))
+        except:  # noqa: E722
+            return False
+        # we could also prinpt `reasoning_element` to see the reasoning of the answer
+        # we could also print the final distance of the tour by `final_answer_element['Distance']`
+
+        # Check if tour is a cycle
+        if tour[0] != tour[-1]:
+            return False, "The tour must start and end at the same city."
+
+        # Check if all cities are visited
+        if len(tour) != len(distance_matrix) + 1:
+            return False, "The tour does not visit all cities exactly once."
+
+        # Calculate the distance of the provided tour
+        tour_distance = sum(distance_matrix[tour[i]][tour[i + 1]] for i in range(len(tour) - 1))
+
+        # Find the greedy tour distance for comparison
+        greedy_tour, greedy_distance = self.greedy_tsp(distance_matrix)
+
+        # Check if the provided tour distance is equal to the greedy tour distance
+        if tour_distance != greedy_distance:
+            return False, f"The tour distance ({tour_distance}) does not match the greedy solution ({greedy_distance})."
+
+        return True, "The solution is complete and matches the greedy solution distance."
 
 
 class GCP(NPHardEvalProblem):

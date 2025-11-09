@@ -25,7 +25,6 @@ from typing import Any, Callable, List, Optional, Tuple
 
 import jax
 import numpy as np
-import numpy.ndarray as ndarray
 from absl import logging
 from clrs import algorithms, probing, specs
 
@@ -831,7 +830,7 @@ def _batch_io(traj_io: Trajectories) -> Trajectory:
     return jax.tree_util.tree_map(lambda *x: np.concatenate(x), *traj_io)
 
 
-def _batch_hints(traj_hints: Trajectories, min_steps: int) -> tuple[Trajectory, ndarray[tuple[int], float]]:
+def _batch_hints(traj_hints: Trajectories, min_steps: int) -> tuple[Trajectory, np.ndarray[tuple[int], float]]:  # type: ignore [type-var]
     """Batches a trajectory of hints samples along the time axis per probe.
 
     Unlike i/o, hints have a variable-length time dimension. Before batching, each
@@ -871,12 +870,12 @@ def _batch_hints(traj_hints: Trajectories, min_steps: int) -> tuple[Trajectory, 
                 assert hint_lengths[sample_idx] == cur_length
             else:
                 hint_lengths[sample_idx] = cur_length
-    return batched_traj, hint_lengths
+    return batched_traj, hint_lengths  # type: ignore [return-value]
 
 
 def _subsample_data(
     trajectory: Trajectory,
-    idx: ndarray[tuple[Any, ...]],
+    idx: np.ndarray[tuple[Any, ...]],
     axis: int = 0,
 ) -> Trajectory:
     """New `Trajectory` where each `DataPoint`'s data is subsampled along axis."""

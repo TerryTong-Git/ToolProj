@@ -1,5 +1,11 @@
 # ------------------------------- Prompts ------------------------------------
 
+# Should have a part designated to code reasoning, versus NL reasoning in the prompt.
+# Then a format part, which may differ for each problem.
+# Then for each problem they specify their own format etc.
+# Store the prompt with the problem actually...
+
+
 JSON_SCHEMA = (
     "Return only JSON with keys 'rationale' and 'answer'. "
     + "'answer' is the final answer in valid json format, e.g. an int, dictionary etc. No extra keys, no text outside JSON."
