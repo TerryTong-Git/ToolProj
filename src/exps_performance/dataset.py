@@ -121,6 +121,7 @@ def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1
         return load_NPHardEval()
     if kinds[0] == "clrs30":
         return load_CLRS30()
+
     rng = random.Random(seed)
     problems: MutableSequence[Problem] = []
     K = max(1, len(kinds))

@@ -10,6 +10,7 @@
 /src/exps_performance/Data*
 /src/exps_performance/Open/
 /NPHardEval/
+/**/tmp/
 
 /src/exps_pret_corr/data/
 /src/exps_pret_corr/faiss_index/

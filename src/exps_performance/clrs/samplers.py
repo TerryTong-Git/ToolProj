@@ -131,7 +131,7 @@ class Sampler(abc.ABC):
         super().__init_subclass__(**kwargs)
         # Check that the subclass has overridden CAN_TRUNCATE_INPUT_DATA
         if getattr(cls, "CAN_TRUNCATE_INPUT_DATA", None) is None:
-            raise NotImplementedError(f"{cls.__name__} must define class attribute" " 'CAN_TRUNCATE_INPUT_DATA'.")
+            raise NotImplementedError(f"{cls.__name__} must define class attribute 'CAN_TRUNCATE_INPUT_DATA'.")
 
     def _make_batch(self, num_samples: int, spec: specs.Spec, min_length: int, algorithm: Algorithm, *args, **kwargs):
         """Generate a batch of data."""

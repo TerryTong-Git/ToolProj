@@ -121,7 +121,7 @@ class VLLMClient(LLMClient):
     ):
         assert dtype == "float16", "Wrong dtype"
         if VLLMEngine is None:
-            raise RuntimeError("vLLM is not installed. Install a CUDA-matching vLLM wheel " "(e.g. vllm-cu121) or build from source.")
+            raise RuntimeError("vLLM is not installed. Install a CUDA-matching vLLM wheel (e.g. vllm-cu121) or build from source.")
         # vLLM engine (persistent)
         self.seed = seed
         self.llm = VLLMEngine(

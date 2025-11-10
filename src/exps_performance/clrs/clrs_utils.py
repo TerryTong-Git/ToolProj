@@ -401,7 +401,7 @@ def _feature_to_str(
     """Converts a numerical CLRS feature into a string."""
     if x.shape[0] != 1:
         raise ValueError(
-            "Feature first dimension (batch) must be 1 but it has shape" f" {x.shape}.",
+            f"Feature first dimension (batch) must be 1 but it has shape {x.shape}.",
         )
 
     x = x[0]
