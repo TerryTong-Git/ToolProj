@@ -2,8 +2,9 @@ import ast
 
 import numpy as np
 import pandas as pd
-from problems.nphardeval import NPHardEvalProblem
-from prompts import tspPrompts
+
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.prompts import tspPrompts
 
 
 class TSP(NPHardEvalProblem):
@@ -22,6 +23,7 @@ class TSP(NPHardEvalProblem):
 
         return prompt_text
 
+    @staticmethod
     def load_data(self, data_path):
         n = 11
         all_data = []

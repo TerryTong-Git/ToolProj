@@ -2,7 +2,7 @@ import re
 from dataclasses import field
 from typing import Any, Dict, Optional
 
-from problems import Problem
+from src.exps_performance.problems import Problem
 
 
 class GSM8KProblem(Problem):

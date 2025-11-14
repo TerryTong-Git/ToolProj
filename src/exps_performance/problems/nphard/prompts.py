@@ -1,38 +1,3 @@
-sppPrompts = {
-    "Intro": "The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph.",
-    "Initial_question": "You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given.",
-    "Output_content": "Please provide the shortest path from {start_node} to {end_node} and its total distance. Offer a concise step-by-step explanation of your reasoning process. Aim for brevity and clarity in your response.",
-    "Finetune_content": "Please provide the shortest path from {start_node} to {end_node} and its total distance.",
-    "Finetune_format": "Your output should be enclosed within <root></root> tags. Include the final path and total distance in <final_answer></final_answer> tags",
-    "Output_format": """Your output should be enclosed within <root></root> tags. Include your reasoning in <reasoning></reasoning> tags and the final path and total distance in <final_answer></final_answer> tags. \
-Below are two examples with null content but correct formating: 
-<example1>
-<root>
-<reasoning>
-your reasoning thoughts ...
-</reasoning>
-<final_answer>
-{'Path': '0->......->3', 'TotalDistance': 'i'} (where '0->......->3' is an example path, 'i' is the total distance of the path)
-</final_answer>
-</root>
-</example1>
-
-<example2>
-<root>
-<reasoning>
-your reasoning thoughts ...
-</reasoning>
-<final_answer>
-{'Path': '0->......->3', 'TotalDistance': 'j'} (where '0->......->3' is an example path, 'j' is the total distance of the path)
-</final_answer>
-</root>
-</example2>
-
-Generate your answer following the format in the above two examples.""",
-    "Few_shot_self": "",
-    "Few_shot_others": "",
-}
-
 mfpPrompts = {
     "Intro": "The Maximum Flow Problem (MFP) seeks to find the maximum possible flow from a source node to a sink node in a flow network, subject to capacity constraints on the edges.",
     "Initial_question": "Determine the maximum flow from the source node {source_node} to the sink node {sink_node} in the given flow network. The capacities of the edges are provided.",

@@ -1,13 +1,15 @@
 import networkx as nx
 import pandas as pd
-from problems.nphardeval import NPHardEvalProblem
-from prompts import tsp_dPrompts
+
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.prompts import tsp_dPrompts
 
 
 class TSP_D(NPHardEvalProblem):
     def __init__(self):
         self.p = tsp_dPrompts
 
+    @staticmethod
     def load_data(self, data_path):
         n = 11
         start = n - 10

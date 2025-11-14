@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import networkx as nx
-from problems.nphardeval import NPHardEvalProblem
-from prompts import gcp_dPrompts
-from utils import read_dimacs_format
+
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.prompts import gcp_dPrompts
+from src.exps_performance.utils import read_dimacs_format
 
 
 class GCP_D(NPHardEvalProblem):

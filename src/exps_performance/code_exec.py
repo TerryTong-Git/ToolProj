@@ -9,7 +9,8 @@ import time
 from typing import Any, Dict, List, Optional
 
 import torch
-from utils import INT_RE, extract_fenced_code
+
+from src.exps_performance.utils import INT_RE, extract_fenced_code
 
 try:
     from vllm import LLM as VLLMEngine

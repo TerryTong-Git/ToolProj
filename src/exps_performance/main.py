@@ -31,13 +31,14 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import torch
-from code_exec import exec_from_rationale
-from dataset import make_dataset
-from llm import DummyClient, HFLocalClient, LLMClient, OpenAIChatClient, VLLMClient
-from parsing import parse_response
-from prompts import CODE_PROMPT, NL_PROMPT, SIM_PROMPT
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+
+from src.exps_performance.code_exec import exec_from_rationale
+from src.exps_performance.dataset import make_dataset
+from src.exps_performance.llm import DummyClient, HFLocalClient, LLMClient, OpenAIChatClient, VLLMClient, run_batch
+from src.exps_performance.parsing import parse_response
+from src.exps_performance.prompts import CODE_PROMPT, NL_PROMPT, SIM_PROMPT
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.deterministic = True
@@ -95,6 +96,7 @@ def mcnemar_exact_p(b: int, c: int) -> float:
 # ------------------------------- Runner -------------------------------------
 
 
+# break this down so its testable, like writing to logdir etc.
 def run(args):
     # backend
     random.seed(args.seed)
@@ -151,28 +153,9 @@ def run(args):
     nl_msgs = [[{"role": "user", "content": NL_PROMPT.format(problem=pb.text())}] for pb in problems]
     code_msgs = [[{"role": "user", "content": CODE_PROMPT.format(problem=pb.text())}] for pb in problems]
 
-    def run_batch(messages_list):
-        if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
-            outs = []
-            for start in tqdm(range(0, len(messages_list), args.batch_size), desc="Chatting"):
-                chunk = messages_list[start : start + args.batch_size]
-                outs.extend(
-                    client.chat_many(
-                        args.model,
-                        chunk,
-                        max_tokens=args.max_tokens,
-                        temperature=args.temperature,
-                        top_p=args.top_p,
-                        stop=None,
-                    )
-                )
-            return outs
-        else:
-            return [client.chat(args.model, m, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None) for m in tqdm(messages_list)]
-
     # === Generate all NL outputs, then all Code outputs (order preserved) ===
-    nl_raw_all = run_batch(nl_msgs)
-    code_raw_all = run_batch(code_msgs)
+    nl_raw_all = run_batch(nl_msgs, args, client)
+    code_raw_all = run_batch(code_msgs, args, client)
 
     records: List[Record] = []
     for i, pb in enumerate(tqdm(problems, total=len(problems), desc="eval")):
@@ -396,6 +379,7 @@ def run(args):
 # ------------------------------- CLI ----------------------------------------
 
 
+# add simple parsing type checking to this.
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--n", type=int, default=100, help="total problems (balanced over kinds)")

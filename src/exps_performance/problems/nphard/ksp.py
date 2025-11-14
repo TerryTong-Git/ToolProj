@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from problems.nphardeval import NPHardEvalProblem
-from prompts import kspPrompts
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.prompts import kspPrompts
 
 
 class KSP(NPHardEvalProblem):

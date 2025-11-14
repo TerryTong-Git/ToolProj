@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Any
 
-from problems import Problem
+from src.exps_performance.problems import Problem
 
 
 class NPHardEvalProblem(Problem):
+    folder_name: str
+
     def ground_truth(self):  # dummy
         return None
 
@@ -22,5 +25,9 @@ class NPHardEvalProblem(Problem):
         )
 
     @abstractmethod
-    def format_one(self, q):
+    def format_one(self, q: Any) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_data(self, data_path):
         raise NotImplementedError

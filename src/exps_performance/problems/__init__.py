@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -12,5 +13,5 @@ class Problem(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def format_one(self):
-        return self.instantiate_prompt()
+    def format_one(self, q: Any) -> str:
+        raise NotImplementedError

@@ -216,6 +216,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/6d/64/67750672b4354ca20ca18d3d1ccf2c62a072e8a2d452ac3cf8ced73571ef/jiter-0.10.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/1e/e8/685f47e0d754320684db4425a0967f7d3fa70126bffd76110b7009a0090f/joblib-1.5.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/85/e2/05328bd2621be49a6fed9e3030b1e51a2d04537d3f816d211b9cc53c5262/json5-0.12.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/73/07/02e16ed01e04a374e644b575638ec7987ae846d25ad97bcc9945a3ee4b0e/jsonpatch-1.33-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/71/92/5e77f98553e9e75130c78900d000368476aed74276eb8ae8796f65f00918/jsonpointer-3.0.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bf/9c/8c95d856233c1f82500c2450b8c68576b4cf1c871db3afac5c34ff84e6fd/jsonschema-4.25.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/01/0e/b27cdbaccf30b890c40ed1da9fd4a3593a5cf94dae54fb34f8a4b74fcd3f/jsonschema_specifications-2025.4.1-py3-none-any.whl
@@ -229,6 +230,13 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/b1/dd/ead9d8ea85bf202d90cc513b533f9c363121c7792674f78e0d8a854b63b4/jupyterlab_pygments-0.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/54/09/2032e7d15c544a0e3cd831c51d77a8ca57f7555b2e1b2922142eddb02a84/jupyterlab_server-2.27.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d4/42/0f333164e6307a0687d1eb9ad256215aae2f4bd5d28f4653d6cd319a3ba3/kiwisolver-1.4.9-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/e1/4f/2603973fb3b74c717335703851a45914bc9794fbfaeb4ff74f7f08ecf5e8/langchain-1.0.5-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/8e/ac/7032e5eb1c147a3d8e0a21a70e77d7efbd6295c8ce4833b90f6ff1750da9/langchain_core-1.0.4-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d7/b1/9f4912e13d4ed691f2685c8a4b764b5a9237a30cca0c5782bc213d9f0a9a/langgraph-1.0.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/48/e3/616e3a7ff737d98c1bbb5700dd62278914e2a9ded09a79a1fa93cf24ce12/langgraph_checkpoint-3.0.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/27/2f/9a7d00d4afa036e65294059c7c912002fb72ba5dbbd5c2a871ca06360278/langgraph_prebuilt-1.0.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/05/b2d34e16638241e6f27a6946d28160d4b8b641383787646d41a3727e0896/langgraph_sdk-0.2.9-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/0f/17/4280bc381b40a642ea5efe1bab0237f03507a9d4281484c5baa1db82055a/langsmith-0.4.42-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2d/00/d90b10b962b4277f5e64a78b6609968859ff86889f5b898c1a778c06ec00/lark-1.2.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c6/21/2ffbab5714e72f2483207b4a1de79b2eecd9debbf666ff4e7067bcc5c134/llvmlite-0.43.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/57/1c/7bb80fe2dff9a9c38b180571ca867f518eb9110f79d4b670ea124e153680/lm_format_enforcer-0.10.12-py3-none-any.whl
@@ -273,6 +281,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/1d/2a/7dd3d207ec669cacc1f186fd856a0f61dbc255d24f6fdc1a6715d6051b0f/openai-1.109.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dd/5c/c139a7876099916879609372bfa513b7f1257f7f1a908b0bdc1c2328241b/opencv_python_headless-4.11.0.86-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/c6/3a/b31c8f0182a3e27f48e703f46e61bb769666cd0dac4700a73912d07a1417/orjson-3.11.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/23/d6/1f445947c95a931bb189b7864a3f9dcbeebe7dcbc1b3c7387427b3779228/ormsgpack-1.12.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/13/b4/99ea4a122bef60e3fd6402d19665aff1f928e0daf8fac3044d0b73f72003/outlines-0.1.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c9/c2/1d85bfeaee3a83327e0d162bee4bdc7d7889bea5998e44fcc66c924dc1fd/outlines_core-0.1.26-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/2c/ab/fc8290c6a4c722e5514d80f62b2dc4c4df1a68a41d1364e625c35990fcf3/overrides-7.7.0-py3-none-any.whl
@@ -314,6 +324,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/19/33/a93006a038e38d697b0a068a8516ee1061ab48cbd1be98707bedd328a86c/ray-2.49.1-cp310-cp310-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/c1/b1/3baf80dc6d2b7bc27a95a67752d0208e410351e3feb4eb78de5f77454d8d/referencing-0.36.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/b3/0f9f7766e980b900df0ba9901b52871a2e4203698fb35cdebd219240d5f7/regex-2025.9.1-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/3f/51/d4db610ef29373b879047326cbf6fa98b6c1969d6f6dc423279de2b1be2c/requests_toolbelt-1.0.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/57/4d/a7545bf6c62b0dbe5795f22ea9e88cc070fdced5c34663ebc5bed2f610c0/returns-0.26.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7b/44/4e421b96b67b2daff264473f7465db72fbdf36a07e05494f50300cc7b0c6/rfc3339_validator-0.1.4-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9e/51/17023c0f8f1869d8806b979a2bffa3f861f26a3f1a66b094288323fba52f/rfc3986_validator-0.1.1-py2.py3-none-any.whl
@@ -342,6 +353,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/a1/25/edf20acbd670934b02cd9344e29c9a03ce040122324b3491bb075ae76b2d/statsmodels-0.14.5-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/b2/fe/81695a1aa331a842b582453b605175f419fe8540355886031328089d840a/sympy-1.13.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0a/7d/3165c7538b8e89b22fa17ad68e04106cca7023cf68e94011ae7b3b6d2a78/tables-3.10.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/e5/30/643397144bfbfec6f6ef821f36f33e57d35946c44a2352d3c9f0ae847619/tenacity-9.1.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9c/d9/a5db55f88f258ac669a92858b70a714bbbd5acd993820b41ec4a96a4d77f/tensorboard-2.20.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7a/13/e503968fefabd4c6b2650af21e110aa8466fe21432cd7c43a84577a89438/tensorboard_data_server-0.7.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e0/1d/b5d63f1a6b824282b57f7b581810d20b7a28ca951f2d5b59f1eb0782c12b/tensorboardx-2.6.4-py3-none-any.whl
@@ -2072,6 +2084,13 @@ packages:
   - twine==6.1.0 ; extra == 'dev'
   - uv==0.6.11 ; extra == 'dev'
   requires_python: '>=3.8.0'
+- pypi: https://files.pythonhosted.org/packages/73/07/02e16ed01e04a374e644b575638ec7987ae846d25ad97bcc9945a3ee4b0e/jsonpatch-1.33-py2.py3-none-any.whl
+  name: jsonpatch
+  version: '1.33'
+  sha256: 0ae28c0cd062bbd8b8ecc26d7d164fbbea9652a1a3693f3b956c1eae5145dade
+  requires_dist:
+  - jsonpointer>=1.9
+  requires_python: '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*'
 - pypi: https://files.pythonhosted.org/packages/71/92/5e77f98553e9e75130c78900d000368476aed74276eb8ae8796f65f00918/jsonpointer-3.0.0-py2.py3-none-any.whl
   name: jsonpointer
   version: 3.0.0
@@ -2401,6 +2420,104 @@ packages:
   purls: []
   size: 1370023
   timestamp: 1719463201255
+- pypi: https://files.pythonhosted.org/packages/e1/4f/2603973fb3b74c717335703851a45914bc9794fbfaeb4ff74f7f08ecf5e8/langchain-1.0.5-py3-none-any.whl
+  name: langchain
+  version: 1.0.5
+  sha256: d59ce7303f1d9e4bca41855b20a1842f4470a22d09a64fb93fb0ff30a2d36d4b
+  requires_dist:
+  - langchain-core>=1.0.4,<2.0.0
+  - langgraph>=1.0.2,<1.1.0
+  - pydantic>=2.7.4,<3.0.0
+  - langchain-anthropic ; extra == 'anthropic'
+  - langchain-aws ; extra == 'aws'
+  - langchain-azure-ai ; extra == 'azure-ai'
+  - langchain-community ; extra == 'community'
+  - langchain-deepseek ; extra == 'deepseek'
+  - langchain-fireworks ; extra == 'fireworks'
+  - langchain-google-genai ; extra == 'google-genai'
+  - langchain-google-vertexai ; extra == 'google-vertexai'
+  - langchain-groq ; extra == 'groq'
+  - langchain-huggingface ; extra == 'huggingface'
+  - langchain-mistralai ; extra == 'mistralai'
+  - langchain-model-profiles ; extra == 'model-profiles'
+  - langchain-ollama ; extra == 'ollama'
+  - langchain-openai ; extra == 'openai'
+  - langchain-perplexity ; extra == 'perplexity'
+  - langchain-together ; extra == 'together'
+  - langchain-xai ; extra == 'xai'
+  requires_python: '>=3.10.0,<4.0.0'
+- pypi: https://files.pythonhosted.org/packages/8e/ac/7032e5eb1c147a3d8e0a21a70e77d7efbd6295c8ce4833b90f6ff1750da9/langchain_core-1.0.4-py3-none-any.whl
+  name: langchain-core
+  version: 1.0.4
+  sha256: 53caa351d9d73b56f5d9628980f36851cfa725977508098869fdc2d246da43b3
+  requires_dist:
+  - jsonpatch>=1.33.0,<2.0.0
+  - langsmith>=0.3.45,<1.0.0
+  - packaging>=23.2.0,<26.0.0
+  - pydantic>=2.7.4,<3.0.0
+  - pyyaml>=5.3.0,<7.0.0
+  - tenacity>=8.1.0,!=8.4.0,<10.0.0
+  - typing-extensions>=4.7.0,<5.0.0
+  requires_python: '>=3.10.0,<4.0.0'
+- pypi: https://files.pythonhosted.org/packages/d7/b1/9f4912e13d4ed691f2685c8a4b764b5a9237a30cca0c5782bc213d9f0a9a/langgraph-1.0.2-py3-none-any.whl
+  name: langgraph
+  version: 1.0.2
+  sha256: b3d56b8c01de857b5fb1da107e8eab6e30512a377685eeedb4f76456724c9729
+  requires_dist:
+  - langchain-core>=0.1
+  - langgraph-checkpoint>=2.1.0,<4.0.0
+  - langgraph-prebuilt>=1.0.2,<1.1.0
+  - langgraph-sdk>=0.2.2,<0.3.0
+  - pydantic>=2.7.4
+  - xxhash>=3.5.0
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/48/e3/616e3a7ff737d98c1bbb5700dd62278914e2a9ded09a79a1fa93cf24ce12/langgraph_checkpoint-3.0.1-py3-none-any.whl
+  name: langgraph-checkpoint
+  version: 3.0.1
+  sha256: 9b04a8d0edc0474ce4eaf30c5d731cee38f11ddff50a6177eead95b5c4e4220b
+  requires_dist:
+  - langchain-core>=0.2.38
+  - ormsgpack>=1.12.0
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/27/2f/9a7d00d4afa036e65294059c7c912002fb72ba5dbbd5c2a871ca06360278/langgraph_prebuilt-1.0.2-py3-none-any.whl
+  name: langgraph-prebuilt
+  version: 1.0.2
+  sha256: d9499f7c449fb637ee7b87e3f6a3b74095f4202053c74d33894bd839ea4c57c7
+  requires_dist:
+  - langchain-core>=1.0.0
+  - langgraph-checkpoint>=2.1.0,<4.0.0
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/66/05/b2d34e16638241e6f27a6946d28160d4b8b641383787646d41a3727e0896/langgraph_sdk-0.2.9-py3-none-any.whl
+  name: langgraph-sdk
+  version: 0.2.9
+  sha256: fbf302edadbf0fb343596f91c597794e936ef68eebc0d3e1d358b6f9f72a1429
+  requires_dist:
+  - httpx>=0.25.2
+  - orjson>=3.10.1
+  requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/0f/17/4280bc381b40a642ea5efe1bab0237f03507a9d4281484c5baa1db82055a/langsmith-0.4.42-py3-none-any.whl
+  name: langsmith
+  version: 0.4.42
+  sha256: 015b0a0c17eb1a61293e8cbb7d41778a4b37caddd267d54274ba94e4721b301b
+  requires_dist:
+  - httpx>=0.23.0,<1
+  - orjson>=3.9.14 ; platform_python_implementation != 'PyPy'
+  - packaging>=23.2
+  - pydantic>=1,<3
+  - requests-toolbelt>=1.0.0
+  - requests>=2.0.0
+  - zstandard>=0.23.0
+  - claude-agent-sdk>=0.1.0 ; python_full_version >= '3.10' and extra == 'claude-agent-sdk'
+  - langsmith-pyo3>=0.1.0rc2 ; extra == 'langsmith-pyo3'
+  - openai-agents>=0.0.3 ; extra == 'openai-agents'
+  - opentelemetry-api>=1.30.0 ; extra == 'otel'
+  - opentelemetry-exporter-otlp-proto-http>=1.30.0 ; extra == 'otel'
+  - opentelemetry-sdk>=1.30.0 ; extra == 'otel'
+  - pytest>=7.0.0 ; extra == 'pytest'
+  - rich>=13.9.4 ; extra == 'pytest'
+  - vcrpy>=7.0.0 ; extra == 'pytest'
+  - vcrpy>=7.0.0 ; extra == 'vcr'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/2d/00/d90b10b962b4277f5e64a78b6609968859ff86889f5b898c1a778c06ec00/lark-1.2.2-py3-none-any.whl
   name: lark
   version: 1.2.2
@@ -3804,6 +3921,16 @@ packages:
   purls: []
   size: 1188881
   timestamp: 1735630209320
+- pypi: https://files.pythonhosted.org/packages/c6/3a/b31c8f0182a3e27f48e703f46e61bb769666cd0dac4700a73912d07a1417/orjson-3.11.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  name: orjson
+  version: 3.11.4
+  sha256: fb6a03a678085f64b97f9d4a9ae69376ce91a3a9e9b56a82b1580d8e1d501aff
+  requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/23/d6/1f445947c95a931bb189b7864a3f9dcbeebe7dcbc1b3c7387427b3779228/ormsgpack-1.12.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  name: ormsgpack
+  version: 1.12.0
+  sha256: 45f911d9c5b23d11e49ff03fc8f9566745a2b1a7d9033733a1c0a2fa9301cd60
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/13/b4/99ea4a122bef60e3fd6402d19665aff1f928e0daf8fac3044d0b73f72003/outlines-0.1.11-py3-none-any.whl
   name: outlines
   version: 0.1.11
@@ -4827,6 +4954,13 @@ packages:
   - pkg:pypi/requests?source=compressed-mapping
   size: 59263
   timestamp: 1755614348400
+- pypi: https://files.pythonhosted.org/packages/3f/51/d4db610ef29373b879047326cbf6fa98b6c1969d6f6dc423279de2b1be2c/requests_toolbelt-1.0.0-py2.py3-none-any.whl
+  name: requests-toolbelt
+  version: 1.0.0
+  sha256: cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06
+  requires_dist:
+  - requests>=2.0.1,<3.0.0
+  requires_python: '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*'
 - pypi: https://files.pythonhosted.org/packages/57/4d/a7545bf6c62b0dbe5795f22ea9e88cc070fdced5c34663ebc5bed2f610c0/returns-0.26.0-py3-none-any.whl
   name: returns
   version: 0.26.0
@@ -5348,6 +5482,17 @@ packages:
   - numpydoc ; extra == 'doc'
   - ipython ; extra == 'doc'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/e5/30/643397144bfbfec6f6ef821f36f33e57d35946c44a2352d3c9f0ae847619/tenacity-9.1.2-py3-none-any.whl
+  name: tenacity
+  version: 9.1.2
+  sha256: f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138
+  requires_dist:
+  - reno ; extra == 'doc'
+  - sphinx ; extra == 'doc'
+  - pytest ; extra == 'test'
+  - tornado>=4.5 ; extra == 'test'
+  - typeguard ; extra == 'test'
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/9c/d9/a5db55f88f258ac669a92858b70a714bbbd5acd993820b41ec4a96a4d77f/tensorboard-2.20.0-py3-none-any.whl
   name: tensorboard
   version: 2.20.0
@@ -5458,7 +5603,7 @@ packages:
 - pypi: ./
   name: tools
   version: 0.1.0
-  sha256: 64729370e15d9241dd34605e56f9d3604aa0d748b8c421d7ca432a39cde2b8b5
+  sha256: 0795deb201540208ea0d5e3414865c77283d576f5e65bec6472ec43c2560db73
   requires_dist:
   - transformer-lens>=2.16.1,<3
   - ipykernel>=6.30.1,<7
@@ -5493,6 +5638,7 @@ packages:
   - simplejson>=3.20.2,<4
   - chex>=0.1.90,<0.2
   - tensorboard>=2.20.0,<3
+  - langchain[all]>=1.0.5,<2
   - pytest ; extra == 'dev'
   - ruff ; extra == 'dev'
   - mypy ; extra == 'dev'

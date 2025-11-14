@@ -1,7 +1,7 @@
 import json
 
-from problems.nphardeval import NPHardEvalProblem
-from prompts import bspPrompts
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.prompts import bspPrompts
 
 
 class BSP(NPHardEvalProblem):

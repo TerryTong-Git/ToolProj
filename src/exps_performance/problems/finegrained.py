@@ -4,12 +4,12 @@ from abc import abstractmethod
 from dataclasses import field
 from typing import Any, Dict
 
-from algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
-from problems import Problem
+from src.exps_performance.algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
+from src.exps_performance.problems import Problem
 
 
 class FineGrainedProblems(Problem):
-    def format_one(self):
+    def format_one(self, q: Any) -> str:
         return self.instantiate_prompt()
 
     def decision_check(self, answer, problem_text=None):
@@ -17,7 +17,7 @@ class FineGrainedProblems(Problem):
 
     @abstractmethod
     def ground_truth(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def instantiate_prompt(self):
@@ -62,7 +62,7 @@ class Multiplication(ArithmeticProblems):
 
 
 class LCS(DPProblem):
-    def format_one(self) -> str:
+    def format_one(self, q: Any) -> str:
         s = self.data["s"]
         t = self.data["t"]
         return f'Compute the length of the Longest Common Subsequence (LCS) between strings:\nS = "{s}"\nT = "{t}"'
@@ -72,7 +72,7 @@ class LCS(DPProblem):
 
 
 class KnapSack(DPProblem):
-    def format_one(self) -> str:
+    def format_one(self, q: Any) -> str:
         w = self.data["weights"]
         v = self.data["values"]
         C = self.data["capacity"]
@@ -83,7 +83,7 @@ class KnapSack(DPProblem):
 
 
 class RodCutting(DPProblem):
-    def format_one(self) -> str:
+    def format_one(self, q: Any) -> str:
         prices = self.data["prices"]
         N = len(prices)
         return "Rod cutting: Given a rod of length N and price list P[1..N], " "compute the maximum obtainable revenue.\n" f"N = {N}\nP = {prices}"
@@ -93,7 +93,7 @@ class RodCutting(DPProblem):
 
 
 class ILPAssign(ILPProblem):
-    def format_one(self) -> str:
+    def format_one(self, q: Any) -> str:
         C = self.data["cost"]
         return (
             "Assignment problem: Given an n×n cost matrix C, assign each worker to one task "
@@ -106,7 +106,7 @@ class ILPAssign(ILPProblem):
 
 
 class ILPPartition(ILPProblem):
-    def format_one(self) -> str:
+    def format_one(self, q: Any) -> str:
         w = self.data["weights"]
         return (
             "Partition: Split the items into two groups to minimize the absolute difference between the sums. "
@@ -119,7 +119,7 @@ class ILPPartition(ILPProblem):
 
 
 class ILPProd(ILPProblem):
-    def format_one(self) -> str:
+    def format_one(self, q: Any) -> str:
         prof = self.data["profit"]
         cons = self.data["consumption"]
         caps = self.data["capacity"]

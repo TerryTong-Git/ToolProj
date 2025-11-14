@@ -5,7 +5,26 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from utils import INT_RE, extract_fenced_code
+from pydantic import BaseModel, Field
+
+from src.exps_performance.utils import INT_RE, extract_fenced_code
+
+
+# try just execute with exec
+class CodeReasoning(BaseModel):
+    code: str = Field(description="The code that solves the problem, printing out the solution")
+    simulation: str = Field(description="The attempt at simulating the code")
+    answer: str = Field(description="The answer the code outputs")
+
+
+class NLReasoning(BaseModel):
+    reasoning: str = Field(description="Step by step reasoning chain used to solve the problem")
+    answer: str = Field(description="The answer arrived at after reasoning")
+
+
+class JustCode(BaseModel):
+    answer: str = Field(description="The answer the code outputs")
+
 
 # ------------------------------- Parsing ------------------------------------
 

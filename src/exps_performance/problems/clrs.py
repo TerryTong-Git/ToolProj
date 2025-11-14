@@ -1,4 +1,4 @@
-from problems import Problem
+from src.exps_performance.problems import Problem
 
 
 class CLRSProblem(Problem):

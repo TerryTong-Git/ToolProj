@@ -5,6 +5,7 @@ import re
 from typing import Dict, List, Optional
 
 import torch
+from tqdm import tqdm
 from transformers import AutoTokenizer
 
 try:
@@ -254,3 +255,23 @@ class HFLocalClient(LLMClient):
                 cut = min(i for i in idxs if i >= 0)
                 text = text[:cut]
         return text
+
+
+def run_batch(messages_list, args, client):
+    if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
+        outs = []
+        for start in tqdm(range(0, len(messages_list), args.batch_size), desc="Chatting"):
+            chunk = messages_list[start : start + args.batch_size]
+            outs.extend(
+                client.chat_many(
+                    args.model,
+                    chunk,
+                    max_tokens=args.max_tokens,
+                    temperature=args.temperature,
+                    top_p=args.top_p,
+                    stop=None,
+                )
+            )
+        return outs
+    else:
+        return [client.chat(args.model, m, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None) for m in tqdm(messages_list)]
