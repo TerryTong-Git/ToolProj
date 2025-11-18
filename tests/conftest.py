@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
+from src.exps_performance.dataset import NPHARD
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
 
 
@@ -32,6 +33,11 @@ class CreateArgs:
 @pytest.fixture(scope="session")
 def default_args():
     return CreateArgs()
+
+
+@pytest.fixture(scope="session")
+def instantiate_data():
+    return NPHARD().load()
 
 
 @pytest.fixture(scope="session")

@@ -1,16 +1,32 @@
 from __future__ import annotations
 
+import os
 from abc import abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
-from src.exps_performance.problems import Problem
+from src.exps_performance.problems import Problem, ProblemUtil
 
 
+@dataclass
 class NPHardEvalProblem(Problem):
-    folder_name: str
+    def util_pointer(self):
+        return NPHardEvalProblemUtil
 
-    def ground_truth(self):  # dummy
-        return None
+
+@dataclass
+class NPHardEvalProblemUtil(ProblemUtil):
+    @property
+    def folder_name(self):
+        if "." in __name__:
+            path = "/".join(__name__.split("."))
+        else:
+            path = __name__
+        return os.path.join(Path(path).parent.parent, "Data_V2")
+
+    # def ground_truth(self):  # dummy
+    #     return None
 
     def instantiate_prompt(self, kwargs):
         return (

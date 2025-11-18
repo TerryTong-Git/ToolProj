@@ -1,6 +1,8 @@
 import ast
 import json
-from typing import Any, Tuple
+import os
+from dataclasses import dataclass
+from typing import List, Tuple
 
 import networkx as nx
 from langchain_core.exceptions import OutputParserException
@@ -8,7 +10,7 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
 
 sppPrompts = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
@@ -69,44 +71,64 @@ class ControlledCodeSim(BaseModel):
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
-PROB_TYPES = {"sim": ControlledCodeSim, "code": SPPCodeReasoning, "nl": SPPNLReasoning}
-PROMPTS = {"sim": sim_template, "code": sppPrompts, "nl": sppPrompts_nl}
-
-
 # have a record class keep track of parse failure statistics
 
 # incorporate this decision logic into a base class to share.
 
 
+@dataclass
 class SPP(NPHardEvalProblem):
+    kind: str = "spp"
+    type: str = "code"  # could be sim, nl etc
+    nodes: List[int] = [0]
+    edges: List[tuple] = [()]
+    complexity_level: int = -1
+    formatted_prompt: str = ""
+    code: str = ""
+
+    @property
+    def util_pointer(self):
+        return SPPUtil
+
+
+# need to update this
+class SPPUtil(NPHardEvalProblemUtil):
     def __init__(self, prob_type):
+        PROB_TYPES = {"sim": ControlledCodeSim, "code": SPPCodeReasoning, "nl": SPPNLReasoning}
+        PROMPTS = {"sim": sim_template, "code": sppPrompts, "nl": sppPrompts_nl}
+        self.PROB_TYPES = PROB_TYPES
+        self.PROMPTS = PROMPTS
         assert prob_type in list(PROB_TYPES.keys())
         self.prob_type = prob_type
         self.p = sppPrompts
         self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
-        if prob_type != "sim":
-            self.prompt = PromptTemplate(
-                template=PROMPTS[prob_type],
+        self.instancetype = SPP
+
+    @property  # should be an abstract property implemented by all classes to decide which template to use
+    def prompt(self):
+        if self.prob_type != "sim":
+            return PromptTemplate(
+                template=self.PROMPTS[self.prob_type],
                 input_variables=["start_node", "end_node", "edges"],
                 partial_variables={"format_instructions": self.parser.get_format_instructions()},
             )
         else:
-            self.prompt = PromptTemplate(
-                template=PROMPTS[prob_type],
+            return PromptTemplate(
+                template=self.PROMPTS[self.prob_type],
                 input_variables=["code"],
                 partial_variables={"format_instructions": self.parser.get_format_instructions()},
             )
 
-    def format_one(self, q: Any) -> str:
+    def format_one(self, q: SPP) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q).to_string()
-        start_node = q["nodes"][0]
-        end_node = q["nodes"][-1]
-        edges = q["edges"]
+            return self.prompt.format_prompt(code=q.code).to_string()
+        start_node = q.nodes[0]
+        end_node = q.nodes[-1]
+        edges = q.edges
 
         edge_string = "\n The graph's edges and weights are as follows: \n"
         for edge in edges:
-            this_line = f"Edge from {edge['from']} to {edge['to']} has a weight of {edge['weight']}."
+            this_line = f"Edge from {edge['from']} to {edge['to']} has a weight of {edge['weight']}."  # type: ignore
             edge_string += this_line + "\n"
         prompt_text = self.prompt.format_prompt(start_node=start_node, end_node=end_node, edges=edge_string)
         return prompt_text.to_string()
@@ -117,11 +139,10 @@ class SPP(NPHardEvalProblem):
             return self.parser.parse(output)  # ok
         except OutputParserException:
             # another way to default to blanks
-            return PROB_TYPES[self.prob_type]()  # err
+            return self.PROB_TYPES[self.prob_type]()  # err
 
-    @staticmethod
-    def load_data(data_path):
-        with open(data_path + "spp_instances.json", "r") as f:
+    def load_data(self):
+        with open(os.path.join(self.folder_name, "SPP", "spp_instances.json"), "r") as f:
             all_data = json.load(f)
         return all_data
 
@@ -134,8 +155,8 @@ class SPP(NPHardEvalProblem):
         :return: The optimal shortest path length and path.
         """
         G = nx.Graph()
-        G.add_nodes_from(instance["nodes"])
-        G.add_weighted_edges_from([(edge["from"], edge["to"], edge["weight"]) for edge in instance["edges"]])
+        G.add_nodes_from(instance.nodes)
+        G.add_weighted_edges_from([(edge["from"], edge["to"], edge["weight"]) for edge in instance.edges])
         shortest_path_length = None
         shortest_path = None
         if nx.has_path(G, source=source, target=target):
@@ -144,7 +165,7 @@ class SPP(NPHardEvalProblem):
         return shortest_path_length, shortest_path
 
     # SPP
-    def decision_check(self, instance: dict, solution: SPPCodeReasoning, start_node=None, end_node=None) -> Tuple[bool, str]:
+    def decision_check(self, instance: SPP, solution: SPPCodeReasoning, start_node=None, end_node=None) -> Tuple[bool, str]:
         """Validate the solution of the SPP problem.
 
         :param instance: The instance dictionary with nodes and edges.
@@ -165,9 +186,9 @@ class SPP(NPHardEvalProblem):
         # Get the start and end nodes
         # Curently, the start and end nodes are the first and last nodes in the instance
         if start_node is None:
-            start_node = instance["nodes"][0]
+            start_node = instance.nodes[0]
         if end_node is None:
-            end_node = instance["nodes"][-1]
+            end_node = instance.nodes[-1]
 
         # Convert solution to dictionary, know that it conforms to schema.
         path_string = solution.Path
@@ -196,17 +217,19 @@ class SPP(NPHardEvalProblem):
 
         # Check if the path is continuous and calculate the cost
         calculated_cost = 0
+
+        # TODO: lambda funcs are unclear, change it
         is_in_edge = lambda edge, from_node, to_node: (edge["from"] == from_node and edge["to"] == to_node) or (  # noqa
             edge["from"] == to_node and edge["to"] == from_node
         )
         for i in range(len(path) - 1):
             from_node, to_node = path[i], path[i + 1]
-            edge = next((edge for edge in instance["edges"] if is_in_edge(edge, from_node, to_node)), None)
+            edge = next((edge for edge in instance.edges if is_in_edge(edge, from_node, to_node)), None)
 
             if not edge:
                 return False, f"No edge found from node {from_node} to node {to_node}."
 
-            calculated_cost += edge["weight"]
+            calculated_cost += edge["weight"]  # type: ignore
 
         # Check if the calculated cost matches the total cost provided in the solution
         if calculated_cost != total_cost:

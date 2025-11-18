@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import os
 import random
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import List, MutableSequence, Optional, Sequence
 
 import torch
 
 from src.exps_performance.problems import Problem
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem
+from src.exps_performance.problems.nphard.spp import SPPUtil
 
 try:
     from vllm import LLM as VLLMEngine
@@ -37,16 +35,17 @@ class Dataset(ABC):
         raise NotImplementedError
 
 
+problem_types = [SPPUtil]
+
+
 class NPHARD(Dataset):
     def load(self) -> Sequence[Problem]:
-        all_subclasses = NPHardEvalProblem.__subclasses__()
-        file_path = os.path.join(Path(__name__).parent, "Data_V2")
         all_data: List[Problem] = []
-        for CLASS in all_subclasses:
-            if CLASS is NPHardEvalProblem:
-                continue
-            data = CLASS().load_data(os.path.join(file_path, CLASS.folder_name))  # type: ignore[abstract]
-            all_data += data
+        for ProblemType in problem_types:
+            classInstance = ProblemType("code")
+            data = classInstance.load_data()  # type: ignore[abstract]
+            problem = classInstance.instancetype
+            all_data += [problem(**d) for d in data]
         return all_data
 
 

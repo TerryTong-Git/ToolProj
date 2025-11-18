@@ -12,24 +12,23 @@ from src.exps_performance.utils import clean_code_llm, remove_json_backticks
 
 
 # only count instances that were parsed?
-def test_spp_llm(instantiate_llm, default_args):
+def test_spp_llm(instantiate_llm, instantiate_data, default_args):
     num_examples = 5
-    spp = SPP("code")
-    data = spp.load_data("/nlpgpu/data/terry/ToolProj/src/exps_performance/Data_V2/SPP/")
-
+    data = instantiate_data
     # check the first 3 examples and see if they work.
-    examples = [spp.format_one(d) for d in data[:num_examples]]
+    examples = [(d.util_pointer)("code").format_one(d) for d in data[:num_examples]]
     messages = [[{"role": "user", "content": example}] for example in examples]
     client = instantiate_llm
     answers = run_batch(messages, default_args, client)
 
     parsed_answer = []
-    for i, answer in enumerate(answers):  # with retries for formatting
-        parsed = spp.parse_output(remove_json_backticks(answer))
+    for i, pairs in enumerate(zip(data[:num_examples], answers)):  # with retries for formatting
+        d, answer = pairs
+        parsed = (d.util_pointer)("code").parse_output(remove_json_backticks(answer))
         count = 0
         while parsed == SPPCodeReasoning() and count < 3:
             rerun = run_batch([messages[i]], default_args, client)[0]
-            reparsed = spp.parse_output(remove_json_backticks(rerun))
+            reparsed = (d.util_pointer)("code").parse_output(remove_json_backticks(rerun))
             with open("/nlpgpu/data/terry/ToolProj/tests/log.txt", "a+") as f:
                 f.write(f"Retrying {i}")
             parsed = reparsed
@@ -39,7 +38,7 @@ def test_spp_llm(instantiate_llm, default_args):
     code_to_run = []
     for q, p in zip(data[:num_examples], parsed_answer):
         # assert parsed_answer != SPPCodeReasoning(), "rerun parse failure"
-        correct, reason = spp.decision_check(q, p)  # integrate err handling here or nah, do like wilcoxon.
+        correct, reason = (q.util_pointer)("code").decision_check(q, p)  # integrate err handling here or nah, do like wilcoxon.
         # assert not correct, "should be wrong for all three for deepseekcoder if deterministic"
         code = p.code
         cleaned_code = clean_code_llm(str(code))
@@ -57,11 +56,11 @@ def test_spp_llm(instantiate_llm, default_args):
     code_ran = [extract_locals(code) for code in code_to_run]  # extract the local variable from prompt.
 
     for q, p in zip(data[:num_examples], code_ran):
-        if p == -1:
+        if p == -1 or len(p) < 2:
             sol = SPPCodeReasoning(prefix="", code="", code_answer="", simulation="", Path="", TotalDistance="")
         else:
             sol = SPPCodeReasoning(prefix="", code="", code_answer="", simulation="", Path=str(p[0]), TotalDistance=str(p[1]))
-        correct, reason = spp.decision_check(q, sol)
+        correct, reason = (q.util_pointer)("code").decision_check(q, sol)
         import pdb
 
         pdb.set_trace()
