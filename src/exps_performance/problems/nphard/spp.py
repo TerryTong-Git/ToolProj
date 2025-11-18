@@ -1,3 +1,4 @@
+import ast
 import json
 from typing import Any, Tuple
 
@@ -12,55 +13,60 @@ from src.exps_performance.problems.nphardeval import NPHardEvalProblem
 sppPrompts = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
     "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    " \n ONLY RETURN ACCORDING TO THE FORMAT!!! THIS IS REALLY IMPORTANT. DO USE PROSE BEFORE OR AFTER THE FORMAT. Here are the format instructions: {format_instructions}"
+    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
 )
 
 sppPrompts_nl = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
     "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    " \n ONLY RETURN STRUCTURED OUTPUT ACCORDING TO THE FORMAT!!! THIS IS REALLY IMPORTANT. DO NOT TALK TO ME, OR GIVE ME A DESCRIPTION, JUST GIVE THE FORMAT. DO USE PROSE OR CODE BEFORE OR AFTER THE GIVEN FORMAT. YOU ARE NEVER ALLOWED TO USE CODE. Here are the format instructions: {format_instructions}"
+    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
 )
 
-sim_template = "Simulate the execution of the provided code: {code} \n ONLY RETURN ACCORDING TO THE FORMAT!!! THIS IS REALLY IMPORTANT. DO USE PROSE BEFORE OR AFTER THE FORMAT. Here are the format instructions: {format_instructions}"
+sim_template = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
 
 
+default_code_instr = """
+The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
+
+```python
+def solution():
+    import numpy as np
+    variable = [0,1,2,3]
+    out = np.sum(variable) 
+    return out
+```
+
+""".strip()
+
+
+# easier to format as a list, but string
 # a local variable called answer should hold the answer? Then when I run the code, I can extract the local variable?
 class SPPCodeReasoning(BaseModel):
-    prefix: str = Field(description="Description of the problem and approach")
-    imports: str = Field(description="Code block of import statements")
-    code: str = Field(description="The code block without imports that solves the problem.")
-    print_statement: str = Field(
-        description="The final piece of the code block that prints the variables to the required output format. For this question, it is JSON format: {'Path': '0->1->2->3','TotalDistance': '8'}. You must print something like this."
+    code: str = Field(
+        description=default_code_instr + "Here are the required types: def solution() -> tuple[list[int], int]",
+        default="",
     )
-    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.")
-    Path: str = Field(
-        description="This is part of the final answer, and the path that the code simulation gives. This should not be a piece of code, but rather, an instance of the answer. Give the answer separated by arrows. For example: '0->1->2->3'. Answers without this are completely wrong"
-    )
-    TotalDistance: str = Field(
-        description="This is part of the final answer, and the total distance the code simulation gives. This should not be a piece of code, but rather, an instance of the answer. For example: 8. Answers without this are completely wrong. "
-    )
+    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.", default="")
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
 class SPPNLReasoning(BaseModel):
     reasoning: str = Field(
-        description="The attempt at simulating the problem in natural language reasoning to give the final answer. YOU ARE NEVER ALLOWED TO GENERATE CODE."
+        description="The attempt at simulating the problem in natural language reasoning to give the final answer.",
+        default="",
     )
-    Path: str = Field(
-        description="This is part of the final answer, and the path that the natural language reasoning simulation gives. Give the answer separated by arrows. For example: '0->1->2->3'. Answers without this are completely wrong"
-    )
-    TotalDistance: str = Field(
-        description="This is part of the final answer, and the total distance the natural language reasoning simulation gives. For example: 8. Answers without this are completely wrong. "
-    )
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
 class ControlledCodeSim(BaseModel):
-    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer. ")
-    Path: str = Field(
-        description="This is part of the final answer, and the path that the code simulation gives. This should not be a piece of code, but rather, an instance of the answer. Give the answer separated by arrows. For example: '0->1->2->3'. Answers without this are completely wrong"
+    simulation: str = Field(
+        description="The attempt at simulating the code in natural language reasoning to give the final answer.",
+        default="",
     )
-    TotalDistance: str = Field(
-        description="This is part of the final answer, and the total distance the code simulation gives. This should not be a piece of code, but rather, an instance of the answer. For example: 8. Answers without this are completely wrong. "
-    )
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
 PROB_TYPES = {"sim": ControlledCodeSim, "code": SPPCodeReasoning, "nl": SPPNLReasoning}
@@ -68,6 +74,10 @@ PROMPTS = {"sim": sim_template, "code": sppPrompts, "nl": sppPrompts_nl}
 
 
 # have a record class keep track of parse failure statistics
+
+# incorporate this decision logic into a base class to share.
+
+
 class SPP(NPHardEvalProblem):
     def __init__(self, prob_type):
         assert prob_type in list(PROB_TYPES.keys())
@@ -89,7 +99,7 @@ class SPP(NPHardEvalProblem):
 
     def format_one(self, q: Any) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format(q).to_string()
+            return self.prompt.format_prompt(code=q).to_string()
         start_node = q["nodes"][0]
         end_node = q["nodes"][-1]
         edges = q["edges"]
@@ -102,11 +112,12 @@ class SPP(NPHardEvalProblem):
         return prompt_text.to_string()
 
     # returns either instance of code, nl, or sim class, or err.
-    def parse_output(self, output) -> Any:
+    def parse_output(self, output) -> BaseModel:  # returns one of the pydantic objects
         try:
             return self.parser.parse(output)  # ok
         except OutputParserException:
-            return 0  # err
+            # another way to default to blanks
+            return PROB_TYPES[self.prob_type]()  # err
 
     @staticmethod
     def load_data(data_path):
@@ -144,6 +155,12 @@ class SPP(NPHardEvalProblem):
         """
 
         # take string and parse it.
+        all_none = True
+        for key, value in vars(solution).items():
+            is_none = value == ""
+            all_none &= is_none
+        if all_none:
+            return (False, "Parse error")
 
         # Get the start and end nodes
         # Curently, the start and end nodes are the first and last nodes in the instance
@@ -164,8 +181,14 @@ class SPP(NPHardEvalProblem):
             else:
                 return True, "No path found from node {start_node} to node {end_node}."
 
-        path = list(map(int, path_string.split("->")))
-        total_cost = int(cost_string)
+        try:
+            path = ast.literal_eval(path_string)  # expecting a string [0,1,2,3]
+        except SyntaxError:  # something wrong witht he parse, e.g. '0 trying to cast to int.
+            path = []
+        try:
+            total_cost = int(cost_string)
+        except ValueError:  # could not cast
+            total_cost = -1
 
         # Check if path starts and ends with the correct nodes
         if not path or path[0] != start_node or path[-1] != end_node:

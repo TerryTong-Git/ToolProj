@@ -4,8 +4,65 @@ from abc import abstractmethod
 from dataclasses import field
 from typing import Any, Dict
 
+from pydantic import BaseModel, Field
+
 from src.exps_performance.algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
 from src.exps_performance.problems import Problem
+
+sppPrompts = (
+    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
+    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
+    " \n ONLY RETURN ACCORDING TO THE FORMAT!!! THIS IS REALLY IMPORTANT. DO USE PROSE BEFORE OR AFTER THE FORMAT. Here are the format instructions: {format_instructions}"
+)
+
+sppPrompts_nl = (
+    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
+    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
+    " \n ONLY RETURN STRUCTURED OUTPUT ACCORDING TO THE FORMAT!!! THIS IS REALLY IMPORTANT. DO NOT TALK TO ME, OR GIVE ME A DESCRIPTION, JUST GIVE THE FORMAT. DO USE PROSE OR CODE BEFORE OR AFTER THE GIVEN FORMAT. YOU ARE NEVER ALLOWED TO USE CODE. Here are the format instructions: {format_instructions}"
+)
+
+sim_template = "Simulate the execution of the provided code: {code} \n ONLY RETURN ACCORDING TO THE FORMAT!!! THIS IS REALLY IMPORTANT. DO USE PROSE BEFORE OR AFTER THE FORMAT. Here are the format instructions: {format_instructions}"
+
+
+# a local variable called answer should hold the answer? Then when I run the code, I can extract the local variable?
+class CodeReasoning(BaseModel):
+    prefix: str = Field(description="Description of the problem and approach")
+    imports: str = Field(description="Code block of import statements. Define all necessary imports that are necessary to execute the below code")
+    code: str = Field(description="The code block without imports that solves the problem. This should be a self-contained function.")
+    code_answer: str = Field(
+        description="The final piece of the code block that calls the function specified in the code block and puts the answer in a local variable 'answer'. ALWAYS USE THE VARIABLE NAME 'answer'. Make sure the code is executable in its entirety by defining all the variables necessary for execution from the text, e.g. the graph variables. For example, for a function FUNC(a,b) with a=1 and b=2, set answer = Function(1,2)"
+    )
+    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.")
+
+
+class AdditionCodeReasoning(CodeReasoning):
+    Answer: str = Field(
+        description="This is part of the final answer, and the sum that the code simulation gives. This should not be a piece of code, but rather, an instance of the answer. Give just the answer as an integer. For example: '0'. Answers without this are completely wrong"
+    )
+
+
+class NLReasoning(BaseModel):
+    reasoning: str = Field(
+        description="The attempt at simulating the problem in natural language reasoning to give the final answer. YOU ARE NEVER ALLOWED TO GENERATE CODE."
+    )
+
+
+class AdditionNLReasoning(NLReasoning):
+    Path: str = Field(
+        description="This is part of the final answer, and the path that the natural language reasoning simulation gives. Give the answer as an integer. For example: '0'. Answers without this are completely wrong"
+    )
+
+
+class ControlledCodeSim(BaseModel):
+    simulation: str = Field(
+        description="The attempt at simulating the code in natural language reasoning to give the final answer. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. If you don't know, just say you don't know."
+    )
+
+
+class AdditionSim(ControlledCodeSim):
+    Answer: str = Field(
+        description="This is part of the final answer, and the sum that the code simulation gives. This should not be a piece of code, but rather, an instance of the answer. Give just the answer as an integer. For example: '0'. Answers without this are completely wrong"
+    )
 
 
 class FineGrainedProblems(Problem):

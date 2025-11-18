@@ -1,0 +1,22 @@
+'ProgramChatInterface' object has no attribute 'runtime'
+'ProgramChatInterface' object has no attribute 'runtime'
+'ProgramChatInterface' object has no attribute 'runtime'
+'ProgramChatInterface' object has no attribute 'runtime'
+'ProgramChatInterface' object has no attribute 'runtime'
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+1
+1
+name 'solution' is not defined
+name 'heapq' is not defined
+name 'heapq' is not defined
+name 'solution' is not defined
+None
+name 'solution' is not defined
+unindent does not match any outer indentation level (<string>, line 37)
+name 'solution' is not defined
+Retrying 2Retrying 3Retrying 4Retrying 4name 'distances' is not defined
+unindent does not match any outer indentation level (<string>, line 23)
+Retrying 0Retrying 2

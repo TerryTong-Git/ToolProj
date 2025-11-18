@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, MutableSequence, Optional, Sequence
 
@@ -25,17 +26,28 @@ try:
 except Exception:
     pass
 
+# data interface
 
-def load_NPHardEval() -> Sequence[Problem]:
-    all_subclasses = NPHardEvalProblem.__subclasses__()
-    file_path = os.path.join(Path(__name__).parent, "Data_V2")
-    all_data: List[Problem] = []
-    for CLASS in all_subclasses:
-        if CLASS is NPHardEvalProblem:
-            continue
-        data = CLASS().load_data(os.path.join(file_path, CLASS.folder_name))  # type: ignore[abstract]
-        all_data += data
-    return all_data
+# runner interface -> track statistics
+
+
+class Dataset(ABC):
+    @abstractmethod
+    def load(self) -> Sequence[Problem]:
+        raise NotImplementedError
+
+
+class NPHARD(Dataset):
+    def load(self) -> Sequence[Problem]:
+        all_subclasses = NPHardEvalProblem.__subclasses__()
+        file_path = os.path.join(Path(__name__).parent, "Data_V2")
+        all_data: List[Problem] = []
+        for CLASS in all_subclasses:
+            if CLASS is NPHardEvalProblem:
+                continue
+            data = CLASS().load_data(os.path.join(file_path, CLASS.folder_name))  # type: ignore[abstract]
+            all_data += data
+        return all_data
 
 
 def load_gsm8k() -> Sequence[Problem]:
@@ -160,7 +172,7 @@ def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1
     if kinds[0] == "gsm8k":
         return load_gsm8k()
     if kinds[0] == "nphardeval":
-        return load_NPHardEval()
+        return NPHARD().load()
     if kinds[0] == "clrs30":
         return load_CLRS30()
 

@@ -7,6 +7,28 @@ INT_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 FENCE_RE = re.compile(r"```[a-zA-Z0-9]*\s*\n([\s\S]*?)\n```", re.MULTILINE)
 
 
+def clean_code_llm(code: str) -> str:
+    pat = r"\`\`\`python(.*)\`\`\`"
+    match = re.search(pat, code, flags=re.DOTALL)
+    if match:
+        return match.group(1)
+    else:
+        code = code.replace("```", "")
+        code = code.replace("python", "")
+        return code
+
+
+def remove_json_backticks(code: str) -> str:
+    pat = r"\`\`\`json(.*)\`\`\`"
+    match = re.search(pat, code, flags=re.DOTALL)
+    if match:
+        return match.group(1)
+    else:
+        code = code.replace("```", "")
+        code = code.replace("json", "")
+        return code
+
+
 def rand_string(rng: random.Random, alpha="abcd", n: Optional[int] = None, lo=5, hi=12) -> str:
     if n is None:
         n = rng.randint(lo, hi)

@@ -71,13 +71,20 @@ class DummyClient(LLMClient):
         return json.dumps(out)
 
 
+openai_api_key = "EMPTY"
+openai_api_base = "http://localhost:8000/v1"
+
+
 class OpenAIChatClient(LLMClient):
-    def __init__(self, seed):
+    def __init__(self, seed=0):
         try:
             from openai import OpenAI  # type: ignore
         except Exception as e:
             raise RuntimeError("pip install openai>=1.0 required") from e
-        self.client = OpenAI()
+        self.client = OpenAI(
+            api_key=openai_api_key,
+            base_url=openai_api_base,
+        )
         self.seed = seed
         print("Instantiated OPENAI!")
 
@@ -90,14 +97,13 @@ class OpenAIChatClient(LLMClient):
         top_p: float,
         stop: Optional[List[str]] = None,
     ) -> str:
-        print("Currently Chatting OPENAI!")
         resp = self.client.chat.completions.create(
             model=model,
             messages=messages,
             top_p=top_p,
             max_completion_tokens=max_tokens,
             stop=stop,
-            seed=self.seed,
+            # seed=self.seed,
         )
         return resp.choices[0].message.content
 
