@@ -45,5 +45,5 @@ class NPHardEvalProblemUtil(ProblemUtil):
         raise NotImplementedError
 
     @abstractmethod
-    def load_data(self, data_path):
+    def load_data(self):
         raise NotImplementedError

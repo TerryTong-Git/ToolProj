@@ -1,24 +1,24 @@
-import ast
+import os
 from dataclasses import dataclass, field
-from typing import List
 
 import numpy as np
 import pandas as pd
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
+from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
 
 tspPrompts = (
-    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
-    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+    "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city.",
+    "Question: You must find the shortest path that visits all {total_cities} cities, labelled from 1 to {total_cities}. The distances between each pair of cities are provided.\n {citystring}",
+    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}",
 )
 
 tspPrompts_nl = (
-    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
-    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+    "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city.",
+    "Question: You must find the shortest path that visits all {total_cities} cities, labelled from 1 to {total_cities}. The distances between each pair of cities are provided.\n {citystring}",
+    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}",
 )
 
 sim_template = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
@@ -72,8 +72,7 @@ class TSPControlledCodeSim(BaseModel):
 class TSP(NPHardEvalProblem):
     kind: str = "tsp"
     type: str = "code"  # could be sim, nl etc
-    nodes: List[int] = field(default_factory=[])  # type: ignore
-    edges: List[tuple] = field(default_factory=[])  # type: ignore
+    distance_matrix: pd.DataFrame = field(default_factory=pd.DataFrame([]))  # type: ignore
     complexity_level: int = -1
     formatted_prompt: str = ""
     code: str = ""
@@ -95,31 +94,51 @@ class TSPUtil(NPHardEvalProblemUtil):
         self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
         self.instancetype = TSP
 
-    def format_one(self, q):
-        total_cities = q.shape[0]
-        prompt_text = self.instantiate_prompt(dict(total_cities=total_cities)) + "The distances between cities are below: \n"
+    @property  # should be an abstract property implemented by all classes to decide which template to use
+    def prompt(self):
+        if self.prob_type != "sim":
+            return PromptTemplate(
+                template=self.PROMPTS[self.prob_type],
+                input_variables=["total_cities", "citystring"],
+                partial_variables={"format_instructions": self.parser.get_format_instructions()},
+            )
+        else:
+            return PromptTemplate(
+                template=self.PROMPTS[self.prob_type],
+                input_variables=["code"],
+                partial_variables={"format_instructions": self.parser.get_format_instructions()},
+            )
 
-        for i in range(q.shape[0]):
-            for j in range(q.shape[1]):
+    def format_one(self, q: TSP):
+        if self.prob_type == "sim":
+            return self.prompt.format_prompt(code=q.code).to_string()
+        dm = q.distance_matrix
+        total_cities = dm.shape[0]
+        citystring = "The distances between cities are below: \n"
+
+        for i in range(dm.shape[0]):
+            for j in range(dm.shape[1]):
                 if i < j:  # only use the upper triangle
-                    this_line = "The path between City {} and City {} is with distance {}.".format(i, j, q.iloc[i, j])
-                    prompt_text += this_line + "\n"
-
+                    this_line = "The path between City {} and City {} is with distance {}.".format(i, j, dm.iloc[i, j])
+                    citystring += this_line + "\n"
+        prompt_text = self.prompt.format_prompt(total_cities=total_cities, citystring=citystring)
         return prompt_text
 
-    def load_data(self, data_path):
+    def load_data(self):
         n = 11
         all_data = []
         start = n - 10
         for level in range(start, n):
             for file_num in range(10):
                 # read np arrary
-                df = pd.read_csv(
-                    data_path + "synthesized_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1), header=None, index_col=False
-                )
+                file_name = os.path.join(self.folder_name, "TSP", "synthesized_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
+                df = pd.read_csv(file_name, header=None, index_col=False)
                 # transform df to
                 all_data.append(df)
         return all_data
+
+    def loaded_data_to_class(self, data):
+        return dict(distance_matrix=data)
 
     def greedy_tsp(self, distance_matrix):
         """
@@ -151,7 +170,7 @@ class TSPUtil(NPHardEvalProblemUtil):
 
         return tour, total_distance
 
-    def tspCheck(self, distance_matrix, final_answer_element):
+    def decision_check(self, instance: TSP, solution: TSPCodeReasoning):
         """
         Check if the TSP solution is complete and if the distance matches the greedy solution.
 
@@ -160,41 +179,8 @@ class TSPUtil(NPHardEvalProblemUtil):
         :return: Boolean indicating whether the tour is complete and matches the greedy distance
         """
         # convert distance_matrix to numpy array
-        distance_matrix = np.array(distance_matrix)
-
-        # Convert the tour string to a list of integers
-        # convert solution to dictionary
-        if final_answer_element == "":
-            return False
-        elif final_answer_element is None:
-            return False
-        else:
-            if isinstance(final_answer_element, str):
-                try:
-                    tour_string = ast.literal_eval(final_answer_element)["Path"]
-                    if tour_string is None:
-                        return False
-                except:  # noqa: E722
-                    try:
-                        tour_string = ast.literal_eval("{" + final_answer_element + "}")["Path"]
-                        if tour_string is None:
-                            return False
-                    except:  # noqa: E722
-                        return False
-            else:
-                try:
-                    tour_string = ast.literal_eval(final_answer_element.text)["Path"]
-                    if tour_string is None:
-                        return False
-                except:  # noqa: E722
-                    return False
-        try:
-            tour = list(map(int, tour_string.split("->")))
-        except:  # noqa: E722
-            return False
-        # we could also prinpt `reasoning_element` to see the reasoning of the answer
-        # we could also print the final distance of the tour by `final_answer_element['Distance']`
-
+        distance_matrix = np.array(instance.distance_matrix)
+        tour = solution.Path
         # Check if tour is a cycle
         if tour[0] != tour[-1]:
             return False, "The tour must start and end at the same city."

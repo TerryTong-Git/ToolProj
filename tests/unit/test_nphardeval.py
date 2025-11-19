@@ -19,7 +19,7 @@ def check(arm, data, types):
 @pytest.mark.parametrize("data_name", ["spp"])
 def test_fine_grained(instantiate_llm, data_name, subset_data, default_args):
     num_examples = 5
-    data = subset_data(data_name)
+    data = subset_data([data_name])
     client = instantiate_llm
     arm2 = Arm2(data[:num_examples], default_args, client)
     arm2.run()

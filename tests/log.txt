@@ -34,3 +34,16 @@ Timeout
 min() arg is an empty sequence
 unindent does not match any outer indentation level (<string>, line 34)
 name 'path' is not defined
+unindent does not match any outer indentation level (<string>, line 33)
+name 'heapq' is not defined
+name 'solution' is not defined
+unindent does not match any outer indentation level (<string>, line 31)
+name 'solution' is not defined
+unindent does not match any outer indentation level (<string>, line 23)
+unindent does not match any outer indentation level (<string>, line 23)
+'(' was never closed (<string>, line 31)
+unindent does not match any outer indentation level (<string>, line 26)
+min() arg is an empty sequence
+name 'solution' is not defined
+name 'solution' is not defined
+unindent does not match any outer indentation level (<string>, line 10)

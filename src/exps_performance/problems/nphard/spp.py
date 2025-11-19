@@ -104,6 +104,9 @@ class SPPUtil(NPHardEvalProblemUtil):
         self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
         self.instancetype = SPP
 
+    def loaded_data_to_class(self, data):
+        return data
+
     def get_field_kwargs(self, result):
         return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 

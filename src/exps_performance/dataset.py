@@ -8,6 +8,7 @@ import torch
 
 from src.exps_performance.problems import Problem
 from src.exps_performance.problems.nphard.spp import SPPUtil
+from src.exps_performance.problems.nphard.tsp import TSPUtil
 
 try:
     from vllm import LLM as VLLMEngine
@@ -35,7 +36,7 @@ class Dataset(ABC):
         raise NotImplementedError
 
 
-problem_types = {"spp": SPPUtil}
+problem_types = {"spp": SPPUtil, "tsp": TSPUtil}
 
 
 class NPHARD(Dataset):
@@ -44,8 +45,9 @@ class NPHARD(Dataset):
         for ProblemType in problem_types.values():
             classInstance = ProblemType("code")
             data = classInstance.load_data()  # type: ignore[abstract]
-            problem = classInstance.instancetype
-            all_data += [problem(**d) for d in data]
+            problem = classInstance.instancetype  # type: ignore
+            data_func = classInstance.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+            all_data += [problem(**data_func(d)) for d in data]
         return all_data
 
     def load_subset(self, subset: List[str]):
@@ -57,7 +59,7 @@ class NPHARD(Dataset):
                 continue
             classInstance = ProblemType("code")
             data = classInstance.load_data()  # type: ignore[abstract]
-            problem = classInstance.instancetype
+            problem = classInstance.instancetype  # type: ignore
             all_data += [problem(**d) for d in data]
         return all_data
 

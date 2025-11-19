@@ -3,7 +3,7 @@ from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
 
 def check(arm, data, types):
     parsed_answer = arm.parsed_answer
-    assert arm.parse_fail < 5, "parse failed too much"
+    assert arm.parse_fail <= 4, "parse failed too much"
     pUtil = data[0].util_pointer(types)
     classtype = pUtil.PROB_TYPES[types]
     empties = 0
