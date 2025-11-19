@@ -7,8 +7,10 @@ from typing import List, MutableSequence, Optional, Sequence
 import torch
 
 from src.exps_performance.problems import Problem
+from src.exps_performance.problems.nphard.msp import MSPUtil
 from src.exps_performance.problems.nphard.spp import SPPUtil
 from src.exps_performance.problems.nphard.tsp import TSPUtil
+from src.exps_performance.problems.nphard.tsp_d import TSP_DUtil
 
 try:
     from vllm import LLM as VLLMEngine
@@ -36,14 +38,14 @@ class Dataset(ABC):
         raise NotImplementedError
 
 
-problem_types = {"spp": SPPUtil, "tsp": TSPUtil}
+problem_types = {"spp": SPPUtil, "tsp": TSPUtil, "tsp_d": TSP_DUtil, "msp": MSPUtil}
 
 
 class NPHARD(Dataset):
     def load(self) -> Sequence[Problem]:
         all_data: List[Problem] = []
         for ProblemType in problem_types.values():
-            classInstance = ProblemType("code")
+            classInstance = ProblemType("code")  # type: ignore
             data = classInstance.load_data()  # type: ignore[abstract]
             problem = classInstance.instancetype  # type: ignore
             data_func = classInstance.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
@@ -57,7 +59,7 @@ class NPHARD(Dataset):
         for key, ProblemType in problem_types.items():
             if key not in subset:
                 continue
-            classInstance = ProblemType("code")
+            classInstance = ProblemType("code")  # type: ignore
             data = classInstance.load_data()  # type: ignore[abstract]
             problem = classInstance.instancetype  # type: ignore
             data_func = classInstance.loaded_data_to_class  # type: ignore #for some reason can only see base class type...

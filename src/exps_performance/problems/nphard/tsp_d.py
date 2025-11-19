@@ -1,3 +1,4 @@
+import ast
 import os
 from dataclasses import dataclass, field
 
@@ -48,7 +49,7 @@ class TSP_DUtil(NPHardEvalProblemUtil):
         all_data = []
         for level in range(start, n):
             for file_num in range(10):
-                file_name = os.path.join(self.folder_name, "TSP_D", "decision_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
+                file_name = os.path.join(self.folder_name, "TSP_Decision", "decision_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
                 df = pd.read_csv(file_name, header=None, index_col=False)
                 all_data.append(df)
         return all_data
@@ -68,21 +69,28 @@ class TSP_DUtil(NPHardEvalProblemUtil):
         prompt_text = self.prompt.format_prompt(total_cities=total_cities, distance_limit=str(q.threshold), citystring=citystring)
         return prompt_text.to_string()
 
+    def type_check_code(self, code: str) -> bool:
+        try:
+            evaluated = ast.literal_eval(code)
+        except (SyntaxError, ValueError):
+            return False  # f"Syntax or Value Error {e}"
+        return isinstance(evaluated, bool)
+
     def loaded_data_to_class(self, data):
         threshold = data.iloc[-1, 0]  # therashold is the last row
         distance_matrix = data.iloc[:-1].values
-        return dict(threshold=threshold, distance_matrix=distance_matrix)
+        return dict(threshold=threshold, distance_matrix=pd.DataFrame(distance_matrix))
 
-    def tsp_approx(self, distance_matrix):
+    def tsp_approx(self, distance_matrix: pd.DataFrame):
         """Returns an approximate solution to the TSP problem.
 
         :param distance_matrix: A 2D numpy array representing the distance matrix.
         :return: A list of the cities in the order they were visited.
         """
-        G = nx.from_numpy_array(distance_matrix)
+        G = nx.from_numpy_array(distance_matrix.to_numpy())
         return nx.approximation.traveling_salesman_problem(G)
 
-    def tsp_decision_check(self, distance_matrix, threshold, tour):
+    def tsp_decision_check(self, distance_matrix: pd.DataFrame, threshold, tour):
         """
         Checks if a given TSP tour is valid and within the threshold distance.
 
@@ -94,7 +102,8 @@ class TSP_DUtil(NPHardEvalProblemUtil):
 
         # Calculate the approxed distance of the tour
         tours = self.tsp_approx(distance_matrix)
-        tour_distance = sum(distance_matrix[tours[i], tours[i + 1]] for i in range(len(tours) - 1)) + distance_matrix[tours[-1], tours[0]]
+        np_distance_matrix = distance_matrix.to_numpy()
+        tour_distance = sum(np_distance_matrix[tours[i], tours[i + 1]] for i in range(len(tours) - 1)) + np_distance_matrix[tours[-1], tours[0]]
 
         if is_feasible != (tour_distance <= threshold):
             return False, f"Feasibility mismatch: {is_feasible} vs {tour_distance} > {threshold}"

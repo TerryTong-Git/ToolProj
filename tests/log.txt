@@ -88,3 +88,11 @@ name 'itertools' is not defined
 0
 0
 0
+name 'itertools' is not defined
+(4, 0)
+tuple index out of range
+name 'calculate_shortest_path' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'heapq' is not defined
+'return' outside function (<string>, line 30)

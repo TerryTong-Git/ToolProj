@@ -16,7 +16,7 @@ def check(arm, data, types):
     assert empties < 2, "too many no parse"
 
 
-@pytest.mark.parametrize("data_name", ["tsp"])
+@pytest.mark.parametrize("data_name", ["spp"])
 def test_fine_grained(instantiate_llm, data_name, subset_data, default_args):
     num_examples = 5
     data = subset_data([data_name])

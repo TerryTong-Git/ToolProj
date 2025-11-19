@@ -44,6 +44,16 @@ class SPPUtil(NPHardEvalProblemUtil):
     def loaded_data_to_class(self, data):
         return data
 
+    def type_check_code(self, code: str) -> bool:
+        try:
+            evaluated = ast.literal_eval(code)
+        except (SyntaxError, ValueError):
+            return False  # f"Syntax or Value Error {e}"
+        if isinstance(evaluated, tuple) and len(evaluated) == 2:
+            return True
+        else:
+            return False
+
     def get_field_kwargs(self, result):
         return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 

@@ -1,3 +1,4 @@
+import ast
 import os
 from dataclasses import dataclass, field
 
@@ -41,6 +42,16 @@ class TSPUtil(NPHardEvalProblemUtil):
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self):
         return self.prompt_template(["total_cities", "citystring"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+
+    def type_check_code(self, code: str) -> bool:
+        try:
+            evaluated = ast.literal_eval(code)
+        except (SyntaxError, ValueError):
+            return False  # f"Syntax or Value Error {e}"
+        if isinstance(evaluated, tuple) and len(evaluated) == 2:
+            return True
+        else:
+            return False
 
     def format_one(self, q: TSP):
         if self.prob_type == "sim":
