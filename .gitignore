@@ -12,6 +12,7 @@
 /NPHardEval/
 /**/tmp/
 
+/prof/*
 /src/exps_pret_corr/data/
 /src/exps_pret_corr/faiss_index/
 /src/exps_code_analysis/

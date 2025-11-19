@@ -18,6 +18,7 @@ class ProblemUtil(ABC):
 class Problem(ABC):
     kind: str = "null"  # e.g. clrs, finegrain, gsm8k etc
     digits: int = 0
+    code: str = ""
 
     @property
     @abstractmethod

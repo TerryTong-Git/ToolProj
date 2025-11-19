@@ -35,13 +35,26 @@ class Dataset(ABC):
         raise NotImplementedError
 
 
-problem_types = [SPPUtil]
+problem_types = {"spp": SPPUtil}
 
 
 class NPHARD(Dataset):
     def load(self) -> Sequence[Problem]:
         all_data: List[Problem] = []
-        for ProblemType in problem_types:
+        for ProblemType in problem_types.values():
+            classInstance = ProblemType("code")
+            data = classInstance.load_data()  # type: ignore[abstract]
+            problem = classInstance.instancetype
+            all_data += [problem(**d) for d in data]
+        return all_data
+
+    def load_subset(self, subset: List[str]):
+        for s in subset:
+            assert s in list(problem_types.keys()), "invalid subset"
+        all_data: List[Problem] = []
+        for key, ProblemType in problem_types.items():
+            if key not in subset:
+                continue
             classInstance = ProblemType("code")
             data = classInstance.load_data()  # type: ignore[abstract]
             problem = classInstance.instancetype

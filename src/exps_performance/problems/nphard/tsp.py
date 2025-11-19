@@ -1,15 +1,99 @@
 import ast
+from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 import pandas as pd
+from langchain_core.output_parsers.pydantic import PydanticOutputParser
+from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem
-from src.exps_performance.problems.prompts import tspPrompts
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+
+tspPrompts = (
+    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
+    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
+    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+)
+
+tspPrompts_nl = (
+    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
+    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
+    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+)
+
+sim_template = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
 
 
+default_code_instr = """
+The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
+
+```python
+def solution():
+    import numpy as np
+    variable = [0,1,2,3]
+    out = np.sum(variable) 
+    return out
+```
+
+""".strip()
+
+
+# easier to format as a list, but string
+# a local variable called answer should hold the answer? Then when I run the code, I can extract the local variable?
+class TSPCodeReasoning(BaseModel):
+    code: str = Field(
+        description=default_code_instr + "Here are the required types: def solution() -> tuple[list[int], int]",
+        default="",
+    )
+    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.", default="")
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
+
+
+class TSPNLReasoning(BaseModel):
+    reasoning: str = Field(
+        description="The attempt at simulating the problem in natural language reasoning to give the final answer.",
+        default="",
+    )
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
+
+
+class TSPControlledCodeSim(BaseModel):
+    simulation: str = Field(
+        description="The attempt at simulating the code in natural language reasoning to give the final answer.",
+        default="",
+    )
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
+
+
+@dataclass
 class TSP(NPHardEvalProblem):
-    def __init__(self):
+    kind: str = "tsp"
+    type: str = "code"  # could be sim, nl etc
+    nodes: List[int] = field(default_factory=[])  # type: ignore
+    edges: List[tuple] = field(default_factory=[])  # type: ignore
+    complexity_level: int = -1
+    formatted_prompt: str = ""
+    code: str = ""
+
+    @property
+    def util_pointer(self):
+        return TSPUtil
+
+
+class TSPUtil(NPHardEvalProblemUtil):
+    def __init__(self, prob_type):
+        PROB_TYPES = {"sim": TSPControlledCodeSim, "code": TSPCodeReasoning, "nl": TSPNLReasoning}
+        PROMPTS = {"sim": sim_template, "code": tspPrompts, "nl": tspPrompts_nl}
+        self.PROB_TYPES = PROB_TYPES
+        self.PROMPTS = PROMPTS
+        assert prob_type in list(PROB_TYPES.keys())
+        self.prob_type = prob_type
         self.p = tspPrompts
+        self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
+        self.instancetype = TSP
 
     def format_one(self, q):
         total_cities = q.shape[0]
@@ -23,7 +107,6 @@ class TSP(NPHardEvalProblem):
 
         return prompt_text
 
-    @staticmethod
     def load_data(self, data_path):
         n = 11
         all_data = []

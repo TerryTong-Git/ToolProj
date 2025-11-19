@@ -1,7 +1,7 @@
 import ast
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import networkx as nx
@@ -80,8 +80,8 @@ class ControlledCodeSim(BaseModel):
 class SPP(NPHardEvalProblem):
     kind: str = "spp"
     type: str = "code"  # could be sim, nl etc
-    nodes: List[int] = [0]
-    edges: List[tuple] = [()]
+    nodes: List[int] = field(default_factory=[])  # type: ignore
+    edges: List[tuple] = field(default_factory=[])  # type: ignore
     complexity_level: int = -1
     formatted_prompt: str = ""
     code: str = ""
@@ -103,6 +103,9 @@ class SPPUtil(NPHardEvalProblemUtil):
         self.p = sppPrompts
         self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
         self.instancetype = SPP
+
+    def get_field_kwargs(self, result):
+        return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self):
@@ -212,7 +215,8 @@ class SPPUtil(NPHardEvalProblemUtil):
             total_cost = -1
 
         # Check if path starts and ends with the correct nodes
-        if not path or path[0] != start_node or path[-1] != end_node:
+
+        if not isinstance(path, list) or not path or path[0] != start_node or path[-1] != end_node:
             return False, "The path does not start or end at the correct nodes."
 
         # Check if the path is continuous and calculate the cost

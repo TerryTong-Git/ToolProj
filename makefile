@@ -7,7 +7,6 @@ test:
 arm2:
 	pixi run pytest tests/unit/test_runner.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 
-
 np:
 	pixi run pytest tests/unit/test_nphardeval.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 

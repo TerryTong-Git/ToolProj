@@ -41,6 +41,11 @@ def instantiate_data():
 
 
 @pytest.fixture(scope="session")
+def subset_data():
+    return NPHARD().load_subset
+
+
+@pytest.fixture(scope="session")
 def instantiate_llm(default_args):
     args = default_args
     if args.backend == "vllm":

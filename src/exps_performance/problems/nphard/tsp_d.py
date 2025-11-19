@@ -9,7 +9,6 @@ class TSP_D(NPHardEvalProblem):
     def __init__(self):
         self.p = tsp_dPrompts
 
-    @staticmethod
     def load_data(self, data_path):
         n = 11
         start = n - 10
