@@ -21,11 +21,11 @@ class CreateArgs:
     vllm_dtype: str = "float16"
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.95
-    vllm_max_model_len: int = 2048
+    vllm_max_model_len: int = 4096
     vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
     hf_trust_remote_code: bool = True
     batch_size: int = 16
-    max_tokens: int = 1024
+    max_tokens: int = 2048
     temperature: float = 0
     top_p: float = 1
 

@@ -60,7 +60,8 @@ class NPHARD(Dataset):
             classInstance = ProblemType("code")
             data = classInstance.load_data()  # type: ignore[abstract]
             problem = classInstance.instancetype  # type: ignore
-            all_data += [problem(**d) for d in data]
+            data_func = classInstance.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+            all_data += [problem(**data_func(d)) for d in data]
         return all_data
 
 

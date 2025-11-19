@@ -47,3 +47,44 @@ min() arg is an empty sequence
 name 'solution' is not defined
 name 'solution' is not defined
 unindent does not match any outer indentation level (<string>, line 10)
+'return' outside function (<string>, line 34)
+maximum recursion depth exceeded
+too many values to unpack (expected 2)
+'0'
+1
+Timeout
+unindent does not match any outer indentation level (<string>, line 27)
+'return' outside function (<string>, line 41)
+unindent does not match any outer indentation level (<string>, line 34)
+unindent does not match any outer indentation level (<string>, line 32)
+Timeout
+unindent does not match any outer indentation level (<string>, line 21)
+unindent does not match any outer indentation level (<string>, line 23)
+3
+2
+unindent does not match any outer indentation level (<string>, line 35)
+name 'solution' is not defined
+name 'solution' is not defined
+3
+Timeout
+'return' outside function (<string>, line 26)
+Timeout
+name 'solution' is not defined
+'return' outside function (<string>, line 34)
+name 'solution' is not defined
+name 'solution' is not defined
+unexpected indent (<string>, line 33)
+expected ':' (<string>, line 19)
+name 'solution' is not defined
+name 'shortest_distance' is not defined
+'ellipsis' object is not callable
+name 'path' is not defined
+name 'itertools' is not defined
+name 'solution' is not defined
+unsupported operand type(s) for -: 'list' and 'set'
+name 'itertools' is not defined
+name 'itertools' is not defined
+0
+0
+0
+0

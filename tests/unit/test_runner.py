@@ -8,7 +8,7 @@ def check(arm, data, types):
     classtype = pUtil.PROB_TYPES[types]
     empties = 0
     for parsed in parsed_answer:
-        assert isinstance(parsed, classtype), "no output, all wrong output types"
+        assert type(parsed).__name__ == classtype.__name__, "no output, all wrong output types"
         if parsed == classtype():
             empties += 1
     assert empties < 2, "too many no parse"

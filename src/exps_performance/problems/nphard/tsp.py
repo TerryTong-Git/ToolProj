@@ -3,78 +3,21 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
-from langchain_core.output_parsers.pydantic import PydanticOutputParser
-from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
 
-tspPrompts = (
-    "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city.",
-    "Question: You must find the shortest path that visits all {total_cities} cities, labelled from 1 to {total_cities}. The distances between each pair of cities are provided.\n {citystring}",
-    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}",
+tsp_desc = (
+    "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city."
+    "Question: You must find the shortest path that visits all {total_cities} cities, labelled from 1 to {total_cities}. The distances between each pair of cities are provided.\n {citystring}"
 )
-
-tspPrompts_nl = (
-    "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city.",
-    "Question: You must find the shortest path that visits all {total_cities} cities, labelled from 1 to {total_cities}. The distances between each pair of cities are provided.\n {citystring}",
-    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}",
-)
-
-sim_template = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
-
-
-default_code_instr = """
-The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
-
-```python
-def solution():
-    import numpy as np
-    variable = [0,1,2,3]
-    out = np.sum(variable) 
-    return out
-```
-
-""".strip()
-
-
-# easier to format as a list, but string
-# a local variable called answer should hold the answer? Then when I run the code, I can extract the local variable?
-class TSPCodeReasoning(BaseModel):
-    code: str = Field(
-        description=default_code_instr + "Here are the required types: def solution() -> tuple[list[int], int]",
-        default="",
-    )
-    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.", default="")
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-class TSPNLReasoning(BaseModel):
-    reasoning: str = Field(
-        description="The attempt at simulating the problem in natural language reasoning to give the final answer.",
-        default="",
-    )
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-class TSPControlledCodeSim(BaseModel):
-    simulation: str = Field(
-        description="The attempt at simulating the code in natural language reasoning to give the final answer.",
-        default="",
-    )
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
 @dataclass
 class TSP(NPHardEvalProblem):
     kind: str = "tsp"
     type: str = "code"  # could be sim, nl etc
-    distance_matrix: pd.DataFrame = field(default_factory=pd.DataFrame([]))  # type: ignore
-    complexity_level: int = -1
-    formatted_prompt: str = ""
+    distance_matrix: pd.DataFrame = field(default_factory=[])  # type: ignore
     code: str = ""
 
     @property
@@ -82,32 +25,22 @@ class TSP(NPHardEvalProblem):
         return TSPUtil
 
 
+class TSPModel(BaseModel):
+    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
+
+
+func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
+
+
 class TSPUtil(NPHardEvalProblemUtil):
     def __init__(self, prob_type):
-        PROB_TYPES = {"sim": TSPControlledCodeSim, "code": TSPCodeReasoning, "nl": TSPNLReasoning}
-        PROMPTS = {"sim": sim_template, "code": tspPrompts, "nl": tspPrompts_nl}
-        self.PROB_TYPES = PROB_TYPES
-        self.PROMPTS = PROMPTS
-        assert prob_type in list(PROB_TYPES.keys())
-        self.prob_type = prob_type
-        self.p = tspPrompts
-        self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
+        super().__init__(prob_type, func_typing, tsp_desc, TSPModel)
         self.instancetype = TSP
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self):
-        if self.prob_type != "sim":
-            return PromptTemplate(
-                template=self.PROMPTS[self.prob_type],
-                input_variables=["total_cities", "citystring"],
-                partial_variables={"format_instructions": self.parser.get_format_instructions()},
-            )
-        else:
-            return PromptTemplate(
-                template=self.PROMPTS[self.prob_type],
-                input_variables=["code"],
-                partial_variables={"format_instructions": self.parser.get_format_instructions()},
-            )
+        return self.prompt_template(["total_cities", "citystring"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
     def format_one(self, q: TSP):
         if self.prob_type == "sim":
@@ -122,7 +55,7 @@ class TSPUtil(NPHardEvalProblemUtil):
                     this_line = "The path between City {} and City {} is with distance {}.".format(i, j, dm.iloc[i, j])
                     citystring += this_line + "\n"
         prompt_text = self.prompt.format_prompt(total_cities=total_cities, citystring=citystring)
-        return prompt_text
+        return prompt_text.to_string()
 
     def load_data(self):
         n = 11
@@ -130,10 +63,8 @@ class TSPUtil(NPHardEvalProblemUtil):
         start = n - 10
         for level in range(start, n):
             for file_num in range(10):
-                # read np arrary
                 file_name = os.path.join(self.folder_name, "TSP", "synthesized_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
                 df = pd.read_csv(file_name, header=None, index_col=False)
-                # transform df to
                 all_data.append(df)
         return all_data
 
@@ -170,7 +101,11 @@ class TSPUtil(NPHardEvalProblemUtil):
 
         return tour, total_distance
 
-    def decision_check(self, instance: TSP, solution: TSPCodeReasoning):
+    # tied to the formatting
+    def get_field_kwargs(self, result):
+        return dict(Path=str(result[0]), TotalDistance=str(result[1]))
+
+    def decision_check(self, instance: TSP, solution: BaseModel):
         """
         Check if the TSP solution is complete and if the distance matches the greedy solution.
 
@@ -181,6 +116,8 @@ class TSPUtil(NPHardEvalProblemUtil):
         # convert distance_matrix to numpy array
         distance_matrix = np.array(instance.distance_matrix)
         tour = solution.Path
+        if not tour:
+            return False, "The tour is empty"
         # Check if tour is a cycle
         if tour[0] != tour[-1]:
             return False, "The tour must start and end at the same city."

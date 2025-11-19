@@ -5,75 +5,21 @@ from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import networkx as nx
-from langchain_core.exceptions import OutputParserException
-from langchain_core.output_parsers.pydantic import PydanticOutputParser
-from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
 
-sppPrompts = (
+spp_desc = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
-    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}."
 )
 
-sppPrompts_nl = (
-    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
-    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
-)
-
-sim_template = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
-default_code_instr = """
-The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
-
-```python
-def solution():
-    import numpy as np
-    variable = [0,1,2,3]
-    out = np.sum(variable) 
-    return out
-```
-
-""".strip()
-
-
-# easier to format as a list, but string
-# a local variable called answer should hold the answer? Then when I run the code, I can extract the local variable?
-class SPPCodeReasoning(BaseModel):
-    code: str = Field(
-        description=default_code_instr + "Here are the required types: def solution() -> tuple[list[int], int]",
-        default="",
-    )
-    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.", default="")
+class SPPModel(BaseModel):
     Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-class SPPNLReasoning(BaseModel):
-    reasoning: str = Field(
-        description="The attempt at simulating the problem in natural language reasoning to give the final answer.",
-        default="",
-    )
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-class ControlledCodeSim(BaseModel):
-    simulation: str = Field(
-        description="The attempt at simulating the code in natural language reasoning to give the final answer.",
-        default="",
-    )
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-# have a record class keep track of parse failure statistics
-
-# incorporate this decision logic into a base class to share.
 
 
 @dataclass
@@ -83,7 +29,6 @@ class SPP(NPHardEvalProblem):
     nodes: List[int] = field(default_factory=[])  # type: ignore
     edges: List[tuple] = field(default_factory=[])  # type: ignore
     complexity_level: int = -1
-    formatted_prompt: str = ""
     code: str = ""
 
     @property
@@ -91,17 +36,9 @@ class SPP(NPHardEvalProblem):
         return SPPUtil
 
 
-# need to update this
 class SPPUtil(NPHardEvalProblemUtil):
     def __init__(self, prob_type):
-        PROB_TYPES = {"sim": ControlledCodeSim, "code": SPPCodeReasoning, "nl": SPPNLReasoning}
-        PROMPTS = {"sim": sim_template, "code": sppPrompts, "nl": sppPrompts_nl}
-        self.PROB_TYPES = PROB_TYPES
-        self.PROMPTS = PROMPTS
-        assert prob_type in list(PROB_TYPES.keys())
-        self.prob_type = prob_type
-        self.p = sppPrompts
-        self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
+        super().__init__(prob_type, func_typing, spp_desc, SPPModel)
         self.instancetype = SPP
 
     def loaded_data_to_class(self, data):
@@ -112,18 +49,7 @@ class SPPUtil(NPHardEvalProblemUtil):
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self):
-        if self.prob_type != "sim":
-            return PromptTemplate(
-                template=self.PROMPTS[self.prob_type],
-                input_variables=["start_node", "end_node", "edges"],
-                partial_variables={"format_instructions": self.parser.get_format_instructions()},
-            )
-        else:
-            return PromptTemplate(
-                template=self.PROMPTS[self.prob_type],
-                input_variables=["code"],
-                partial_variables={"format_instructions": self.parser.get_format_instructions()},
-            )
+        return self.prompt_template(["start_node", "end_node", "edges"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
     def format_one(self, q: SPP) -> str:
         if self.prob_type == "sim":
@@ -138,14 +64,6 @@ class SPPUtil(NPHardEvalProblemUtil):
             edge_string += this_line + "\n"
         prompt_text = self.prompt.format_prompt(start_node=start_node, end_node=end_node, edges=edge_string)
         return prompt_text.to_string()
-
-    # returns either instance of code, nl, or sim class, or err.
-    def parse_output(self, output) -> BaseModel:  # returns one of the pydantic objects
-        try:
-            return self.parser.parse(output)  # ok
-        except OutputParserException:
-            # another way to default to blanks
-            return self.PROB_TYPES[self.prob_type]()  # err
 
     def load_data(self):
         with open(os.path.join(self.folder_name, "SPP", "spp_instances.json"), "r") as f:
@@ -171,7 +89,7 @@ class SPPUtil(NPHardEvalProblemUtil):
         return shortest_path_length, shortest_path
 
     # SPP
-    def decision_check(self, instance: SPP, solution: SPPCodeReasoning, start_node=None, end_node=None) -> Tuple[bool, str]:
+    def decision_check(self, instance: SPP, solution: BaseModel, start_node=None, end_node=None) -> Tuple[bool, str]:
         """Validate the solution of the SPP problem.
 
         :param instance: The instance dictionary with nodes and edges.
