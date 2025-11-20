@@ -1,4 +1,8 @@
-from src.exps_performance.problems import Problem
+from src.exps_performance.problems import Problem, ProblemUtil
+
+
+class CLRSUtil(ProblemUtil):
+    pass
 
 
 class CLRSProblem(Problem):

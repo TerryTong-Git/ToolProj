@@ -1,81 +1,112 @@
 from __future__ import annotations
 
 import ast
+import os
+from dataclasses import dataclass
+from typing import Tuple
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem
-from src.exps_performance.problems.prompts import gcpPrompts
+from pydantic import BaseModel, Field
+
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
 from src.exps_performance.utils import read_dimacs_format
 
+gcp_desc = (
+    "Background: Graph coloring refers to the problem of coloring vertices of a graph in such a way that no two adjacent vertices have the same color. "
+    "Question: There are {max_vertices} vertices 1 to {max_vertices} in a graph. You may use {max_colors} colors with alphabets from A, B, C,... to color the graph.\n{graph}"
+)
 
+func_typing = "Dict[int, str]"  # (Path, TotalDistance)
+
+
+@dataclass
 class GCP(NPHardEvalProblem):
-    def __init__(self):
-        self.p = gcpPrompts
+    kind: str = "gcp"
+    type: str = "code"  # could be sim, nl etc
+    dimacs_str: str = ""
+    code: str = ""
 
-    def format_one(self, q):
-        chromatic_number = q.split("\n")[0][-1]  # last character of the first line
-        number_of_vertices = q.split("\n")[1].split(" ")[2]  # third word of the second line
-        prompt_text = self.instantiate_prompt(dict(max_vertices=number_of_vertices, max_colors=chromatic_number)) + "\n The graph is below: \n"
-        for line in q.split("\n")[2:]:
+    @property
+    def util_pointer(self):
+        return GCPUtil
+
+
+class GCPModel(BaseModel):
+    Colors: str = Field(description="The color assignment for each vertex. Type: Dict[int, str]. For example {1: 'A', 2: 'B' }", default="")
+
+
+class GCPUtil(NPHardEvalProblemUtil):
+    def __init__(self, prob_type):
+        super().__init__(prob_type, func_typing, gcp_desc, GCPModel)
+        self.instancetype = GCP
+
+    def loaded_data_to_class(self, data):
+        return dict(dimacs_str=data)
+
+    def type_check_code(self, code: str) -> bool:
+        try:
+            evaluated = ast.literal_eval(code)
+        except (SyntaxError, ValueError):
+            return False  # f"Syntax or Value Error {e}"
+
+        if not isinstance(evaluated, dict):
+            return False  # "Not a dict"
+        else:
+            for vertex, color in evaluated.items():
+                if not isinstance(vertex, int):
+                    return False
+                if not isinstance(color, str) or len(color) > 1:
+                    return False
+        return True
+
+    # tied to code
+    def get_field_kwargs(self, result):
+        return dict(Colors=str(result))
+
+    @property  # should be an abstract property implemented by all classes to decide which template to use
+    def prompt(self):
+        return self.prompt_template(["max_vertices", "max_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+
+    def format_one(self, q: GCP):
+        inp = q.dimacs_str
+        if self.prob_type == "sim":
+            return self.prompt.format_prompt(code=q.code).to_string()
+        chromatic_number = inp.split("\n")[0][-1]  # last character of the first line
+        number_of_vertices = inp.split("\n")[1].split(" ")[2]  # third word of the second line
+        graph = "\n The graph is below: \n"
+        for line in inp.split("\n")[2:]:
             vertex_list = line.split(" ")
             this_line = "Vertex {} is connected to vertex {}.".format(vertex_list[1], vertex_list[2])
-            prompt_text += this_line + "\n"
-        return prompt_text
+            graph += this_line + "\n"
+        prompt_text = self.prompt.format_prompt(max_vertices=number_of_vertices, max_colors=chromatic_number, graph=graph)
+        return prompt_text.to_string()
 
-    def gcpCheck(self, dimacs_str, answer_str):
+    def gcpCheck(self, dimacs_str: str, answer: str) -> Tuple[bool, str]:
         num_vertices, adjacency_list = read_dimacs_format(dimacs_str)
-        answer_colors = self.parse_answer(answer_str)
-
+        try:
+            answer_colors = ast.literal_eval(answer)
+        except (SyntaxError, ValueError):
+            return False, "wrong format"
+        if not isinstance(answer_colors, dict):
+            return False, "wrong format"
         # Check if all colors in the answer are valid
         for vertex, neighbors in adjacency_list.items():
             for neighbor in neighbors:
                 try:
                     if answer_colors[vertex] == answer_colors[neighbor]:
-                        print(f"Invalid coloring: Vertex {vertex} and {neighbor} have the same color.")
-                        return False
+                        return False, f"Invalid coloring: Vertex {vertex} and {neighbor} have the same color."
                 except:  # noqa
-                    print("Invalid input.")  # dealing with hullucination
-                    return False
+                    return False, "Invalid input."  # dealing with hullucination
+        return True, f"Valid coloring found with {len(set(answer_colors.values()))} colors: {answer_colors}"
 
-        print(f"Valid coloring found with {len(set(answer_colors.values()))} colors: {answer_colors}")
-        return True
+    def decision_check(self, q: GCP, output: BaseModel):
+        return self.gcpCheck(q.dimacs_str, output.Colors)
 
-    def decision_check(self, q, output):
-        return self.gcpCheck(q, output)
-
-    def parse_answer(self, llm_string):
-        # all_answers, reasoning_element = parse_xml_to_dict(llm_string)
-        all_answers = ""  # fix the parsing
-
-        if all_answers == "":
-            return {}
-        elif all_answers is None:
-            return {}
-        else:
-            if isinstance(all_answers, str):
-                try:
-                    all_answers = ast.literal_eval(all_answers)
-                except:  # noqa
-                    try:
-                        all_answers = ast.literal_eval("{" + all_answers + "}")
-                    except:  # noqa
-                        return {}
-            else:
-                all_answers = ast.literal_eval(all_answers.text)
-        # answer_dict = {}
-        # for pair in all_answers:
-        #     vertex, color = pair.split(":")
-        #     answer_dict[int(vertex)] = color
-        # convert key type to int
-        all_answers = {int(k): v for k, v in all_answers.items()}
-        return all_answers  # answer_dict
-
-    @staticmethod
-    def load_data(data_path):
+    def load_data(self):
         n = 11
         start = n - 10
         all_data = []
         for file_num in range(start, n):
-            with open(data_path + "synthesized_data_GCP_{}.txt".format(file_num)) as f:
+            with open(os.path.join(self.folder_name, "GCP", "synthesized_data_GCP_{}.txt".format(file_num))) as f:
                 data = f.read()
             all_data += data.split("\n\n")[:-1]
         return all_data

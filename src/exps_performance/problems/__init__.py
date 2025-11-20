@@ -24,3 +24,6 @@ class Problem(ABC):
     @abstractmethod
     def util_pointer(self):
         raise NotImplementedError
+
+
+# (d.util_pointer)(self.run_type).format_one(d)

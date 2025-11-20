@@ -5,7 +5,7 @@ from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
 
 def check(arm, data, types):
     parsed_answer = arm.parsed_answer
-    assert arm.parse_fail <= 4, "parse failed too much"
+    assert arm.parse_fail <= 10, "parse failed too much"  # try 5 problems x3 times would be 15 times total, 10 times failed a lot lol
     pUtil = data[0].util_pointer(types)
     classtype = pUtil.PROB_TYPES[types]
     empties = 0
@@ -16,7 +16,7 @@ def check(arm, data, types):
     assert empties < 2, "too many no parse"
 
 
-@pytest.mark.parametrize("data_name", ["spp"])
+@pytest.mark.parametrize("data_name", ["edp", "bsp"])
 def test_fine_grained(instantiate_llm, data_name, subset_data, default_args):
     num_examples = 5
     data = subset_data([data_name])

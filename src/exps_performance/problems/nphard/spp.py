@@ -17,11 +17,13 @@ spp_desc = (
 func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
+# rather than model, maybe SppLlmSolFormat
 class SPPModel(BaseModel):
     Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
+# call SppProbDataFormat
 @dataclass
 class SPP(NPHardEvalProblem):
     kind: str = "spp"
@@ -36,6 +38,7 @@ class SPP(NPHardEvalProblem):
         return SPPUtil
 
 
+# SppUtilCheckAndFormat
 class SPPUtil(NPHardEvalProblemUtil):
     def __init__(self, prob_type):
         super().__init__(prob_type, func_typing, spp_desc, SPPModel)

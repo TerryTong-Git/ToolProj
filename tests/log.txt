@@ -96,3 +96,38 @@ name 'solution' is not defined
 name 'solution' is not defined
 name 'heapq' is not defined
 'return' outside function (<string>, line 30)
+name 'meeting_id' is not defined
+dictionary update sequence element #0 has length 1; 2 is required
+unhashable type: 'dict'
+name 'solution' is not defined
+name 'solution' is not defined
+name 'meeting' is not defined
+name 'solution' is not defined
+expected ':' (<string>, line 10)
+name 'solution' is not defined
+name 'solution' is not defined
+'list' object has no attribute 'issubset'
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+unexpected indent (<string>, line 15)
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+not enough values to unpack (expected 3, got 2)
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'text1' and 'text2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'array' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+unexpected indent (<string>, line 17)
+solution() missing 2 required positional arguments: 'array' and 'target'
+solution() missing 2 required positional arguments: 'array' and 'target'

@@ -1,35 +1,92 @@
 from __future__ import annotations
 
-import networkx as nx
+import ast
+import os
+from dataclasses import dataclass
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem
-from src.exps_performance.problems.prompts import gcp_dPrompts
+import networkx as nx
+from pydantic import BaseModel, Field
+
+from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
 from src.exps_performance.utils import read_dimacs_format
 
+gcp_desc = (
+    "Description: The Graph Coloring Problem (Decision Version, GCP-D) involves determining if it is possible to color the vertices of a graph using a given number of colors, ensuring no two adjacent vertices have the same color."
+    "Question: Find out if the vertices of a graph with {total_vertices} vertices can be colored using only {number_of_colors} colors, such that no adjacent vertices share the same color. \n {graph}"
+)
 
+func_typing = "bool"  # (Path, TotalDistance)
+
+
+class GCP_DModel(BaseModel):
+    Feasible: str = Field(description="The feasibility. Type: bool. Return 'True' or 'False'. ", default="")
+
+
+@dataclass
 class GCP_D(NPHardEvalProblem):
-    folder_name = "GCP_Decision"
+    kind: str = "gcp_d"
+    type: str = "code"  # could be sim, nl etc
+    dimacs_str: str = ""
+    code: str = ""
 
-    def __init__(self):
-        self.p = gcp_dPrompts
+    @property
+    def util_pointer(self):
+        return GCP_DUtil
 
-    def format_one(self, q):
-        number_of_colors = q.split("\n")[0].split()[-2]  # last character of the first line
-        number_of_vertices = q.split("\n")[1].split(" ")[2]  # third word of the second line
-        prompt_text = (
-            self.instantiate_prompt(dict(total_vertices=number_of_vertices, number_of_colors=number_of_colors)) + "\n The graph is below: \n"
-        )
-        for line in q.split("\n")[2:]:
+
+class GCP_DUtil(NPHardEvalProblemUtil):
+    def __init__(self, prob_type):
+        super().__init__(prob_type, func_typing, gcp_desc, GCP_DModel)
+        self.instancetype = GCP_D
+
+    # tied to inputs, may not be called input
+    def loaded_data_to_class(self, data):
+        return dict(dimacs_str=data)
+
+    def type_check_code(self, code: str) -> bool:
+        try:
+            evaluated = ast.literal_eval(code)
+        except (SyntaxError, ValueError):
+            return False  # f"Syntax or Value Error {e}"
+
+        if not isinstance(evaluated, dict):
+            return False  # "Not a dict"
+        else:
+            for vertex, color in evaluated.items():
+                if not isinstance(vertex, int):
+                    return False
+                if not isinstance(color, str) or len(color) > 1:
+                    return False
+        return True
+
+    # tied to code
+    def get_field_kwargs(self, result):
+        return dict(Feasible=str(result))
+
+    @property  # should be an abstract property implemented by all classes to decide which template to use
+    def prompt(self):
+        return self.prompt_template(["total_vertices", "number_of_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+
+    def format_one(self, q: GCP_D):
+        if self.prob_type == "sim":
+            return self.prompt.format_prompt(code=q.code).to_string()
+        inp = q.dimacs_str
+        number_of_colors = inp.split("\n")[0].split()[-2]  # last character of the first line
+        number_of_vertices = inp.split("\n")[1].split(" ")[2]  # third word of the second line
+        graph = "\n The graph is below: \n"
+
+        for line in inp.split("\n")[2:]:
             vertex_list = line.split(" ")
             this_line = "Vertex {} is connected to vertex {}.".format(vertex_list[1], vertex_list[2])
-            prompt_text += this_line + "\n"
-        return prompt_text
+            graph += this_line + "\n"
+        prompt_text = self.prompt.format_prompt(total_vertices=number_of_vertices, number_of_colors=number_of_colors, graph=graph)
+        return prompt_text.to_string()
 
-    def decision_check(self, q, output):
-        number_of_colors = int(q.split("\n")[0].split()[-2])
-        return self.gcp_decision_check(q, output, number_of_colors)
+    def decision_check(self, q: GCP_D, output: BaseModel):
+        number_of_colors = int(q.dimacs_str.split("\n")[0].split()[-2])
+        return self.gcp_decision_check(q.dimacs_str, output, number_of_colors)
 
-    def gcp_greedy_solution(self, adjacency_list):
+    def gcp_greedy_solution(self, adjacency_list: dict):
         """Provides a greedy solution to the GCP problem.
 
         :param adjacency_list: A dictionary of the adjacency list.
@@ -44,7 +101,7 @@ class GCP_D(NPHardEvalProblem):
         num_colors = max(coloring.values()) + 1
         return num_colors, coloring
 
-    def gcp_decision_check(self, dimacs_str, answer, k_colors):
+    def gcp_decision_check(self, dimacs_str: str, answer, k_colors):
         """
         Check if the given GCP instance is feasible with k_colors.
 
@@ -55,8 +112,8 @@ class GCP_D(NPHardEvalProblem):
         """
         num_vertices, adjacency_list = read_dimacs_format(dimacs_str)
         try:
-            is_feasible = answer.get("Feasible", "no").lower() == "yes"
-        except ValueError:
+            is_feasible = ast.literal_eval(answer.Feasible)
+        except (SyntaxError, ValueError):
             return False, "Feasible key not found"
         num_colors, coloring = self.gcp_greedy_solution(adjacency_list)
         exist_optimal = num_colors <= k_colors
@@ -67,13 +124,12 @@ class GCP_D(NPHardEvalProblem):
                 return False, f"Feasibility mismatch: {is_feasible} vs {exist_optimal}"
         return True, "Feasible" if is_feasible else "Infeasible"
 
-    @staticmethod
-    def load_data(data_path):
+    def load_data(self):
         all_data = []
         n = 10
         start = n - 9
         for file_num in range(start, n):
-            with open(data_path + "decision_data_GCP_{}.txt".format(file_num)) as f:
+            with open(os.path.join(self.folder_name, "GCP_Decision", "decision_data_GCP_{}.txt".format(file_num))) as f:
                 data = f.read()
             all_data += data.split("\n\n")[:-1]
         return all_data

@@ -7,6 +7,11 @@ from typing import List, MutableSequence, Optional, Sequence
 import torch
 
 from src.exps_performance.problems import Problem
+from src.exps_performance.problems.nphard.bsp import BSPUtil
+from src.exps_performance.problems.nphard.edp import EDPUtil
+from src.exps_performance.problems.nphard.gcp import GCPUtil
+from src.exps_performance.problems.nphard.gcp_d import GCP_DUtil
+from src.exps_performance.problems.nphard.ksp import KSPUtil
 from src.exps_performance.problems.nphard.msp import MSPUtil
 from src.exps_performance.problems.nphard.spp import SPPUtil
 from src.exps_performance.problems.nphard.tsp import TSPUtil
@@ -38,7 +43,17 @@ class Dataset(ABC):
         raise NotImplementedError
 
 
-problem_types = {"spp": SPPUtil, "tsp": TSPUtil, "tsp_d": TSP_DUtil, "msp": MSPUtil}
+problem_types = {
+    "spp": SPPUtil,
+    "tsp": TSPUtil,
+    "tsp_d": TSP_DUtil,
+    "msp": MSPUtil,
+    "ksp": KSPUtil,
+    "gcp": GCPUtil,
+    "gcp_d": GCP_DUtil,
+    "bsp": BSPUtil,
+    "edp": EDPUtil,
+}
 
 
 class NPHARD(Dataset):

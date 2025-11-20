@@ -29,6 +29,7 @@ class MSP(NPHardEvalProblem):
     time_slots: int = -1  # type: ignore
     meetings: List[Dict[str, int]] = field(default_factory=[])  # type: ignore
     participants: Dict[int, Dict[str, List[int]]] = field(default_factory={})  # type: ignore
+    complexity_level: int = -1
     code: str = ""
 
     @property
@@ -102,8 +103,15 @@ class MSPUtil(NPHardEvalProblemUtil):
         - A tuple (is_valid, message). is_valid is True if the solution is valid, False otherwise.
         message contains information about the validity of the solution.
         """
-        output_dict = output.Meet2Time
-        if output_dict is None:
+        if isinstance(output.Meet2Time, dict):
+            import pdb
+
+            pdb.set_trace()
+        try:
+            output_dict = ast.literal_eval(output.Meet2Time)
+        except SyntaxError:
+            return False, "Parse error"
+        if not self.type_check_code(output.Meet2Time) or output_dict is None:
             return False, "Parse error"
         # Check if all meetings are scheduled within the available time slots
         for meeting in q.meetings:
