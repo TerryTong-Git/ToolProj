@@ -29,7 +29,8 @@ from typing import Tuple, Union
 
 import chex
 import numpy as np
-from clrs import probing, specs
+
+from src.exps_performance.clrs import probing, specs
 
 _Array = np.ndarray
 _Numeric = Union[int, float]

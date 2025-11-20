@@ -30,7 +30,8 @@ from typing import Any, Tuple
 
 import chex
 import numpy as np
-from clrs import probing, specs
+
+from src.exps_performance.clrs import probing, specs
 
 _Array = np.ndarray
 _Out = Tuple[Any, probing.ProbesDict]

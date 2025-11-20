@@ -7,6 +7,8 @@ from typing import List, MutableSequence, Optional, Sequence
 import torch
 
 from src.exps_performance.problems import Question
+from src.exps_performance.problems.clrs import ClrsCheckAndFormat
+from src.exps_performance.problems.gsm8k import Gsm8kCheckAndFormat
 from src.exps_performance.problems.nphard.bsp import BspCheckAndFormat
 from src.exps_performance.problems.nphard.edp import EdpCheckAndFormat
 from src.exps_performance.problems.nphard.gcp import GcpCheckAndFormat
@@ -56,15 +58,21 @@ problem_types = {
 }
 
 
+clrs_problem_types = {
+    "clrs": ClrsCheckAndFormat,
+}
+
+gsm_problem_types = {
+    "gsm8k": Gsm8kCheckAndFormat,
+}
+
+
 class NPHARD(Dataset):
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
         for ProblemType in problem_types.values():
             classInstance = ProblemType("code")  # type: ignore
-            data = classInstance.load_data()  # type: ignore[abstract]
-            problem = classInstance.instancetype  # type: ignore
-            data_func = classInstance.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
-            all_data += [problem(**data_func(d)) for d in data]
+            all_data += classInstance.load_data()  # type: ignore[abstract]
         return all_data
 
     def load_subset(self, subset: List[str]):
@@ -75,10 +83,25 @@ class NPHARD(Dataset):
             if key not in subset:
                 continue
             classInstance = ProblemType("code")  # type: ignore
-            data = classInstance.load_data()  # type: ignore[abstract]
-            problem = classInstance.instancetype  # type: ignore
-            data_func = classInstance.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
-            all_data += [problem(**data_func(d)) for d in data]
+            all_data += classInstance.load_data()  # type: ignore[abstract]
+        return all_data
+
+
+class CLRS(Dataset):
+    def load(self) -> Sequence[Question]:
+        all_data: List[Question] = []
+        for ProblemType in clrs_problem_types.values():
+            classInstance = ProblemType("code")  # type: ignore
+            all_data += classInstance.load_data()  # type: ignore[abstract]
+        return all_data
+
+
+class GSM8K(Dataset):
+    def load(self) -> Sequence[Question]:
+        all_data: List[Question] = []
+        for ProblemType in gsm_problem_types.values():
+            classInstance = ProblemType("code")  # type: ignore
+            all_data += classInstance.load_data()  # type: ignore[abstract]
         return all_data
 
 

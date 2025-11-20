@@ -17,7 +17,8 @@
 
 import numpy as np
 from absl.testing import absltest
-from clrs._src.algorithms import dynamic_programming
+
+from src.exps_performance.clrs._src.algorithms import dynamic_programming
 
 
 class DynamicProgrammingTest(absltest.TestCase):

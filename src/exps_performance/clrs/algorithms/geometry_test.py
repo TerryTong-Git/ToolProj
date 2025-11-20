@@ -17,7 +17,8 @@
 
 import numpy as np
 from absl.testing import absltest, parameterized
-from clrs._src.algorithms import geometry
+
+from src.exps_performance.clrs._src.algorithms import geometry
 
 
 class GeometryTest(parameterized.TestCase):

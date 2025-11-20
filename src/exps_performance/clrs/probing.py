@@ -30,7 +30,8 @@ import attr
 import jax
 import jax.numpy as jnp
 import numpy as np
-from clrs import specs
+
+from src.exps_performance.clrs import specs
 
 # import tensorflow as tf
 

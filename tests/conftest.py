@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from src.exps_performance.dataset import NPHARD
+from src.exps_performance.dataset import CLRS, GSM8K, NPHARD
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
 
 
@@ -36,17 +36,27 @@ def default_args():
 
 
 @pytest.fixture(scope="session")
-def instantiate_data():
+def npdata():
     return NPHARD().load()
 
 
 @pytest.fixture(scope="session")
-def subset_data():
+def clrsdata():
+    return CLRS().load()
+
+
+@pytest.fixture(scope="session")
+def gsmdata():
+    return GSM8K().load()
+
+
+@pytest.fixture(scope="session")
+def subset_npdata():
     return NPHARD().load_subset
 
 
 @pytest.fixture(scope="session")
-def instantiate_llm(default_args):
+def llm(default_args):
     args = default_args
     if args.backend == "vllm":
         client = VLLMClient(
@@ -66,23 +76,18 @@ def instantiate_llm(default_args):
         return OpenAIChatClient()
 
 
-# rather than booting one up, we can just send requests to a command line one? vllm serve Qwen/Qwen2.5-1.5B-Instruct
+EXAMPLES = 5
+RETRIES = 3
 
-# from openai import OpenAI
-# # Set OpenAI's API key and API base to use vLLM's API server.
-# openai_api_key = "EMPTY"
-# openai_api_base = "http://localhost:8000/v1"
 
-# client = OpenAI(
-#     api_key=openai_api_key,
-#     base_url=openai_api_base,
-# )
-
-# chat_response = client.chat.completions.create(
-#     model="Qwen/Qwen2.5-1.5B-Instruct",
-#     messages=[
-#         {"role": "system", "content": "You are a helpful assistant."},
-#         {"role": "user", "content": "Tell me a joke."},
-#     ]
-# )
-# print("Chat response:", chat_response)
+def check(arm, data, types):
+    parsed_answer = arm.parsed_answer
+    assert arm.parse_fail <= EXAMPLES * RETRIES - 1, "parse failed too much"
+    pUtil = data[0].util_pointer(types)
+    classtype = pUtil.PROB_TYPES[types]
+    empties = 0
+    for parsed in parsed_answer:
+        assert type(parsed).__name__ == classtype.__name__, "no output, all wrong output types"
+        if parsed == classtype():
+            empties += 1
+    assert empties < RETRIES - 1, "too many no parse"

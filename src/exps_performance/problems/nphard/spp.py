@@ -2,7 +2,7 @@ import ast
 import json
 import os
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 import networkx as nx
 from pydantic import BaseModel, Field
@@ -75,9 +75,12 @@ class SppCheckAndFormat(NpCheckAndFormat):
         prompt_text = self.prompt.format_prompt(start_node=start_node, end_node=end_node, edges=edge_string)
         return prompt_text.to_string()
 
-    def load_data(self):
+    def load_data(self) -> Sequence[SppQuestion]:
         with open(os.path.join(self.folder_name, "SPP", "spp_instances.json"), "r") as f:
-            all_data = json.load(f)
+            data = json.load(f)
+        problem = self.instancetype  # type: ignore
+        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+        all_data = [problem(**data_func(d)) for d in data]
         return all_data
 
     def ssp_optimal_solution(self, instance, source, target):

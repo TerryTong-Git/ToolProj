@@ -46,12 +46,15 @@ class TspdCheckAndFormat(NpCheckAndFormat):
     def load_data(self):
         n = 11
         start = n - 10
-        all_data = []
+        data = []
         for level in range(start, n):
             for file_num in range(10):
                 file_name = os.path.join(self.folder_name, "TSP_Decision", "decision_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
                 df = pd.read_csv(file_name, header=None, index_col=False)
-                all_data.append(df)
+                data.append(df)
+        problem = self.instancetype  # type: ignore
+        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+        all_data = [problem(**data_func(d)) for d in data]
         return all_data
 
     def format_one(self, q: TspdQuestion):

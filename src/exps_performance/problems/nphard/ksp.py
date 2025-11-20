@@ -89,7 +89,10 @@ class KspCheckAndFormat(NpCheckAndFormat):
 
     def load_data(self):
         with open(os.path.join(self.folder_name, "KSP", "ksp_instances.json"), "r") as f:
-            all_data = json.load(f)
+            data = json.load(f)
+        problem = self.instancetype  # type: ignore
+        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+        all_data = [problem(**data_func(d)) for d in data]
         return all_data
 
     def decision_check(self, q, output):

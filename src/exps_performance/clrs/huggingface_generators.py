@@ -20,7 +20,7 @@ import random
 from pathlib import Path
 from typing import Dict, List
 
-from clrs import clrs_utils, samplers
+from src.exps_performance.clrs import clrs_utils, samplers
 
 
 def clrs_generator(

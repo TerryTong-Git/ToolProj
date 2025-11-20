@@ -26,7 +26,8 @@ from typing import Any, Callable, List, Optional, Tuple
 import jax
 import numpy as np
 from absl import logging
-from clrs import algorithms, probing, specs
+
+from src.exps_performance.clrs import algorithms, probing, specs
 
 _Array = np.ndarray
 Trajectory = List[probing.DataPoint]
@@ -151,9 +152,9 @@ class Sampler(abc.ABC):
                 logging.info("%i samples created", len(hints))
 
         # Batch and pad trajectories to max(T).
-        inputs = _batch_io(inputs)
-        outputs = _batch_io(outputs)
-        hints, lengths = _batch_hints(hints, min_length)
+        inputs = _batch_io(inputs)  # type: ignore
+        outputs = _batch_io(outputs)  # type: ignore
+        hints, lengths = _batch_hints(hints, min_length)  # type: ignore
         return inputs, outputs, hints, lengths
 
     def next(self, batch_size: Optional[int] = None) -> Feedback:

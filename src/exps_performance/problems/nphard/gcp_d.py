@@ -125,11 +125,14 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
         return True, "Feasible" if is_feasible else "Infeasible"
 
     def load_data(self):
-        all_data = []
+        data = []
         n = 10
         start = n - 9
         for file_num in range(start, n):
             with open(os.path.join(self.folder_name, "GCP_Decision", "decision_data_GCP_{}.txt".format(file_num))) as f:
                 data = f.read()
-            all_data += data.split("\n\n")[:-1]
+            data += data.split("\n\n")[:-1]
+        problem = self.instancetype  # type: ignore
+        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+        all_data = [problem(**data_func(d)) for d in data]
         return all_data

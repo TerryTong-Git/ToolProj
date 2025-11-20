@@ -10,6 +10,12 @@ arm2:
 np:
 	pixi run pytest tests/unit/test_nphardeval.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 
+clrs:
+	pixi run pytest tests/unit/test_clrs.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
+
+gsm:
+	pixi run pytest tests/unit/test_gsm8k.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
+
 utils:
 	pixi run pytest tests/unit/test_utils.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 

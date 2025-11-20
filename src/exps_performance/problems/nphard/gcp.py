@@ -104,9 +104,12 @@ class GcpCheckAndFormat(NpCheckAndFormat):
     def load_data(self):
         n = 11
         start = n - 10
-        all_data = []
+        data = []
         for file_num in range(start, n):
             with open(os.path.join(self.folder_name, "GCP", "synthesized_data_GCP_{}.txt".format(file_num))) as f:
                 data = f.read()
-            all_data += data.split("\n\n")[:-1]
+            data += data.split("\n\n")[:-1]
+        problem = self.instancetype  # type: ignore
+        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+        all_data = [problem(**data_func(d)) for d in data]
         return all_data

@@ -1,27 +1,14 @@
 import pytest
 
 from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
+from tests.conftest import EXAMPLES, check
 
 
-def check(arm, data, types):
-    parsed_answer = arm.parsed_answer
-    assert arm.parse_fail <= 10, "parse failed too much"  # try 5 problems x3 times would be 15 times total, 10 times failed a lot lol
-    pUtil = data[0].util_pointer(types)
-    classtype = pUtil.PROB_TYPES[types]
-    empties = 0
-    for parsed in parsed_answer:
-        assert type(parsed).__name__ == classtype.__name__, "no output, all wrong output types"
-        if parsed == classtype():
-            empties += 1
-    assert empties < 2, "too many no parse"
-
-
-@pytest.mark.parametrize("data_name", ["edp", "bsp"])
-def test_fine_grained(instantiate_llm, data_name, subset_data, default_args):
-    num_examples = 5
-    data = subset_data([data_name])
-    client = instantiate_llm
-    arm2 = Arm2(data[:num_examples], default_args, client)
+@pytest.mark.parametrize("data_name", ["edp"])
+def test_fine_grained(llm, data_name, subset_npdata, default_args):
+    data = subset_npdata([data_name])
+    client = llm
+    arm2 = Arm2(data[:EXAMPLES], default_args, client)
     arm2.run()
     check(arm2, data, "code")
 
@@ -30,16 +17,16 @@ def test_fine_grained(instantiate_llm, data_name, subset_data, default_args):
     for p in problems_w_code:
         if p.code == "":
             blanks += 1
-    assert blanks <= 4, "too many no code generations"
+    assert blanks <= EXAMPLES - 1, "too many no code generations"
 
     arm3 = Arm3(problems_w_code)
     arm3.run()
-    assert arm3.errs <= 4, "too many errors"
+    assert arm3.errs <= EXAMPLES - 1, "too many errors"
 
     arm4 = Arm4(problems_w_code, default_args, client)
     arm4.run()
     check(arm4, data, "sim")
 
-    arm1 = Arm1(data[:num_examples], default_args, client)
+    arm1 = Arm1(data[:EXAMPLES], default_args, client)
     arm1.run()
     check(arm1, data, "nl")

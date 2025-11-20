@@ -30,7 +30,8 @@ from typing import Tuple
 
 import chex
 import numpy as np
-from clrs import probing, specs
+
+from src.exps_performance.clrs import probing, specs
 
 _Array = np.ndarray
 _Out = Tuple[_Array, probing.ProbesDict]
@@ -69,8 +70,8 @@ def insertion_sort(A: _Array) -> _Out:
             specs.Stage.HINT,
             next_probe={
                 "pred_h": probing.array(np.copy(A_pos)),
-                "i": probing.mask_one(stor_pos, np.copy(A.shape[0])),
-                "j": probing.mask_one(j, np.copy(A.shape[0])),
+                "i": probing.mask_one(stor_pos, np.copy(A.shape[0])),  # type: ignore
+                "j": probing.mask_one(j, np.copy(A.shape[0])),  # type: ignore
             },
         )
 
@@ -108,8 +109,8 @@ def bubble_sort(A: _Array) -> _Out:
                 specs.Stage.HINT,
                 next_probe={
                     "pred_h": probing.array(np.copy(A_pos)),
-                    "i": probing.mask_one(A_pos[i], np.copy(A.shape[0])),
-                    "j": probing.mask_one(A_pos[j], np.copy(A.shape[0])),
+                    "i": probing.mask_one(A_pos[i], np.copy(A.shape[0])),  # type: ignore
+                    "j": probing.mask_one(A_pos[j], np.copy(A.shape[0])),  # type: ignore
                 },
             )
 
