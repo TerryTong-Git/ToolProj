@@ -6,16 +6,16 @@ from typing import List, MutableSequence, Optional, Sequence
 
 import torch
 
-from src.exps_performance.problems import Problem
-from src.exps_performance.problems.nphard.bsp import BSPUtil
-from src.exps_performance.problems.nphard.edp import EDPUtil
-from src.exps_performance.problems.nphard.gcp import GCPUtil
-from src.exps_performance.problems.nphard.gcp_d import GCP_DUtil
-from src.exps_performance.problems.nphard.ksp import KSPUtil
-from src.exps_performance.problems.nphard.msp import MSPUtil
-from src.exps_performance.problems.nphard.spp import SPPUtil
-from src.exps_performance.problems.nphard.tsp import TSPUtil
-from src.exps_performance.problems.nphard.tsp_d import TSP_DUtil
+from src.exps_performance.problems import Question
+from src.exps_performance.problems.nphard.bsp import BspCheckAndFormat
+from src.exps_performance.problems.nphard.edp import EdpCheckAndFormat
+from src.exps_performance.problems.nphard.gcp import GcpCheckAndFormat
+from src.exps_performance.problems.nphard.gcp_d import GcpdCheckAndFormat
+from src.exps_performance.problems.nphard.ksp import KspCheckAndFormat
+from src.exps_performance.problems.nphard.msp import MspCheckAndFormat
+from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
+from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
+from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
 
 try:
     from vllm import LLM as VLLMEngine
@@ -39,26 +39,26 @@ except Exception:
 
 class Dataset(ABC):
     @abstractmethod
-    def load(self) -> Sequence[Problem]:
+    def load(self) -> Sequence[Question]:
         raise NotImplementedError
 
 
 problem_types = {
-    "spp": SPPUtil,
-    "tsp": TSPUtil,
-    "tsp_d": TSP_DUtil,
-    "msp": MSPUtil,
-    "ksp": KSPUtil,
-    "gcp": GCPUtil,
-    "gcp_d": GCP_DUtil,
-    "bsp": BSPUtil,
-    "edp": EDPUtil,
+    "spp": SppCheckAndFormat,
+    "tsp": TspCheckAndFormat,
+    "tsp_d": TspdCheckAndFormat,
+    "msp": MspCheckAndFormat,
+    "ksp": KspCheckAndFormat,
+    "gcp": GcpCheckAndFormat,
+    "gcp_d": GcpdCheckAndFormat,
+    "bsp": BspCheckAndFormat,
+    "edp": EdpCheckAndFormat,
 }
 
 
 class NPHARD(Dataset):
-    def load(self) -> Sequence[Problem]:
-        all_data: List[Problem] = []
+    def load(self) -> Sequence[Question]:
+        all_data: List[Question] = []
         for ProblemType in problem_types.values():
             classInstance = ProblemType("code")  # type: ignore
             data = classInstance.load_data()  # type: ignore[abstract]
@@ -70,7 +70,7 @@ class NPHARD(Dataset):
     def load_subset(self, subset: List[str]):
         for s in subset:
             assert s in list(problem_types.keys()), "invalid subset"
-        all_data: List[Problem] = []
+        all_data: List[Question] = []
         for key, ProblemType in problem_types.items():
             if key not in subset:
                 continue
@@ -82,7 +82,7 @@ class NPHARD(Dataset):
         return all_data
 
 
-def load_gsm8k() -> Sequence[Problem]:
+def load_gsm8k() -> Sequence[Question]:
     return []
     # ds = load_dataset("openai/gsm8k", "main", split="test")
     # items = []
@@ -99,7 +99,7 @@ def load_gsm8k() -> Sequence[Problem]:
     # return items
 
 
-def load_CLRS30() -> Sequence[Problem]:
+def load_CLRS30() -> Sequence[Question]:
     return []
     # clrs = CLRS()
     # return clrs.load_data()
@@ -197,7 +197,7 @@ def make_problem(rng: random.Random, kind: str, digits: Optional[int] = None):
     # raise ValueError(f"unknown kind: {kind}")
 
 
-def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> Sequence[Problem]:
+def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1) -> Sequence[Question]:
     """
     Balance over (kind × digits) so MI/acc buckets are well-populated.
     """
@@ -209,7 +209,7 @@ def make_dataset(n: int, digits_list: List[int], kinds: List[str], seed: int = 1
         return load_CLRS30()
 
     rng = random.Random(seed)
-    problems: MutableSequence[Problem] = []
+    problems: MutableSequence[Question] = []
     K = max(1, len(kinds))
     D = max(1, len(digits_list))
     per = max(1, n // (K * D))

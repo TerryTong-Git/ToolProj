@@ -6,7 +6,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 msp_desc = (
     "Description: The meeting scheduling problem (MSP) is a type of constraint satisfaction problem where the goal is to find a suitable time slot for a meeting that all participants can attend without conflicts in their schedules."
@@ -16,14 +16,14 @@ msp_desc = (
 func_typing = "Dict[int, List[int]]"  # (Meeting #Num -> Time slots)
 
 
-class MSPModel(BaseModel):
+class MspAnswer(BaseModel):
     Meet2Time: str = Field(
         description="The meeting number to list of time slots. Type: Dict[int, List[int]]. For example: '{{0:[1,2], 1:[4], ...}}' ", default=""
     )
 
 
 @dataclass
-class MSP(NPHardEvalProblem):
+class MspQuestion(NpQuestion):
     kind: str = "spp"
     type: str = "code"  # could be sim, nl etc
     time_slots: int = -1  # type: ignore
@@ -34,13 +34,13 @@ class MSP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return MSPUtil
+        return MspCheckAndFormat
 
 
-class MSPUtil(NPHardEvalProblemUtil):
+class MspCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, msp_desc, MSPModel)
-        self.instancetype = MSP
+        super().__init__(prob_type, func_typing, msp_desc, MspAnswer)
+        self.instancetype = MspQuestion
 
     def loaded_data_to_class(self, data):
         return data
@@ -75,7 +75,7 @@ class MSPUtil(NPHardEvalProblemUtil):
             else self.prompt_template(["code"])
         )
 
-    def format_one(self, q: MSP) -> str:
+    def format_one(self, q: MspQuestion) -> str:
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         participants = q.participants
@@ -91,7 +91,7 @@ class MSPUtil(NPHardEvalProblemUtil):
         prompt_text = self.prompt.format_prompt(total_participants=participants, total_timeslots=q.time_slots, meetingdetails=meetingdetails)
         return prompt_text.to_string()
 
-    def decision_check(self, q: MSP, output: BaseModel):
+    def decision_check(self, q: MspQuestion, output: BaseModel):
         """
         Validate the MSP solution.
 

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 edp_desc = (
     "Description: The Edit Distance Problem (EDP) involves finding the minimum number of operations required to transform one string into another, where each operation is either an insertion, deletion, or substitution of a single character."
@@ -15,12 +15,12 @@ edp_desc = (
 func_typing = "int"
 
 
-class EDPModel(BaseModel):
+class EdpAnswer(BaseModel):
     Operations: str = Field(description="The number of edits. Type: int. For example: 8. ", default="")
 
 
 @dataclass
-class EDP(NPHardEvalProblem):
+class EdpQuestion(NpQuestion):
     kind: str = "edp"
     type: str = "code"  # could be sim, nl etc
     string_a: str = ""
@@ -29,13 +29,13 @@ class EDP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return EDPUtil
+        return EdpCheckAndFormat
 
 
-class EDPUtil(NPHardEvalProblemUtil):
+class EdpCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, edp_desc, EDPModel)
-        self.instancetype = EDP
+        super().__init__(prob_type, func_typing, edp_desc, EdpAnswer)
+        self.instancetype = EdpQuestion
 
     # tied to inputs, may not be called input
     def loaded_data_to_class(self, data):
@@ -58,7 +58,7 @@ class EDPUtil(NPHardEvalProblemUtil):
     def prompt(self):
         return self.prompt_template(["string_a", "string_b"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
-    def format_one(self, q: EDP):
+    def format_one(self, q: EdpQuestion):
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         string_a = q.string_a
@@ -84,7 +84,7 @@ class EDPUtil(NPHardEvalProblemUtil):
                     dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
         return dp[m][n]
 
-    def decision_check(self, q: EDP, output: BaseModel):
+    def decision_check(self, q: EdpQuestion, output: BaseModel):
         """Check if the edit distance solution is valid.
 
         :param instance: The instance dictionary with 'string_a' and 'string_b'.

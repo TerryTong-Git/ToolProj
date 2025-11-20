@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 tsp_desc = (
     "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city."
@@ -15,7 +15,7 @@ tsp_desc = (
 
 
 @dataclass
-class TSP(NPHardEvalProblem):
+class TspQuestion(NpQuestion):
     kind: str = "tsp"
     type: str = "code"  # could be sim, nl etc
     distance_matrix: pd.DataFrame = field(default_factory=[])  # type: ignore
@@ -23,10 +23,10 @@ class TSP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return TSPUtil
+        return TspCheckAndFormat
 
 
-class TSPModel(BaseModel):
+class TspAnswer(BaseModel):
     Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
@@ -34,10 +34,10 @@ class TSPModel(BaseModel):
 func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
-class TSPUtil(NPHardEvalProblemUtil):
+class TspCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, tsp_desc, TSPModel)
-        self.instancetype = TSP
+        super().__init__(prob_type, func_typing, tsp_desc, TspAnswer)
+        self.instancetype = TspQuestion
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self):
@@ -53,7 +53,7 @@ class TSPUtil(NPHardEvalProblemUtil):
         else:
             return False
 
-    def format_one(self, q: TSP):
+    def format_one(self, q: TspQuestion):
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         dm = q.distance_matrix
@@ -116,7 +116,7 @@ class TSPUtil(NPHardEvalProblemUtil):
     def get_field_kwargs(self, result):
         return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 
-    def decision_check(self, instance: TSP, solution: BaseModel):
+    def decision_check(self, instance: TspQuestion, solution: BaseModel):
         """
         Check if the TSP solution is complete and if the distance matches the greedy solution.
 

@@ -11,17 +11,16 @@ from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel
 
-from src.exps_performance.problems import Problem, ProblemUtil
-from src.exps_performance.problems.nphard import get_prompt_classes, get_prompts
+from src.exps_performance.problems import CheckAndFormat, Question, get_prompt_classes, get_prompts
 
 
 @dataclass
-class NPHardEvalProblem(Problem):
+class NpQuestion(Question):
     def util_pointer(self):
-        return NPHardEvalProblemUtil
+        return NpCheckAndFormat
 
 
-class NPHardEvalProblemUtil(ProblemUtil):
+class NpCheckAndFormat(CheckAndFormat):
     def __init__(self, prob_type, func_typing, desc, probModel):
         available = ["code", "nl", "sim"]
         PROB_TYPES = {name: classes for name, classes in zip(available, get_prompt_classes(probModel, func_typing))}

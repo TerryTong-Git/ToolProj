@@ -7,7 +7,7 @@ from typing import Tuple
 
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 from src.exps_performance.utils import read_dimacs_format
 
 gcp_desc = (
@@ -19,7 +19,7 @@ func_typing = "Dict[int, str]"  # (Path, TotalDistance)
 
 
 @dataclass
-class GCP(NPHardEvalProblem):
+class GcpQuestion(NpQuestion):
     kind: str = "gcp"
     type: str = "code"  # could be sim, nl etc
     dimacs_str: str = ""
@@ -27,17 +27,17 @@ class GCP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return GCPUtil
+        return GcpCheckAndFormat
 
 
-class GCPModel(BaseModel):
+class GcpAnswer(BaseModel):
     Colors: str = Field(description="The color assignment for each vertex. Type: Dict[int, str]. For example {1: 'A', 2: 'B' }", default="")
 
 
-class GCPUtil(NPHardEvalProblemUtil):
+class GcpCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, gcp_desc, GCPModel)
-        self.instancetype = GCP
+        super().__init__(prob_type, func_typing, gcp_desc, GcpAnswer)
+        self.instancetype = GcpQuestion
 
     def loaded_data_to_class(self, data):
         return dict(dimacs_str=data)
@@ -66,7 +66,7 @@ class GCPUtil(NPHardEvalProblemUtil):
     def prompt(self):
         return self.prompt_template(["max_vertices", "max_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
-    def format_one(self, q: GCP):
+    def format_one(self, q: GcpQuestion):
         inp = q.dimacs_str
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
@@ -98,7 +98,7 @@ class GCPUtil(NPHardEvalProblemUtil):
                     return False, "Invalid input."  # dealing with hullucination
         return True, f"Valid coloring found with {len(set(answer_colors.values()))} colors: {answer_colors}"
 
-    def decision_check(self, q: GCP, output: BaseModel):
+    def decision_check(self, q: GcpQuestion, output: BaseModel):
         return self.gcpCheck(q.dimacs_str, output.Colors)
 
     def load_data(self):

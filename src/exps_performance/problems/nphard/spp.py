@@ -7,7 +7,7 @@ from typing import List, Tuple
 import networkx as nx
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 spp_desc = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
@@ -17,15 +17,13 @@ spp_desc = (
 func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
-# rather than model, maybe SppLlmSolFormat
-class SPPModel(BaseModel):
+class SppAnswer(BaseModel):
     Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
-# call SppProbDataFormat
 @dataclass
-class SPP(NPHardEvalProblem):
+class SppQuestion(NpQuestion):
     kind: str = "spp"
     type: str = "code"  # could be sim, nl etc
     nodes: List[int] = field(default_factory=[])  # type: ignore
@@ -35,14 +33,13 @@ class SPP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return SPPUtil
+        return SppCheckAndFormat
 
 
-# SppUtilCheckAndFormat
-class SPPUtil(NPHardEvalProblemUtil):
+class SppCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, spp_desc, SPPModel)
-        self.instancetype = SPP
+        super().__init__(prob_type, func_typing, spp_desc, SppAnswer)
+        self.instancetype = SppQuestion
 
     def loaded_data_to_class(self, data):
         return data
@@ -64,7 +61,7 @@ class SPPUtil(NPHardEvalProblemUtil):
     def prompt(self):
         return self.prompt_template(["start_node", "end_node", "edges"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
-    def format_one(self, q: SPP) -> str:
+    def format_one(self, q: SppQuestion) -> str:
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         start_node = q.nodes[0]
@@ -102,7 +99,7 @@ class SPPUtil(NPHardEvalProblemUtil):
         return shortest_path_length, shortest_path
 
     # SPP
-    def decision_check(self, instance: SPP, solution: BaseModel, start_node=None, end_node=None) -> Tuple[bool, str]:
+    def decision_check(self, instance: SppQuestion, solution: BaseModel, start_node=None, end_node=None) -> Tuple[bool, str]:
         """Validate the solution of the SPP problem.
 
         :param instance: The instance dictionary with nodes and edges.

@@ -131,3 +131,13 @@ solution() missing 2 required positional arguments: 'arr' and 'target'
 unexpected indent (<string>, line 17)
 solution() missing 2 required positional arguments: 'array' and 'target'
 solution() missing 2 required positional arguments: 'array' and 'target'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+unexpected indent (<string>, line 17)
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'

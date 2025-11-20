@@ -6,7 +6,7 @@ import networkx as nx
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 tsp_desc = (
     "Description: The Traveling Salesman Problem (Decision Version, TSP-D) focuses on determining if a salesman can complete a route, visiting each city at least once, with the total travel distance being less than a specified value."
@@ -15,7 +15,7 @@ tsp_desc = (
 
 
 @dataclass
-class TSP_D(NPHardEvalProblem):
+class TspdQuestion(NpQuestion):
     kind: str = "TSP_D"
     type: str = "code"  # could be sim, nl etc
     distance_matrix: pd.DataFrame = field(default_factory=[])  # type: ignore
@@ -24,20 +24,20 @@ class TSP_D(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return TSP_DUtil
+        return TspdCheckAndFormat
 
 
-class TSPModel(BaseModel):
+class TspdAnswer(BaseModel):
     Feasible: str = Field(description="The feasibility. Type: Bool. Answer with True or False.", default="")
 
 
 func_typing = "Bool"  # (Feasible yes or no)
 
 
-class TSP_DUtil(NPHardEvalProblemUtil):
+class TspdCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, tsp_desc, TSPModel)
-        self.instancetype = TSP_D
+        super().__init__(prob_type, func_typing, tsp_desc, TspdAnswer)
+        self.instancetype = TspdQuestion
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self):
@@ -54,7 +54,7 @@ class TSP_DUtil(NPHardEvalProblemUtil):
                 all_data.append(df)
         return all_data
 
-    def format_one(self, q: TSP_D):
+    def format_one(self, q: TspdQuestion):
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         dm = q.distance_matrix
@@ -109,5 +109,5 @@ class TSP_DUtil(NPHardEvalProblemUtil):
             return False, f"Feasibility mismatch: {is_feasible} vs {tour_distance} > {threshold}"
         return True, "Feasible: {} <= {}".format(tour_distance, threshold)
 
-    def decision_check(self, q: TSP_D, output: BaseModel):
+    def decision_check(self, q: TspdQuestion, output: BaseModel):
         return self.tsp_decision_check(q.distance_matrix, q.threshold, output)

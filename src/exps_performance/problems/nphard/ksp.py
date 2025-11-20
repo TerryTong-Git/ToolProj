@@ -8,7 +8,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 ksp_desc = (
     "Description: The Knapsack Problem (KSP) asks whether a subset of items, each with a given weight and value, can be chosen to fit into a knapsack of fixed capacity, maximizing the total value without exceeding the capacity."
@@ -18,14 +18,14 @@ ksp_desc = (
 func_typing = "Tuple[bool, int, List[int]]"  # (Path, TotalDistance)
 
 
-class KSPModel(BaseModel):
+class KspAnswer(BaseModel):
     Feasible: str = Field(description="The feasibility. Type: bool. Return 'True' or 'False'. ", default="")
     TotalValue: str = Field(description="The total value of knapsack. Type: int. For example: 8. ", default="")
     SelectedItemIds: str = Field(description="The total value of knapsack. Type: List[int]. For example: [1,2,3]. ", default="")
 
 
 @dataclass
-class KSP(NPHardEvalProblem):
+class KspQuestion(NpQuestion):
     kind: str = "ksp"
     type: str = "code"  # could be sim, nl etc
     knapsack_capacity: int = -1
@@ -34,13 +34,13 @@ class KSP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return KSPUtil
+        return KspCheckAndFormat
 
 
-class KSPUtil(NPHardEvalProblemUtil):
+class KspCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, ksp_desc, KSPModel)
-        self.instancetype = KSP
+        super().__init__(prob_type, func_typing, ksp_desc, KspAnswer)
+        self.instancetype = KspQuestion
 
     def loaded_data_to_class(self, data):
         return data
@@ -75,7 +75,7 @@ class KSPUtil(NPHardEvalProblemUtil):
     def prompt(self):
         return self.prompt_template(["knapsacks", "itemweights"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
-    def format_one(self, q: KSP):
+    def format_one(self, q: KspQuestion):
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         knapsack_capacity = q.knapsack_capacity
@@ -111,7 +111,7 @@ class KSPUtil(NPHardEvalProblemUtil):
         return dp[capacity]
 
     # KSP
-    def kspCheck(self, instance: KSP, solution: BaseModel):
+    def kspCheck(self, instance: KspQuestion, solution: BaseModel):
         """Validates the solution for the KSP instance.
 
         :param instance: A dictionary of the KSP instance.

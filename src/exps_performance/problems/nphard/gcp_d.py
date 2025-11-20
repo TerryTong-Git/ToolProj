@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import networkx as nx
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 from src.exps_performance.utils import read_dimacs_format
 
 gcp_desc = (
@@ -18,12 +18,12 @@ gcp_desc = (
 func_typing = "bool"  # (Path, TotalDistance)
 
 
-class GCP_DModel(BaseModel):
+class GcpdAnswer(BaseModel):
     Feasible: str = Field(description="The feasibility. Type: bool. Return 'True' or 'False'. ", default="")
 
 
 @dataclass
-class GCP_D(NPHardEvalProblem):
+class GcpdQuestion(NpQuestion):
     kind: str = "gcp_d"
     type: str = "code"  # could be sim, nl etc
     dimacs_str: str = ""
@@ -31,13 +31,13 @@ class GCP_D(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return GCP_DUtil
+        return GcpdCheckAndFormat
 
 
-class GCP_DUtil(NPHardEvalProblemUtil):
+class GcpdCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, gcp_desc, GCP_DModel)
-        self.instancetype = GCP_D
+        super().__init__(prob_type, func_typing, gcp_desc, GcpdAnswer)
+        self.instancetype = GcpdQuestion
 
     # tied to inputs, may not be called input
     def loaded_data_to_class(self, data):
@@ -67,7 +67,7 @@ class GCP_DUtil(NPHardEvalProblemUtil):
     def prompt(self):
         return self.prompt_template(["total_vertices", "number_of_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
-    def format_one(self, q: GCP_D):
+    def format_one(self, q: GcpdQuestion):
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         inp = q.dimacs_str
@@ -82,7 +82,7 @@ class GCP_DUtil(NPHardEvalProblemUtil):
         prompt_text = self.prompt.format_prompt(total_vertices=number_of_vertices, number_of_colors=number_of_colors, graph=graph)
         return prompt_text.to_string()
 
-    def decision_check(self, q: GCP_D, output: BaseModel):
+    def decision_check(self, q: GcpdQuestion, output: BaseModel):
         number_of_colors = int(q.dimacs_str.split("\n")[0].split()[-2])
         return self.gcp_decision_check(q.dimacs_str, output, number_of_colors)
 

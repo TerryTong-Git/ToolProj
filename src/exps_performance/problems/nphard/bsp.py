@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 bsp_desc = (
     "Description: The Binary Search Problem (BSP) deals with finding the position of a target value within a sorted array using a binary search algorithm, which efficiently narrows down the search range."
@@ -15,12 +15,12 @@ bsp_desc = (
 func_typing = "int"
 
 
-class BSPModel(BaseModel):
+class BspAnswer(BaseModel):
     Position: str = Field(description="Position resulting from search. Type: int. For example: 8. ", default="")
 
 
 @dataclass
-class BSP(NPHardEvalProblem):
+class BspQuestion(NpQuestion):
     kind: str = "edp"
     type: str = "code"  # could be sim, nl etc
     target: str = ""
@@ -29,13 +29,13 @@ class BSP(NPHardEvalProblem):
 
     @property
     def util_pointer(self):
-        return BSPUtil
+        return BspCheckAndFormat
 
 
-class BSPUtil(NPHardEvalProblemUtil):
+class BspCheckAndFormat(NpCheckAndFormat):
     def __init__(self, prob_type):
-        super().__init__(prob_type, func_typing, bsp_desc, BSPModel)
-        self.instancetype = BSP
+        super().__init__(prob_type, func_typing, bsp_desc, BspAnswer)
+        self.instancetype = BspQuestion
 
     # tied to inputs, may not be called input
     def loaded_data_to_class(self, data):
@@ -58,7 +58,7 @@ class BSPUtil(NPHardEvalProblemUtil):
     def prompt(self):
         return self.prompt_template(["target_value", "arr"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
-    def format_one(self, q: BSP):
+    def format_one(self, q: BspQuestion):
         if self.prob_type == "sim":
             return self.prompt.format_prompt(code=q.code).to_string()
         target_value = q.target
@@ -68,7 +68,7 @@ class BSPUtil(NPHardEvalProblemUtil):
 
         return prompt_text
 
-    def decision_check(self, q: BSP, output: BaseModel):
+    def decision_check(self, q: BspQuestion, output: BspAnswer):
         """Check if the binary search solution is valid.
 
         :param instance: The instance dictionary with array and target value.
