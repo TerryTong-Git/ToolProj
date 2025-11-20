@@ -154,3 +154,5 @@ unexpected indent (<string>, line 15)
 name 'solution' is not defined
 name 'solution' is not defined
 name 'key' is not defined
+name 'solution' is not defined
+name 'solution' is not defined

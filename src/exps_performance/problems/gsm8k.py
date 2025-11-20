@@ -63,7 +63,7 @@ class Gsm8kCheckAndFormat(CheckAndFormat):
 
     def decision_check(self, instance: Gsm8kAnswer, solution: BaseModel):
         str_ans = solution.Answer
-        return int(str_ans == instance.answer)
+        return int(str_ans == instance.answer), ""
 
     def parse_gsm8k_gold(self, ans: str) -> int:
         m = re.search(r"####\s*(-?\d+)", ans)
