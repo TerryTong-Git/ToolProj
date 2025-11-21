@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import List, Sequence
 
 import torch
 
 from src.exps_performance.problems import Question
 from src.exps_performance.problems.clrs import ClrsCheckAndFormat
+from src.exps_performance.problems.finegrained import (
+    AddCheckAndFormat,
+    IlpAssignCheckAndFormat,
+    IlpPartitionCheckAndFormat,
+    IlpProdCheckAndFormat,
+    Knap01CheckAndFormat,
+    LcsCheckAndFormat,
+    MulCheckAndFormat,
+    RodCheckAndFormat,
+    SubCheckAndFormat,
+)
 from src.exps_performance.problems.gsm8k import Gsm8kCheckAndFormat
 from src.exps_performance.problems.nphard.bsp import BspCheckAndFormat
 from src.exps_performance.problems.nphard.edp import EdpCheckAndFormat
@@ -65,6 +77,18 @@ gsm_problem_types = {
     "gsm8k": Gsm8kCheckAndFormat,
 }
 
+fg_problem_types = {
+    "add": AddCheckAndFormat,
+    "sub": SubCheckAndFormat,
+    "mul": MulCheckAndFormat,
+    "lcs": LcsCheckAndFormat,
+    "rod": RodCheckAndFormat,
+    "knap": Knap01CheckAndFormat,
+    "ilp_assign": IlpAssignCheckAndFormat,
+    "ilp_prod": IlpProdCheckAndFormat,
+    "ilp_partition": IlpPartitionCheckAndFormat,
+}
+
 
 class NPHARD(Dataset):
     def load(self) -> Sequence[Question]:
@@ -104,18 +128,54 @@ class GSM8K(Dataset):
         return all_data
 
 
-fg_problem_types: dict = {}
-
-
+@dataclass
 class FG(Dataset):
     n: int
     digits_list: List[int]
-    kinds: List[str]
     seed: int = 1
 
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
         for ProblemType in fg_problem_types.values():
-            classInstance = ProblemType("code")  # type: ignore
+            classInstance = ProblemType("code", self.n, self.digits_list)  # type: ignore
             all_data += classInstance.load_data()  # type: ignore[abstract]
         return all_data
+
+    def load_subset(self, subset: List[str]):
+        for s in subset:
+            assert s in list(fg_problem_types.keys()), "invalid subset"
+        all_data: List[Question] = []
+        for key, ProblemType in fg_problem_types.items():
+            if key not in subset:
+                continue
+            classInstance = ProblemType("code", self.n, self.digits_list)  # type: ignore
+            all_data += classInstance.load_data()  # type: ignore[abstract]
+        return all_data
+
+
+def make_dataset(kinds, n=10, digits_list=[2]) -> Sequence[Question]:
+    # accepts both single a subset
+    np = []
+    clrs = False
+    gsm = False
+    fg = []
+    for kind in kinds:
+        if kind in list(problem_types.keys()):
+            np.append(kind)
+        if kind in list(clrs_problem_types.keys()):
+            clrs = True
+        if kind in list(gsm_problem_types.keys()):
+            gsm = True
+        if kind in list(fg_problem_types.keys()):
+            fg.append(kind)
+
+    all_data: List[Question] = []
+    if clrs:
+        all_data += CLRS().load()
+    if gsm:
+        all_data += GSM8K().load()
+    if fg:
+        all_data += FG(n, digits_list).load_subset(fg)
+    if np:
+        all_data += NPHARD().load_subset(np)
+    return all_data

@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from src.exps_performance.dataset import CLRS, GSM8K, NPHARD
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
+from src.exps_performance.logger import Record
 
 
 @dataclass
@@ -28,6 +28,8 @@ class CreateArgs:
     max_tokens: int = 2048
     temperature: float = 0
     top_p: float = 1
+    log_every: int = 50
+    tb_text_chars: int = 10000
 
 
 @pytest.fixture(scope="session")
@@ -36,23 +38,40 @@ def default_args():
 
 
 @pytest.fixture(scope="session")
-def npdata():
-    return NPHARD().load()
-
-
-@pytest.fixture(scope="session")
-def clrsdata():
-    return CLRS().load()
-
-
-@pytest.fixture(scope="session")
-def gsmdata():
-    return GSM8K().load()
-
-
-@pytest.fixture(scope="session")
-def subset_npdata():
-    return NPHARD().load_subset
+def mock_records():
+    fake_record = Record(
+        model="abc",  # answers depend on this
+        seed=2,  # answers depend on this
+        exp_id="abc",
+        digit=2,
+        kind="abc",
+        question="abc",
+        answer="abc",
+        nl_question="abc",
+        nl_answer="abc",
+        nl_correct=True,
+        nl_parse_err=True,
+        nl_err_msg="abc",  # defaults to "" if not err
+        code_question="abc",
+        code_answer="abc",  # (or err message)
+        code_correct=True,
+        code_parse_err=True,
+        code_gen_err=True,
+        code_err_msg="abc",
+        sim_question="abc",
+        sim_reasoning="abc",  # attempted reasoning
+        sim_answer="abc",
+        sim_correct=True,
+        sim_parse_err=True,
+        sim_err_msg="abc",
+        controlsim_question="abc",
+        controlsim_reasoning="abc",
+        controlsim_answer="abc",
+        controlsim_correct=True,
+        controlsim_parse_err=True,
+        controlsim_err_msg="abc",
+    )
+    return [fake_record for _ in range(EXAMPLES)]
 
 
 @pytest.fixture(scope="session")

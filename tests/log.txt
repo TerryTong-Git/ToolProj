@@ -156,3 +156,64 @@ name 'solution' is not defined
 name 'key' is not defined
 name 'solution' is not defined
 name 'solution' is not defined
+unexpected indent (<string>, line 2)
+unexpected indent (<string>, line 17)
+solution() missing 2 required positional arguments: 'S' and 'T'
+solution() missing 2 required positional arguments: 'S' and 'T'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() takes 0 positional arguments but 2 were given
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+name 'solution' is not defined
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'text1' and 'text2'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'x' and 'y'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+unexpected indent (<string>, line 22)
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+invalid syntax. Perhaps you forgot a comma? (<string>, line 23)
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+unindent does not match any outer indentation level (<string>, line 20)
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+unexpected indent (<string>, line 21)
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'path_list' is not defined

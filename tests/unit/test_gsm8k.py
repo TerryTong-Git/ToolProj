@@ -1,9 +1,10 @@
+from src.exps_performance.dataset import make_dataset
 from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
 from tests.conftest import EXAMPLES, check
 
 
-def test_clrs(llm, gsmdata, default_args):
-    data = gsmdata
+def test_gsm(llm, default_args):
+    data = make_dataset(["gsm"])
     client = llm
     arm2 = Arm2(data[:EXAMPLES], default_args, client)
     arm2.run()

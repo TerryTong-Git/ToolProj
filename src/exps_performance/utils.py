@@ -52,6 +52,23 @@ def sample_int(digits: int, rng: random.Random) -> int:
     return rng.randint(lo, hi)
 
 
+def seed_all_and_setup(args):
+    random.seed(args.seed)
+    import numpy as np
+    import torch
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.deterministic = True
+
+    try:
+        torch.set_float32_matmul_precision("high")
+    except Exception:
+        pass
+
+
 def read_dimacs_format(dimacs_str):
     lines = dimacs_str.strip().split("\n")
     p_line = next(line for line in lines if line.startswith("p"))

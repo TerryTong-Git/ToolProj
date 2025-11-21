@@ -263,6 +263,25 @@ class HFLocalClient(LLMClient):
         return text
 
 
+def llm(args):
+    if args.backend == "vllm":
+        client = VLLMClient(
+            model_name=args.model,
+            dtype=args.vllm_dtype,
+            tensor_parallel_size=args.vllm_tensor_parallel,
+            gpu_memory_utilization=args.vllm_gpu_mem_util,
+            max_model_len=args.vllm_max_model_len,
+            download_dir=args.vllm_download_dir,
+            trust_remote_code=args.hf_trust_remote_code,
+            seed=args.seed,
+        )
+        return client
+    elif args.backend == "dummy":
+        return DummyClient()
+    elif args.backend == "running":
+        return OpenAIChatClient()
+
+
 def run_batch(messages_list, args, client):
     if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
         outs = []

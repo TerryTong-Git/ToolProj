@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Tuple
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
+
+from src.exps_performance.logger import Record
 
 
 class CheckAndFormat(ABC):
@@ -23,11 +25,11 @@ class CheckAndFormat(ABC):
     def decision_check(self, q, output):
         raise NotImplementedError
 
-    def parse_output(self, output) -> BaseModel:  # returns one of the pydantic objects
+    def parse_output(self, output) -> Tuple[BaseModel, str]:  # returns one of the pydantic objects
         try:
-            return self.parser.parse(output)  # ok
-        except OutputParserException:
-            return self.PROB_TYPES[self.prob_type]()  # err
+            return self.parser.parse(output), "ok"  # ok
+        except OutputParserException as e:
+            return self.PROB_TYPES[self.prob_type](), e  # err
 
     def prompt_template(self, input_var):
         return PromptTemplate(
@@ -50,6 +52,10 @@ class Question(ABC):
     kind: str = "null"  # e.g. clrs, finegrain, gsm8k etc
     digits: int = 0
     code: str = ""
+
+    question: str = ""  # formatted prompt
+    answer: str = ""  # gold answer
+    record: Record = Record()  # solution
 
     @property
     @abstractmethod

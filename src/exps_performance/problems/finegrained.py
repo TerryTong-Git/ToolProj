@@ -168,7 +168,6 @@ class IlpAssignCheckAndFormat(FgCheckAndFormat):
     k: str = "ilp_assign"
 
     def make_problem(self, rng, d):
-        C = self.data["cost"]
         n = max(2, min(int(d), 7))  # cap n for brute-force fallback safety
         C = [[rng.randint(1, max(6, 3 * d)) for _ in range(n)] for __ in range(n)]
         question = (
@@ -211,15 +210,12 @@ class IlpProdCheckAndFormat(FgCheckAndFormat):
         for j in range(P):
             ub_j = min(10, min((capacity[i] // max(1, consumption[i][j]) for i in range(R)), default=10))
             upper.append(int(max(3, ub_j)))
-        data = (
-            {
-                "profit": profit,
-                "consumption": consumption,
-                "capacity": capacity,
-                "upper_bound": upper,
-            },
-        )
-
+        data = {
+            "profit": profit,
+            "consumption": consumption,
+            "capacity": capacity,
+            "upper_bound": upper,
+        }
         question = (
             "Production planning: Choose integer quantities x_j ≥ 0 to maximize total profit sum_j profit[j]*x_j, "
             "subject to resource constraints sum_j consumption[i][j]*x_j ≤ capacity[i]. Return the max profit.\n"

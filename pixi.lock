@@ -358,6 +358,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/a1/25/edf20acbd670934b02cd9344e29c9a03ce040122324b3491bb075ae76b2d/statsmodels-0.14.5-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/b2/fe/81695a1aa331a842b582453b605175f419fe8540355886031328089d840a/sympy-1.13.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0a/7d/3165c7538b8e89b22fa17ad68e04106cca7023cf68e94011ae7b3b6d2a78/tables-3.10.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/17/7a/56818acfbf03ef6eae4c3e0a7091ab6ffd8c3b44af93f2982297c07b50f2/tbparse-0.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/30/643397144bfbfec6f6ef821f36f33e57d35946c44a2352d3c9f0ae847619/tenacity-9.1.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9c/d9/a5db55f88f258ac669a92858b70a714bbbd5acd993820b41ec4a96a4d77f/tensorboard-2.20.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7a/13/e503968fefabd4c6b2650af21e110aa8466fe21432cd7c43a84577a89438/tensorboard_data_server-0.7.2-py3-none-any.whl
@@ -5533,6 +5534,27 @@ packages:
   - numpydoc ; extra == 'doc'
   - ipython ; extra == 'doc'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/17/7a/56818acfbf03ef6eae4c3e0a7091ab6ffd8c3b44af93f2982297c07b50f2/tbparse-0.0.9-py3-none-any.whl
+  name: tbparse
+  version: 0.0.9
+  sha256: 51a001728bc539a1efed9f03450b1e0151ad14011c8c52f156cf55dc1fbaa884
+  requires_dist:
+  - pandas>=1.3.0
+  - tensorboard>=2.12.0
+  - pytest ; extra == 'testing'
+  - mypy ; extra == 'testing'
+  - flake8 ; extra == 'testing'
+  - pylint ; extra == 'testing'
+  - sphinx ; extra == 'testing'
+  - sphinx-rtd-theme ; extra == 'testing'
+  - torch ; extra == 'testing'
+  - tensorboardx==2.6 ; extra == 'testing'
+  - seaborn ; extra == 'testing'
+  - soundfile ; extra == 'testing'
+  - pytest-cov ; extra == 'testing'
+  - sphinx-tabs ; extra == 'testing'
+  - nbsphinx ; extra == 'testing'
+  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/e5/30/643397144bfbfec6f6ef821f36f33e57d35946c44a2352d3c9f0ae847619/tenacity-9.1.2-py3-none-any.whl
   name: tenacity
   version: 9.1.2
@@ -5654,7 +5676,7 @@ packages:
 - pypi: ./
   name: tools
   version: 0.1.0
-  sha256: e816250c95c71c231e26dc6b7b3a9271b7e1e66b195c5a518370a22a75ad029d
+  sha256: ccdf999c6f85854ff83ae34342421edf235350e1eda03280735182a0153163ba
   requires_dist:
   - transformer-lens>=2.16.1,<3
   - ipykernel>=6.30.1,<7
@@ -5692,6 +5714,7 @@ packages:
   - langchain[all]>=1.0.5,<2
   - pytest-profiling>=1.8.1,<2
   - pytest-monitor>=1.6.6,<2
+  - tbparse>=0.0.9,<0.0.10
   - pytest ; extra == 'dev'
   - ruff ; extra == 'dev'
   - mypy ; extra == 'dev'

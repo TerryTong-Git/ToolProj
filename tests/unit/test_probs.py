@@ -5,7 +5,31 @@ from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
 from tests.conftest import EXAMPLES, check
 
 
-@pytest.mark.parametrize("data_name", ["edp"])
+@pytest.mark.parametrize(
+    "data_name",
+    [
+        "spp",
+        "tsp",
+        "tsp_d",
+        "msp",
+        "ksp",
+        "gcp",
+        "gcp_d",
+        "bsp",
+        "edp",
+        "clrs",
+        "gsm8k",
+        "add",
+        "sub",
+        "mul",
+        "lcs",
+        "rod",
+        "knap",
+        "ilp_assign",
+        "ilp_prod",
+        "ilp_partition",
+    ],
+)
 def test_nphard(llm, data_name, default_args):
     data = make_dataset([data_name])
     client = llm

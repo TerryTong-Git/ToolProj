@@ -130,8 +130,8 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
         start = n - 9
         for file_num in range(start, n):
             with open(os.path.join(self.folder_name, "GCP_Decision", "decision_data_GCP_{}.txt".format(file_num))) as f:
-                data = f.read()
-            data += data.split("\n\n")[:-1]
+                d = f.read()
+            data += d.split("\n\n")[:-1]
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]

@@ -73,7 +73,8 @@ class SppCheckAndFormat(NpCheckAndFormat):
             this_line = f"Edge from {edge['from']} to {edge['to']} has a weight of {edge['weight']}."  # type: ignore
             edge_string += this_line + "\n"
         prompt_text = self.prompt.format_prompt(start_node=start_node, end_node=end_node, edges=edge_string)
-        return prompt_text.to_string()
+        string_prompt = prompt_text.to_string()
+        return string_prompt
 
     def load_data(self) -> Sequence[SppQuestion]:
         with open(os.path.join(self.folder_name, "SPP", "spp_instances.json"), "r") as f:
@@ -102,6 +103,7 @@ class SppCheckAndFormat(NpCheckAndFormat):
         return shortest_path_length, shortest_path
 
     # SPP
+
     def decision_check(self, instance: SppQuestion, solution: BaseModel, start_node=None, end_node=None) -> Tuple[bool, str]:
         """Validate the solution of the SPP problem.
 
@@ -133,6 +135,7 @@ class SppCheckAndFormat(NpCheckAndFormat):
 
         # Calculate the optimal solution
         ssp_optimal_length, ssp_optimal_path = self.ssp_optimal_solution(instance, start_node, end_node)
+
         if ssp_optimal_length is None:
             if isinstance(cost_string, int) or cost_string.isdigit():
                 return False, f"No path between from node {start_node} to node {end_node}."
@@ -176,5 +179,4 @@ class SppCheckAndFormat(NpCheckAndFormat):
         if calculated_cost != ssp_optimal_length:
             # spp_optimal_path = "->".join(map(str, ssp_optimal_path))
             return False, f"The calculated cost ({calculated_cost}) does not match the optimal solution ({ssp_optimal_length}): {ssp_optimal_path}."
-
         return True, "The solution is valid."
