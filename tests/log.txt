@@ -352,3 +352,12 @@ unexpected indent (<string>, line 16)
 solution() missing 2 required positional arguments: 'arr' and 'target'
 unexpected indent (<string>, line 16)
 solution() missing 2 required positional arguments: 'array' and 'target'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'text1' and 'text2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 's1' and 's2'
+solution() missing 2 required positional arguments: 'string' and 'key'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'string' and 'key'
+unindent does not match any outer indentation level (<string>, line 35)
+cannot unpack non-iterable float object

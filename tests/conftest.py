@@ -75,7 +75,7 @@ def mock_records():
 
 
 @pytest.fixture(scope="session")
-def mock_record_1():
+def mock_records_1():
     fake_record = Record(
         model="efg",  # answers depend on this
         seed=2,  # answers depend on this
