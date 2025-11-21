@@ -53,6 +53,7 @@ def test_nphard(llm, data_name, default_args):
     assert accuracy == correct / EXAMPLES, "accuracy record keeping is wrong"
 
     problems_w_code = arm2.set_code()
+
     blanks = 0
     for p in problems_w_code:
         if p.code == "":

@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 import pytest
 
@@ -8,9 +9,9 @@ from src.exps_performance.logger import Record
 
 @dataclass
 class CreateArgs:
-    n: int = 1000
-    digits: int = 2
-    kinds: str = "add"
+    n: int = 100
+    root: str = "."
+    kinds: List[str] = field(default_factory=lambda: ["add"])
     seed: int = 1
     backend: str = "running"
     hf_dtype: str = "float16"
@@ -30,6 +31,7 @@ class CreateArgs:
     top_p: float = 1
     log_every: int = 50
     tb_text_chars: int = 10000
+    digits_list: int = field(default_factory=lambda: [32])  # type: ignore
 
 
 @pytest.fixture(scope="session")
