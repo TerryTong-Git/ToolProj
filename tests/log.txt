@@ -217,3 +217,138 @@ solution() missing 2 required positional arguments: 'str1' and 'str2'
 solution() missing 2 required positional arguments: 'str1' and 'str2'
 solution() missing 2 required positional arguments: 'str1' and 'str2'
 name 'path_list' is not defined
+Timeout
+unindent does not match any outer indentation level (<string>, line 21)
+name 'solution' is not defined
+unindent does not match any outer indentation level (<string>, line 22)
+name 'itertools' is not defined
+name 'path' is not defined
+name 'itertools' is not defined
+name 'itertools' is not defined
+name 'solution' is not defined
+(3, 0)
+(2, 1)
+name 'itertools' is not defined
+(7, 0)
+name 'itertools' is not defined
+name 'total_distance' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'Tuple' is not defined
+name 'solution' is not defined
+solution() missing 3 required positional arguments: 'capacity', 'weights', and 'values'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'text1' and 'text2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'string' and 'key'
+unindent does not match any outer indentation level (<string>, line 38)
+solution() missing 1 required positional argument: 'arr'
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+unexpected indent (<string>, line 17)
+unexpected indent (<string>, line 17)
+solution() missing 2 required positional arguments: 'S' and 'T'
+solution() missing 2 required positional arguments: 'n' and 'P'
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'n' and 'prices'
+solution() missing 2 required positional arguments: 'N' and 'P'
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+name 'solution' is not defined
+solution() missing 1 required positional argument: 'C'
+name 'np' is not defined
+name 'solution' is not defined
+solution() missing 1 required positional argument: 'C'
+solution() missing 1 required positional argument: 'C'
+'[' was never closed (<string>, line 11)
+name 'solution' is not defined
+name 'np' is not defined
+'[' was never closed (<string>, line 11)
+name 'np' is not defined
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+solution() missing 2 required positional arguments: 'S' and 'T'
+solution() missing 2 required positional arguments: 'S' and 'T'
+solution() missing 2 required positional arguments: 'S' and 'T'
+solution() missing 2 required positional arguments: 'P' and 'N'
+solution() missing 2 required positional arguments: 'n' and 'prices'
+unexpected indent (<string>, line 9)
+solution() missing 3 required positional arguments: 'W', 'V', and 'C'
+unexpected indent (<string>, line 18)
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+unexpected indent (<string>, line 2)
+solution() missing 1 required positional argument: 'weights'
+solution() missing 1 required positional argument: 'weights'
+'return' outside function (<string>, line 43)
+unsupported operand type(s) for +: 'int' and 'NoneType'
+name 'itertools' is not defined
+name 'itertools' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+unhashable type: 'list'
+not enough values to unpack (expected 3, got 2)
+name 'solution' is not defined
+name 'solution' is not defined
+0
+name 'solution' is not defined
+list index out of range
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'array' and 'target'
+solution() missing 2 required positional arguments: 'arr' and 'target'
+unexpected indent (<string>, line 9)
+unindent does not match any outer indentation level (<string>, line 15)
+unindent does not match any outer indentation level (<string>, line 15)
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+solution() missing 2 required positional arguments: 'str1' and 'str2'
+name 'solution' is not defined
+Timeout
+1
+free variable 'distance' referenced before assignment in enclosing scope
+name 'solution' is not defined
+name 'itertools' is not defined
+name 'solution' is not defined
+(0, 0)
+'int' object is not subscriptable
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+unindent does not match any outer indentation level (<string>, line 37)
+name 'solution' is not defined
+name 'solution' is not defined
+name 'graph_adjacency_list' is not defined
+name 'solution' is not defined
+name 'solution' is not defined
+solution() missing 2 required positional arguments: 'array' and 'target'
+unexpected indent (<string>, line 16)
+solution() missing 2 required positional arguments: 'arr' and 'target'
+unexpected indent (<string>, line 16)
+solution() missing 2 required positional arguments: 'array' and 'target'

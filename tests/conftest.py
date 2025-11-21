@@ -21,7 +21,7 @@ class CreateArgs:
     vllm_dtype: str = "float16"
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.95
-    vllm_max_model_len: int = 4096
+    vllm_max_model_len: int = 8192
     vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
     hf_trust_remote_code: bool = True
     batch_size: int = 16
@@ -41,9 +41,9 @@ def default_args():
 def mock_records():
     fake_record = Record(
         model="abc",  # answers depend on this
-        seed=2,  # answers depend on this
+        seed=1,  # answers depend on this
         exp_id="abc",
-        digit=2,
+        digit=1,
         kind="abc",
         question="abc",
         answer="abc",
@@ -70,6 +70,43 @@ def mock_records():
         controlsim_correct=True,
         controlsim_parse_err=True,
         controlsim_err_msg="abc",
+    )
+    return [fake_record for _ in range(EXAMPLES)]
+
+
+@pytest.fixture(scope="session")
+def mock_record_1():
+    fake_record = Record(
+        model="efg",  # answers depend on this
+        seed=2,  # answers depend on this
+        exp_id="efg",
+        digit=2,
+        kind="efg",
+        question="efg",
+        answer="efg",
+        nl_question="efg",
+        nl_answer="efg",
+        nl_correct=False,
+        nl_parse_err=False,
+        nl_err_msg="efg",  # defaults to "" if not err
+        code_question="efg",
+        code_answer="efg",  # (or err message)
+        code_correct=False,
+        code_parse_err=False,
+        code_gen_err=False,
+        code_err_msg="efg",
+        sim_question="efg",
+        sim_reasoning="efg",  # attempted reasoning
+        sim_answer="efg",
+        sim_correct=False,
+        sim_parse_err=False,
+        sim_err_msg="efg",
+        controlsim_question="efg",
+        controlsim_reasoning="efg",
+        controlsim_answer="efg",
+        controlsim_correct=False,
+        controlsim_parse_err=False,
+        controlsim_err_msg="efg",
     )
     return [fake_record for _ in range(EXAMPLES)]
 

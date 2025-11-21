@@ -30,7 +30,7 @@ from typing import List
 
 from src.exps_performance.dataset import make_dataset
 from src.exps_performance.llm import llm
-from src.exps_performance.logger import init_tensorboard, write_text_to_tensorboard, write_to_csv
+from src.exps_performance.logger import create_dir, init_tensorboard, write_text_to_tensorboard, write_to_csv
 from src.exps_performance.metrics import accuracy
 from src.exps_performance.problems import Question
 from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
@@ -65,11 +65,10 @@ def run(args):
             continue
 
     # serialize results
-    outdir: str = args.model.split("/")[1]
-    abs_outdir = os.path.join(Path(__name__), "results", outdir)
-    writer, logdir = init_tensorboard(args, abs_outdir)
+    exp_dir = create_dir(args, Path(__name__))
+    writer = init_tensorboard(args, exp_dir)
     write_text_to_tensorboard(records, writer, args)
-    csv_path = os.path.join(logdir, "res.csv")
+    csv_path = os.path.join(exp_dir, "res.csv")
     write_to_csv(csv_path, records)
 
 
@@ -96,7 +95,7 @@ class ModelHyperArgs:
     vllm_dtype: str = "float16"
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.95
-    vllm_max_model_len: int = 4096
+    vllm_max_model_len: int = 8192
     vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
     hf_trust_remote_code: bool = True
     batch_size: int = 16

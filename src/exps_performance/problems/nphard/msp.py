@@ -109,7 +109,7 @@ class MspCheckAndFormat(NpCheckAndFormat):
             pdb.set_trace()
         try:
             output_dict = ast.literal_eval(output.Meet2Time)
-        except SyntaxError:
+        except (SyntaxError, TypeError):
             return False, "Parse error"
         if not self.type_check_code(output.Meet2Time) or output_dict is None:
             return False, "Parse error"

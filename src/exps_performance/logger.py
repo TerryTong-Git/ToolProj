@@ -1,6 +1,5 @@
 # define how to serialize here.
 import os
-import re
 import time
 from functools import partial
 from pathlib import Path
@@ -60,14 +59,18 @@ class Record(BaseModel):
     controlsim_err_msg: str = ""
 
 
-def init_tensorboard(args, logdir) -> SummaryWriter:  # use the logdir to specify tmp for testing, later switch to results dir
-    # if args.kinds[0] == "gsm8k":
-    #     outdir += "_gsm8k"
-
-    os.makedirs(logdir, exist_ok=True)
+# results/model_seed/exp_id/res.csv
+def create_dir(args, base):  # root would be like ./results
+    outdir: str = args.model.split("/")[1] + f"_seed{args.seed}"
+    abs_outdir = os.path.join(base, "results", outdir)
+    os.makedirs(abs_outdir, exist_ok=True)
     exp_id = time.strftime("run_%Y%m%d_%H%M%S")
-    actual_logdir = os.path.join(logdir, "tb", exp_id)
-    return SummaryWriter(log_dir=actual_logdir), actual_logdir
+    actual_logdir = os.path.join(abs_outdir, "tb", exp_id)
+    return actual_logdir
+
+
+def init_tensorboard(args, exp_dir) -> SummaryWriter:  # use the logdir to specify tmp for testing, later switch to results dir
+    return SummaryWriter(log_dir=exp_dir)
 
 
 def tb_text(
@@ -145,22 +148,18 @@ def read_from_csv(logdir) -> List[Record]:
     return result
 
 
-def create_big(args):
-    pass
-    # name = args.csv_folder.split("_")[-1]
-    # csv_folder = Path(os.path.join(Path(__name__).parent, args.csv_folder))
-    # csv_files = [f for f in csv_folder.iterdir() if (f.is_file() and "results" in f.name)]
-    # df = create_big_df(csv_files)
+def walk_results_folder(csv_folder):
+    csv_files = []
+    for dirpath, dirnames, filenames in os.walk(csv_folder):
+        for filename in filenames:
+            if filename.endswith(".csv"):
+                csv_files.append(os.path.join(dirpath, filename))
+    return csv_files
 
 
 def create_big_df(csv_files: List[Path]):
-    pattern = r"seed_(\d)"
     big_df = []
     for csv_file in csv_files:
-        seed = re.search(pattern, csv_file.name)
-        if seed is not None:
-            parsed_seed = seed.group(1)
-            df = pd.read_csv(csv_file)
-            df["seed"] = int(parsed_seed)
-            big_df.append(df)
+        df = pd.read_csv(csv_file)
+        big_df.append(df)
     return pd.concat(big_df, axis=0, ignore_index=True)

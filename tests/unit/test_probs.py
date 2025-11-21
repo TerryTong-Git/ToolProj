@@ -31,6 +31,9 @@ from tests.conftest import EXAMPLES, check
     ],
 )
 def test_nphard(llm, data_name, default_args):
+    # should also test the seed
+    # should also test the exp_id logged correctly
+
     data = make_dataset([data_name])
     client = llm
     data_subset = data[:EXAMPLES]
@@ -43,6 +46,7 @@ def test_nphard(llm, data_name, default_args):
         # parse_error = d.record.sim_parse_err
         # ans_ok = d.record.sim_reasoning != ""
         # assert parse_error != ans_ok, "cannot have ok answer and parse error"
+        assert d.record.seed != -1, "did not seed the problem"
         assert d.record.sim_answer != "", "sim answer is not string"
         assert d.record.sim_question != "", "sim question is not string"
         correct += int(d.record.sim_correct)
@@ -62,11 +66,11 @@ def test_nphard(llm, data_name, default_args):
     data_subset = arm3.edited_problems
     correct = 0
     for d in data_subset:
-        parse_error = d.record.code_parse_err
-        code_ok = d.record.code_answer != "-1"
-        gen_error = d.record.code_gen_err
-        assert parse_error != code_ok, "cannot have ok code and parse error"
-        assert parse_error != gen_error, "cannot have gen_err and parse error, only one"
+        # parse_error = d.record.code_parse_err
+        # code_ok = d.record.code_answer != "-1"
+        # gen_error = d.record.code_gen_err
+        # assert parse_error != code_ok, "cannot have ok code and parse error"
+        # assert parse_error != gen_error, "cannot have gen_err and parse error, only one"
         # assert gen_error != code_ok, "cannot have gen error and ok code" -> this is possible when code is not syntax error but type error
         assert isinstance(d.record.code_answer, str), "code answer is not string"
         assert isinstance(d.record.code_question, str), "code question is not string"

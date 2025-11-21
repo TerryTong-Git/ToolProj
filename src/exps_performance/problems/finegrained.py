@@ -122,9 +122,10 @@ class LcsCheckAndFormat(FgCheckAndFormat):
     k: str = "lcs"
 
     def make_problem(self, rng, d):
-        n = max(2, int(d))  # max 2 digit lcs
-        s = rand_string(rng, alpha="abcd", n=n)
-        t = rand_string(rng, alpha="abcd", n=n + rng.randint(-1, 1))
+        n = int(d)  # complexity O(n^2)
+        s = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
+        t = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
+
         question = f'Compute the length of the Longest Common Subsequence (LCS) between strings:\nS = "{s}"\nT = "{t}"'
         answer = lcs_len(s, t)
         return FgQuestion(kind="lcs", digits=d, question=question, answer=str(answer))
@@ -134,13 +135,14 @@ class Knap01CheckAndFormat(FgCheckAndFormat):
     k: str = "knapsack"
 
     def make_problem(self, rng, d):
-        n_items = max(3, int(d))
+        # complexity O(items * Capacity)
+        capacity = max(2, int(d))
+        n_items = max(2, int(d))
         # scale magnitudes gently with d to keep runtimes sane
-        w_max = max(5, 2 * d)  # this cap may make some results disingenuous
-        v_max = max(10, 4 * d)
+        w_max = max(2, 32)
+        v_max = max(2, 32)
         weights = [rng.randint(1, w_max) for _ in range(n_items)]
         values = [rng.randint(1, v_max) for _ in range(n_items)]
-        capacity = max(1, int(0.5 * sum(weights)))
         question = (
             "0/1 Knapsack: Given item weights W and values V and capacity C, "
             "compute the maximum total value.\n"
@@ -154,8 +156,8 @@ class RodCheckAndFormat(FgCheckAndFormat):
     k: str = "rod"
 
     def make_problem(self, rng, d):
-        N = max(2, int(d))
-        price_max = max(5, 3 * d)
+        N = max(2, int(d))  # O(n^2)
+        price_max = 32
         prices = [rng.randint(1, price_max) for _ in range(N)]
         question = (
             "Rod cutting: Given a rod of length N and price list P[1..N], " "compute the maximum obtainable revenue.\n" f"N = {N}\nP = {prices}"
@@ -168,8 +170,8 @@ class IlpAssignCheckAndFormat(FgCheckAndFormat):
     k: str = "ilp_assign"
 
     def make_problem(self, rng, d):
-        n = max(2, min(int(d), 7))  # cap n for brute-force fallback safety
-        C = [[rng.randint(1, max(6, 3 * d)) for _ in range(n)] for __ in range(n)]
+        n = max(2, int(d))  # O(2^n)
+        C = [[rng.randint(1, 32) for _ in range(n)] for __ in range(n)]
         question = (
             "Assignment problem: Given an n×n cost matrix C, assign each worker to one task "
             "minimizing the total cost. Return the minimum total cost as an integer. \n"
@@ -183,8 +185,8 @@ class IlpPartitionCheckAndFormat(FgCheckAndFormat):
     k: str = "ilp_partition"
 
     def make_problem(self, rng, d):
-        n_items = max(4, min(int(d), 24))
-        w_max = max(6, 3 * d)
+        n_items = max(2, int(d))
+        w_max = 32
         weights = [rng.randint(1, w_max) for _ in range(n_items)]
         question = (
             "Partition: Split the items into two groups to minimize the absolute difference between the sums. "
@@ -200,15 +202,14 @@ class IlpProdCheckAndFormat(FgCheckAndFormat):
 
     def make_problem(self, rng, d):
         # scale #products/#resources and magnitudes with d, but cap to keep fallback feasible
-        P = max(2, min(2 + d // 3, 6))  # benchmark runtime of problems
-        R = max(2, min(2 + d // 4, 4))
-        profit = [rng.randint(3, max(8, 3 * d)) for _ in range(P)]
-        consumption = [[rng.randint(1, max(3, d)) for _ in range(P)] for __ in range(R)]
-        # capacity scaled so some slack exists; upper bounds smallish (<= 10)
-        capacity = [rng.randint(max(6, 2 * d), max(10, 4 * d)) for _ in range(R)]
+        P = max(2, int(d))
+        R = max(2, int(d))
+        profit = [rng.randint(2, 32) for _ in range(P)]
+        consumption = [[rng.randint(2, 32) for _ in range(P)] for __ in range(R)]
+        capacity = [rng.randint(2, 32) for _ in range(R)]
         upper = []
-        for j in range(P):
-            ub_j = min(10, min((capacity[i] // max(1, consumption[i][j]) for i in range(R)), default=10))
+        for j in range(P):  # upper bound 32 so there is slack
+            ub_j = min(32, min((capacity[i] // max(1, consumption[i][j]) for i in range(R)), default=32))
             upper.append(int(max(3, ub_j)))
         data = {
             "profit": profit,

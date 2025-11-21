@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Sequence
 
 import torch
@@ -50,6 +50,7 @@ except Exception:
 # runner interface -> track statistics
 
 
+@dataclass
 class Dataset(ABC):
     @abstractmethod
     def load(self) -> Sequence[Question]:
@@ -90,6 +91,7 @@ fg_problem_types = {
 }
 
 
+@dataclass
 class NPHARD(Dataset):
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
@@ -110,6 +112,7 @@ class NPHARD(Dataset):
         return all_data
 
 
+@dataclass
 class CLRS(Dataset):
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
@@ -119,6 +122,7 @@ class CLRS(Dataset):
         return all_data
 
 
+@dataclass
 class GSM8K(Dataset):
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
@@ -130,9 +134,8 @@ class GSM8K(Dataset):
 
 @dataclass
 class FG(Dataset):
-    n: int
-    digits_list: List[int]
-    seed: int = 1
+    n: int = 10
+    digits_list: List[int] = field(default_factory=[32])  # type: ignore
 
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
@@ -153,7 +156,7 @@ class FG(Dataset):
         return all_data
 
 
-def make_dataset(kinds, n=10, digits_list=[2]) -> Sequence[Question]:
+def make_dataset(kinds, n=3, digits_list=[32]) -> Sequence[Question]:
     # accepts both single a subset
     np = []
     clrs = False
@@ -175,7 +178,10 @@ def make_dataset(kinds, n=10, digits_list=[2]) -> Sequence[Question]:
     if gsm:
         all_data += GSM8K().load()
     if fg:
-        all_data += FG(n, digits_list).load_subset(fg)
+        all_data += FG(
+            n,
+            digits_list,
+        ).load_subset(fg)
     if np:
         all_data += NPHARD().load_subset(np)
     return all_data

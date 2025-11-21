@@ -43,6 +43,9 @@ class TspdCheckAndFormat(NpCheckAndFormat):
     def prompt(self):
         return self.prompt_template(["total_cities", "distance_limit", "citystring"]) if self.prob_type != "sim" else self.prompt_template(["code"])
 
+    def get_field_kwargs(self, result):
+        return dict(Feasible=str(result))
+
     def load_data(self):
         n = 11
         start = n - 10

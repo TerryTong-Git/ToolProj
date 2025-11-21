@@ -64,7 +64,7 @@ class Question(ABC):
 
 
 DEFAULT_CODE_INSTR = """
-The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
+The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. You may use packages Pulp, Numpy, Pandas, Torch, Scipy. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
 
 ```python
 def solution():
