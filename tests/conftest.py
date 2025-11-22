@@ -51,6 +51,7 @@ def mock_records():
         answer="abc",
         nl_question="abc",
         nl_answer="abc",
+        nl_reasoning="abc",
         nl_correct=True,
         nl_parse_err=True,
         nl_err_msg="abc",  # defaults to "" if not err
@@ -77,7 +78,7 @@ def mock_records():
 
 
 @pytest.fixture(scope="session")
-def mock_records_1():
+def mock_record_1():
     fake_record = Record(
         model="efg",  # answers depend on this
         seed=2,  # answers depend on this
@@ -89,6 +90,7 @@ def mock_records_1():
         nl_question="efg",
         nl_answer="efg",
         nl_correct=False,
+        nl_reasoning="abc",
         nl_parse_err=False,
         nl_err_msg="efg",  # defaults to "" if not err
         code_question="efg",

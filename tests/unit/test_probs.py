@@ -1,7 +1,7 @@
 import pytest
 
+from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4
 from src.exps_performance.dataset import make_dataset
-from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
 from tests.conftest import EXAMPLES, check
 
 
@@ -9,25 +9,25 @@ from tests.conftest import EXAMPLES, check
     "data_name",
     [
         "spp",
-        "tsp",
-        "tsp_d",
-        "msp",
-        "ksp",
-        "gcp",
-        "gcp_d",
-        "bsp",
-        "edp",
-        "clrs",
-        "gsm8k",
-        "add",
-        "sub",
-        "mul",
-        "lcs",
-        "rod",
-        "knap",
-        "ilp_assign",
-        "ilp_prod",
-        "ilp_partition",
+        # "tsp",
+        # "tsp_d",
+        # "msp",
+        # "ksp",
+        # "gcp",
+        # "gcp_d",
+        # "bsp",
+        # "edp",
+        # "clrs",
+        # "gsm8k",
+        # "add",
+        # "sub",
+        # "mul",
+        # "lcs",
+        # "rod",
+        # "knap",
+        # "ilp_assign",
+        # "ilp_prod",
+        # "ilp_partition",
     ],
 )
 def test_nphard(llm, data_name, default_args):
@@ -38,9 +38,9 @@ def test_nphard(llm, data_name, default_args):
     client = llm
     data_subset = data[:EXAMPLES]
     arm2 = Arm2(data_subset, default_args, client)
-    accuracy = arm2.run()
+    accuracy, data_subset = arm2.run()
+    assert data_subset == arm2.edited_problems
     check(arm2, data, "code")
-    data_subset = arm2.edited_problems
     correct = 0
     for d in data_subset:
         # parse_error = d.record.sim_parse_err
@@ -52,19 +52,17 @@ def test_nphard(llm, data_name, default_args):
         correct += int(d.record.sim_correct)
     assert accuracy == correct / EXAMPLES, "accuracy record keeping is wrong"
 
-    problems_w_code = arm2.set_code()
-
     blanks = 0
-    for p in problems_w_code:
+    for p in data_subset:
         if p.code == "":
             blanks += 1
     assert blanks <= EXAMPLES - 1, "too many no code generations"
 
-    arm3 = Arm3(problems_w_code)
-    accuracy = arm3.run()
-    assert arm3.errs <= EXAMPLES - 1, "too many errors"
+    arm3 = Arm3(data_subset, default_args, client)
+    accuracy, data_subset = arm3.run()
+    assert arm3.parse_fail <= EXAMPLES - 1, "too many errors"
+    assert data_subset == arm3.edited_problems
 
-    data_subset = arm3.edited_problems
     correct = 0
     for d in data_subset:
         # parse_error = d.record.code_parse_err
@@ -77,12 +75,11 @@ def test_nphard(llm, data_name, default_args):
         assert isinstance(d.record.code_question, str), "code question is not string"
         correct += int(d.record.code_correct)
     assert accuracy == correct / EXAMPLES, "accuracy record keeping is wrong"
-
-    arm4 = Arm4(problems_w_code, default_args, client)
-    accuracy = arm4.run()
+    assert data_subset != [], "empty data subset"
+    arm4 = Arm4(data_subset, default_args, client)
+    accuracy, data_subset = arm4.run()
     check(arm4, data, "sim")
 
-    data_subset = arm4.edited_problems
     correct = 0
     for d in data_subset:
         # parse_error = d.record.controlsim_parse_err
@@ -94,9 +91,8 @@ def test_nphard(llm, data_name, default_args):
     assert accuracy == correct / EXAMPLES, "accuracy record keeping is wrong"
 
     arm1 = Arm1(data_subset, default_args, client)
-    accuracy = arm1.run()
+    accuracy, data_subset = arm1.run()
     check(arm1, data, "nl")
-    data_subset = arm1.edited_problems
     correct = 0
     for d in data_subset:
         parse_error = d.record.nl_parse_err

@@ -96,7 +96,7 @@ def get_prompt_classes(SpecificModel: BaseModel, func_typing: str):
         simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.", default="")
 
     class NLReasoning(SpecificModel):
-        reasoning: str = Field(
+        simulation: str = Field(
             description="The attempt at simulating the problem in natural language reasoning to give the final answer.",
             default="",
         )

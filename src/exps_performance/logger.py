@@ -33,6 +33,7 @@ class Record(BaseModel):
 
     nl_question: str = ""
     nl_answer: str = ""
+    nl_reasoning: str = ""
     nl_correct: bool = False
     nl_parse_err: bool = False
     nl_err_msg: str = ""  # defaults to "" if not err
@@ -63,9 +64,9 @@ class Record(BaseModel):
 def create_dir(args, base):  # root would be like ./results
     outdir: str = args.model.split("/")[1] + f"_seed{args.seed}"
     abs_outdir = os.path.join(base, "results", outdir)
+    os.makedirs(abs_outdir, exist_ok=True)
     exp_id = time.strftime("run_%Y%m%d_%H%M%S")
     actual_logdir = os.path.join(abs_outdir, "tb", exp_id)
-    os.makedirs(actual_logdir, exist_ok=True)
     return actual_logdir
 
 

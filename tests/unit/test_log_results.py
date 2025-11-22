@@ -69,4 +69,4 @@ def test_aggregate_results(tmp_path_factory, default_args, mock_records, mock_re
     # mock_data = ["abc", "1", "True"]
     # mock_data1 = ['efg', "2", "False"]
     for r in rows:
-        assert r["code_question"] in ["abc", "efg"], "not loaded correctly"
+        assert r["sim_parse_err"] in ["abc", "efg"], "not loaded correctly"
