@@ -120,3 +120,43 @@ WARNING 11-22 22:22:38 [utils.py:2282] Methods determine_num_available_blocks,de
 [1;36m(VllmWorker rank=5 pid=41041)[0;0m INFO 11-22 22:27:34 [backends.py:419] Dynamo bytecode transform time: 101.00 s
 [1;36m(VllmWorker rank=2 pid=40953)[0;0m INFO 11-22 22:27:34 [backends.py:419] Dynamo bytecode transform time: 101.02 s
 [1;36m(VllmWorker rank=3 pid=40983)[0;0m INFO 11-22 22:27:34 [backends.py:419] Dynamo bytecode transform time: 101.03 s
+[1;36m(VllmWorker rank=6 pid=41068)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=0 pid=40884)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=7 pid=41095)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=3 pid=40983)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=2 pid=40953)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=5 pid=41041)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=1 pid=40917)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=4 pid=41014)[0;0m INFO 11-22 22:28:04 [backends.py:132] Cache the graph of shape None for later use
+[1;36m(VllmWorker rank=2 pid=40953)[0;0m INFO 11-22 22:33:15 [backends.py:144] Compiling a graph for general shape takes 333.78 s
+[1;36m(VllmWorker rank=4 pid=41014)[0;0m INFO 11-22 22:33:16 [backends.py:144] Compiling a graph for general shape takes 333.88 s
+[1;36m(VllmWorker rank=1 pid=40917)[0;0m INFO 11-22 22:33:16 [backends.py:144] Compiling a graph for general shape takes 334.19 s
+[1;36m(VllmWorker rank=6 pid=41068)[0;0m INFO 11-22 22:33:16 [backends.py:144] Compiling a graph for general shape takes 334.36 s
+[1;36m(VllmWorker rank=3 pid=40983)[0;0m INFO 11-22 22:33:16 [backends.py:144] Compiling a graph for general shape takes 334.69 s
+[1;36m(VllmWorker rank=7 pid=41095)[0;0m INFO 11-22 22:33:18 [backends.py:144] Compiling a graph for general shape takes 336.43 s
+[1;36m(VllmWorker rank=5 pid=41041)[0;0m INFO 11-22 22:33:18 [backends.py:144] Compiling a graph for general shape takes 336.23 s
+[1;36m(VllmWorker rank=0 pid=40884)[0;0m INFO 11-22 22:33:18 [backends.py:144] Compiling a graph for general shape takes 336.22 s
+[1;36m(VllmWorker rank=7 pid=41095)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 437.39 s in total
+[1;36m(VllmWorker rank=2 pid=40953)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 434.80 s in total
+[1;36m(VllmWorker rank=0 pid=40884)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 437.17 s in total
+[1;36m(VllmWorker rank=4 pid=41014)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 434.83 s in total
+[1;36m(VllmWorker rank=3 pid=40983)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 435.73 s in total
+[1;36m(VllmWorker rank=5 pid=41041)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 437.24 s in total
+[1;36m(VllmWorker rank=6 pid=41068)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 435.36 s in total
+[1;36m(VllmWorker rank=1 pid=40917)[0;0m INFO 11-22 22:34:07 [monitor.py:33] torch.compile takes 435.18 s in total
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
+INFO 11-22 22:34:16 [kv_cache_utils.py:537] GPU KV cache size: 761,104 tokens
+INFO 11-22 22:34:16 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 92.91x
