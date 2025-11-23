@@ -1,0 +1,6 @@
+cpu-bind=MASK - nlpgpu06, task  0  0 [63775]: mask 0x100000001 set
+`torch_dtype` is deprecated! Use `dtype` instead!
+/mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/vllm/transformers_utils/tokenizer_group/tokenizer_group.py:25: FutureWarning: It is strongly recommended to run mistral models with `--tokenizer-mode "mistral"` to ensure correct encoding and decoding.
+  self.tokenizer = get_tokenizer(self.tokenizer_id, **tokenizer_config)
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/10 [00:00<?, ?it/s]
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m Loading safetensors checkpoint shards:  10% Completed | 1/10 [00:42<06:23, 42.59s/it]

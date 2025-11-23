@@ -11,7 +11,8 @@ SEEDS=(0)
 MODELS=( #7B Models
 #  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
 #  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
-Qwen/Qwen2.5-32B-Instruct
+# Qwen/Qwen2.5-32B-Instruct
+Qwen/Qwen2.5-14B-Instruct
 )
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do

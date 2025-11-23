@@ -1,7 +1,7 @@
 #!/bin/sh
-#SBATCH --job-name=llama
-#SBATCH --output=llamaOut.txt
-#SBATCH --error=llamaErr.txt
+#SBATCH --job-name=yi
+#SBATCH --output=YiOut.txt
+#SBATCH --error=YiErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
@@ -9,8 +9,9 @@
 
 SEEDS=(0)
 MODELS=( #7B Models
-meta-llama/Llama-3.1-8B-Instruct
-)
+#  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
+#  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
+01-ai/Yi-34B-Chat)
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do
     pixi run python src/exps_performance/main.py \

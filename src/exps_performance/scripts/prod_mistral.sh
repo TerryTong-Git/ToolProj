@@ -1,17 +1,21 @@
 #!/bin/sh
-#SBATCH --job-name=qwen
+#SBATCH --job-name=mistral
 #SBATCH --output=MistralOut.txt
 #SBATCH --error=MistralErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
 #SBATCH --time=1-6:00:00
+export HF_HOME="/nlpgpu/data/terry/ToolProj/src/models/"
+export HF_DATASETS_CACHE="/nlpgpu/data/terry/ToolProj/src/models/"
+export HF_HUB_CACHE="/nlpgpu/data/terry/ToolProj/src/models/"
+
 
 SEEDS=(0)
 MODELS=( #7B Models
 #  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
 #  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
-mistralai/Mistral-Small-3.2-24B-Instruct-2506
+mistralai/Mistral-Small-24B-Instruct-2501
 )
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do

@@ -1,7 +1,7 @@
 #!/bin/sh
-#SBATCH --job-name=llama
-#SBATCH --output=llamaOut.txt
-#SBATCH --error=llamaErr.txt
+#SBATCH --job-name=deepseek
+#SBATCH --output=deepseekOut.txt
+#SBATCH --error=deepseekErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
@@ -9,7 +9,10 @@
 
 SEEDS=(0)
 MODELS=( #7B Models
-meta-llama/Llama-3.1-8B-Instruct
+#  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
+ "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
+# mistralai/Mistral-7B-Instruct-v0.3
+
 )
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do
