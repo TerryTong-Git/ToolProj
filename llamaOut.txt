@@ -1,0 +1,2 @@
+INFO 11-22 22:27:04 [__init__.py:256] Automatically detected platform cuda.
+WARNING 11-22 22:27:08 [config.py:2599] Casting torch.bfloat16 to torch.float16.

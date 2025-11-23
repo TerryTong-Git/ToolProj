@@ -68,4 +68,4 @@ class ProgramChatInterface:
                 exec_result = self.runtime.eval_code(self.answer_expr)
             except Exception as e:
                 err = str(e)
-        return str(exec_result), err
+        return exec_result, err

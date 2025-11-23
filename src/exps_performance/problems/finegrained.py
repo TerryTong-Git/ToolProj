@@ -73,10 +73,11 @@ class FgCheckAndFormat(CheckAndFormat):
         return int(str_ans == instance.answer), ""
 
     def make_problem(self, rng, d):
+        rng1 = random.Random(2)
         a = sample_int(d, rng)
-        b = sample_int(d, rng)
-        question = f"Compute: {a} + {a}"
-        answer = a + b
+        b = sample_int(d, rng1)
+        question = f"Compute: {a} + {b}"
+        answer = int(float(a) + float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
     def load_data(self) -> Sequence[FgQuestion]:
@@ -98,12 +99,13 @@ class SubCheckAndFormat(FgCheckAndFormat):
     k: str = "sub"
 
     def make_problem(self, rng, d):
+        rng1 = random.Random(2)
         a = sample_int(d, rng)
-        b = sample_int(d, rng)
-        question = f"Compute: {a} - {a}"
+        b = sample_int(d, rng1)
+        question = f"Compute: {a} - {b}"
         if b > a:
             a, b = b, a
-        answer = a - b
+        answer = int(float(a) - float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
 
@@ -111,10 +113,11 @@ class MulCheckAndFormat(FgCheckAndFormat):
     k: str = "mul"
 
     def make_problem(self, rng, d):
+        rng1 = random.Random(2)
         a = sample_int(d, rng)
-        b = sample_int(d, rng)
-        question = f"Compute: {a} * {a}"
-        answer = a * b
+        b = sample_int(d, rng1)
+        question = f"Compute: {a} * {b}"
+        answer = int(float(a) * float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
 
@@ -123,8 +126,9 @@ class LcsCheckAndFormat(FgCheckAndFormat):
 
     def make_problem(self, rng, d):
         n = int(d)  # complexity O(n^2)
+        rng1 = random.Random(2)
         s = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
-        t = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
+        t = rand_string(rng1, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
 
         question = f'Compute the length of the Longest Common Subsequence (LCS) between strings:\nS = "{s}"\nT = "{t}"'
         answer = lcs_len(s, t)

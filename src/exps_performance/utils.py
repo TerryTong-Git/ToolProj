@@ -7,6 +7,18 @@ INT_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 FENCE_RE = re.compile(r"```[a-zA-Z0-9]*\s*\n([\s\S]*?)\n```", re.MULTILINE)
 
 
+def cast_float_to_int(obj):
+    if isinstance(obj, float):
+        return int(obj)
+    if isinstance(obj, list):
+        return [cast_float_to_int(o) for o in obj]
+    if isinstance(obj, dict):
+        return {cast_float_to_int(k): cast_float_to_int(v) for k, v in obj.items()}
+    if isinstance(obj, tuple):
+        return (cast_float_to_int(o) for o in obj)
+    return obj
+
+
 def clean_code_llm(code: str) -> str:
     pat = r"\`\`\`python(.*)\`\`\`"
     match = re.search(pat, code, flags=re.DOTALL)

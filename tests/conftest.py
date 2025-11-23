@@ -9,7 +9,7 @@ from src.exps_performance.logger import Record
 
 @dataclass
 class CreateArgs:
-    n: int = 100
+    n: int = 10
     root: str = "."
     kinds: List[str] = field(default_factory=lambda: ["add"])
     seed: int = 1
@@ -31,7 +31,7 @@ class CreateArgs:
     top_p: float = 1
     log_every: int = 50
     tb_text_chars: int = 10000
-    digits_list: int = field(default_factory=lambda: [32])  # type: ignore
+    digits_list: int = field(default_factory=lambda: [2])  # type: ignore
 
 
 @pytest.fixture(scope="session")

@@ -93,11 +93,13 @@ fg_problem_types = {
 
 @dataclass
 class NPHARD(Dataset):
+    n: int = 10
+
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
         for ProblemType in problem_types.values():
             classInstance = ProblemType("code")  # type: ignore
-            all_data += classInstance.load_data()  # type: ignore[abstract]
+            all_data += classInstance.load_data()[: self.n]  # type: ignore[abstract]
         return all_data
 
     def load_subset(self, subset: List[str]):
@@ -108,7 +110,7 @@ class NPHARD(Dataset):
             if key not in subset:
                 continue
             classInstance = ProblemType("code")  # type: ignore
-            all_data += classInstance.load_data()  # type: ignore[abstract]
+            all_data += classInstance.load_data()[: self.n]  # type: ignore[abstract]
         return all_data
 
 
@@ -174,14 +176,14 @@ def make_dataset(kinds, n=3, digits_list=[32]) -> Sequence[Question]:
 
     all_data: List[Question] = []
     if clrs:
-        all_data += CLRS().load()
+        all_data += CLRS().load()[:n]
     if gsm:
-        all_data += GSM8K().load()
+        all_data += GSM8K().load()[:n]
     if fg:
         all_data += FG(
             n,
             digits_list,
         ).load_subset(fg)
     if np:
-        all_data += NPHARD().load_subset(np)
+        all_data += NPHARD(n).load_subset(np)
     return all_data

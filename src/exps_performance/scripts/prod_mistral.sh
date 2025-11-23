@@ -1,7 +1,7 @@
 #!/bin/sh
-#SBATCH --job-name=gemma
-#SBATCH --output=output.txt
-#SBATCH --error=error.txt
+#SBATCH --job-name=qwen
+#SBATCH --output=MistralOut.txt
+#SBATCH --error=MistralErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
@@ -11,7 +11,7 @@ SEEDS=(0)
 MODELS=( #7B Models
 #  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
 #  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
-#  "google/gemma-2-9b-it"
+mistralai/Mistral-Small-3.2-24B-Instruct-2506
 )
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do

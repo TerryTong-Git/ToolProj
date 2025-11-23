@@ -23,4 +23,4 @@ metric:
 	pixi run pytest tests/unit/test_metrics.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 
 main:
-	pixi run pytest tests/unit/test_main.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
+	pixi run pytest tests/integration/test_main.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg

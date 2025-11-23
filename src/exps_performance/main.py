@@ -24,16 +24,13 @@ from __future__ import annotations
 
 import argparse
 import os
-from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
+from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4
 from src.exps_performance.dataset import make_dataset
 from src.exps_performance.llm import llm
 from src.exps_performance.logger import create_dir, init_tensorboard, write_text_to_tensorboard, write_to_csv
 from src.exps_performance.metrics import accuracy
-from src.exps_performance.problems import Question
-from src.exps_performance.runners import Arm1, Arm2, Arm3, Arm4
 from src.exps_performance.utils import seed_all_and_setup
 
 
@@ -43,21 +40,15 @@ def run(args):
 
     data = make_dataset(args.kinds, args.n, args.digits_list)  # choose the data
     arm2 = Arm2(data, args, client)
-    arm2.run()
-    problems_w_code = arm2.set_code()
-    arm3 = Arm3(problems_w_code)
-    arm3.run()
-    data = arm3.edited_problems
+    _, data = arm2.run()
+    arm3 = Arm3(data, args, client)
+    _, data = arm3.run()
     arm4 = Arm4(data, args, client)
-    arm4.run()
-    data = arm4.edited_problems
+    _, data = arm4.run()
     arm1 = Arm1(data, args, client)
-    arm1.run()
-    data_subset: List[Question] = arm1.edited_problems
+    _, data = arm1.run()
 
-    # here should return a sequence of records
-    # report summary metrics
-    records = [d.record for d in data_subset]
+    records = [d.record for d in data]
     df = accuracy(records)
     # summarize here
     for kind in df.values:
@@ -65,57 +56,95 @@ def run(args):
             continue
 
     # serialize results
-    exp_dir = create_dir(args, Path(__name__))
+    exp_dir = create_dir(args, Path(args.root))
     writer = init_tensorboard(args, exp_dir)
     write_text_to_tensorboard(records, writer, args)
     csv_path = os.path.join(exp_dir, "res.csv")
     write_to_csv(csv_path, records)
 
 
-@dataclass
-class ExpArgs:
-    n: int = 1000  # number of examples per digit per kind
-    digits: List[int] = [
-        2  # Global hardness levels. For arithmetic: number magnitude. "LCS: string length; knap: #items; rod: rod length; ilp_assign: n×n siz ilp_prod: scales products/resources/bounds; ilp_partition: #items.
-    ]
-    kinds: List[str] = [
-        "add"  # choices: "add","sub","mul","mix","lcs","knap","rod","ilp_assign","ilp_prod","ilp_partition","gsm8k","nphardeval","clrs30",
-    ]
-    seed: int = 1
-    backend: str = "vllm"
-    hf_dtype: str = "float16"
-    sim_code_only: bool = True
-    exec_code_only: bool = True
-    controlled_sim: bool = True
-    model: str = "google/gemma-2-9b-it"
-
-
-@dataclass
-class ModelHyperArgs:
-    vllm_dtype: str = "float16"
-    vllm_tensor_parallel: int = 8
-    vllm_gpu_mem_util: float = 0.95
-    vllm_max_model_len: int = 8192
-    vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
-    hf_trust_remote_code: bool = True
-    batch_size: int = 16
-    max_tokens: int = 2048
-    temperature: float = 0
-    top_p: float = 1
-
-
-@dataclass
-class LogArgs:
-    log_every: int = 50
-    tb_text_chars: int = 10000
-
-
 # add simple parsing type checking to this.
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument(ExpArgs)
-    p.add_argument(ModelHyperArgs)
-    p.add_argument(LogArgs)
+    p.add_argument("--root", type=str, default=".")
+    p.add_argument("--n", type=int, default=1, help="total problems (balanced over kinds)")
+    p.add_argument(
+        "--digits_list",
+        type=int,
+        nargs="+",
+        default=[2, 4, 8],
+        help="Global hardness levels. For arithmetic: number magnitude. "
+        "LCS: string length; knap: #items; rod: rod length; "
+        "ilp_assign: n×n size; ilp_prod: scales products/resources/bounds; "
+        "ilp_partition: #items.",
+    )
+    p.add_argument(
+        "--kinds",
+        type=str,
+        nargs="+",
+        default=[
+            "add",
+            "sub",
+            "mul",
+            "lcs",
+            "knap",
+            "rod",
+            "ilp_assign",
+            "ilp_prod",
+            "ilp_partition",
+        ],
+    )
+    p.add_argument("--seed", type=int, default=1)
+
+    p.add_argument("--backend", type=str, default="dummy", choices=["dummy", "openai", "running", "vllm"])
+    p.add_argument(
+        "--model",
+        type=str,
+        default="gpt-4o",
+        help="OpenAI model name or HF repo/path when --backend=hf",
+    )
+    p.add_argument(
+        "--hf_dtype",
+        type=str,
+        default="bfloat16",
+        choices=["auto", "float16", "bfloat16", "float32"],
+    )
+    p.add_argument("--hf_device_map", type=str, default="auto")
+    p.add_argument("--hf_trust_remote_code", action="store_true")
+
+    p.add_argument("--max_tokens", type=int, default=4192)
+    p.add_argument("--temperature", type=int, default=0.1)
+    p.add_argument("--top_p", type=int, default=0.90)
+
+    p.add_argument("--sim_code_only", action="store_true", help="Simulate only the generated code, not any NL input for fair comparison with arm 3")
+    p.add_argument(
+        "--exec_code",
+        action="store_true",
+        help="execute code-CoT in sandboxed subprocess (imports allowed)",
+    )
+    p.add_argument(
+        "--controlled_sim",
+        action="store_true",
+        help="do fair controlled simulation w/o prompt",
+    )
+    p.add_argument("--log_every", type=int, default=50)
+
+    # TensorBoard text limits
+    p.add_argument("--tb_text_chars", type=int, default=10000)
+    p.add_argument("--tb_disable", action="store_true")
+
+    # vLLM options (kept minimal; defaults are conservative)
+    p.add_argument(
+        "--batch_size",
+        type=int,
+        default=8,
+        help="Batch size for backends that support chat_many (vLLM).",
+    )
+    p.add_argument("--vllm_dtype", type=str, default="float16", choices=["auto", "float16", "bfloat16"])
+    p.add_argument("--vllm_tensor_parallel", type=int, default=8)
+    p.add_argument("--vllm_gpu_mem_util", type=float, default=0.90)
+    p.add_argument("--vllm_max_model_len", type=int, default=8192)
+    p.add_argument("--vllm_download_dir", type=str, default="/nlpgpu/data/terry/ToolProj/src/models")
     return p.parse_args()
 
 

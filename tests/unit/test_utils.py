@@ -1,4 +1,16 @@
-from src.exps_performance.utils import clean_code_llm
+from src.exps_performance.utils import cast_float_to_int, clean_code_llm
+
+
+def test_cast():
+    assert 0 == cast_float_to_int(0.2), "not casting"
+
+    floatList = [0.1, 0.2, 2.2, 3.3]
+    castedList = [0, 0, 2, 3]
+    assert castedList == cast_float_to_int(floatList), "cast not working"
+
+    complexList = [{"hi": 0.1}, 0.22, [0.1, 2, 3]]
+    complexAns = [{"hi": 0}, 0, [0, 2, 3]]
+    assert complexAns == cast_float_to_int(complexList), "complex not casting"
 
 
 def test_clean_code():

@@ -26,7 +26,7 @@ from src.exps_performance.problems.nphard.msp import MspCheckAndFormat
 from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
 from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
-from src.exps_performance.utils import clean_code_llm
+from src.exps_performance.utils import cast_float_to_int, clean_code_llm
 
 FG_PROBS = {
     "add": AddCheckAndFormat,
@@ -91,12 +91,11 @@ class BaseArm:
         for q, a in zip(self.problems, answers):
             pUtil = q.util_pointer(self.run_type)
             parsed_output, err = pUtil.parse_output(a)
-            default = pUtil.PROB_TYPES[self.run_type]
+            default = pUtil.PROB_TYPES[self.run_type]()
             if parsed_output == default:
                 self.parse_fail += 1
                 parsed_output, err = self.rerun(q, parsed_output, pUtil, default)
-
-            all_parsed.append((parsed_output, err))
+            all_parsed.append((parsed_output, str(err)))
         return all_parsed
 
     def each_record(self, q: Question, a, p, e, s) -> Question:
@@ -120,10 +119,10 @@ class BaseArm:
         return edited_problems
 
     def rerun(self, problem, parsed, pUtil, default):
-        default = pUtil.PROB_TYPE[self.run_type]
+        default = pUtil.PROB_TYPES[self.run_type]()
         count = 0
-        while parsed == default and count < 3:
-            a = run_batch([[{"role": "user", "content": problem}]], self.default_args, self.client)[0]
+        while parsed == default and count < 5:
+            a = run_batch([[{"role": "user", "content": pUtil.format_one(problem)}]], self.default_args, self.client)[0]
             parsed, err = pUtil.parse_output(a)
             count += 1
         print(f"Reran parsing {count} times")
@@ -138,6 +137,9 @@ class Arm2(BaseArm):
         q.record.question = str(q.question)
         q.record.answer = str(q.answer)
         q.code = p[0].code
+        q.record.kind = q.kind
+        q.record.digit = q.digits
+        q.record.model = self.default_args.model
         q.record.seed = self.default_args.seed
         q = super().each_record(q, a, p, e, s)
         return q
@@ -155,15 +157,24 @@ class Arm3(BaseArm):
         answers = []
         self.parse_fail = 0
         for p in self.problems:
+            parse_err = "ok"
+            if p.code == "":
+                parse_err = "No code recieved from simulation parse"
             pUtil = p.util_pointer(self.run_type)
             cleaned_code = clean_code_llm(p.code)
             examples.append(cleaned_code)
             assert "```" not in cleaned_code
             code, gen_err = self.extract_locals(cleaned_code)
-            assert isinstance(code, str), "code not a string"
+            # import pdb; pdb.set_trace()
+            code = cast_float_to_int(code)
+            code = str(code)
             answers.append(code)
-            parsed, parse_err = pUtil.parse_output(code)
+            type_class = pUtil.PROB_TYPES[self.run_type]
+            kwargs = pUtil.get_field_kwargs(code)
+            parsed = type_class(**kwargs)
+            # import pdb; pdb.set_trace()
             correct, reason = pUtil.decision_check(p, parsed)
+            # import pdb; pdb.set_trace()
             sequence_parity.append(correct)
 
             total_correct += 1 if correct else 0

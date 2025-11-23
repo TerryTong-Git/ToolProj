@@ -1,7 +1,7 @@
 #!/bin/sh
-#SBATCH --job-name=gemma
-#SBATCH --output=output.txt
-#SBATCH --error=error.txt
+#SBATCH --job-name=qwen
+#SBATCH --output=llamaOut.txt
+#SBATCH --error=llamaErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
@@ -11,7 +11,7 @@ SEEDS=(0)
 MODELS=( #7B Models
 #  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
 #  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
-#  "google/gemma-2-9b-it"
+meta-llama/Llama-3.1-8B-Instruct
 )
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do

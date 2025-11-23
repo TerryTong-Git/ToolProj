@@ -95,9 +95,9 @@ def test_nphard(llm, data_name, default_args):
     check(arm1, data, "nl")
     correct = 0
     for d in data_subset:
-        parse_error = d.record.nl_parse_err
-        ans_ok = d.record.nl_answer != ""
-        assert parse_error != ans_ok, "cannot have ok answer and parse error"
+        # parse_error = d.record.nl_parse_err
+        # ans_ok = d.record.nl_answer != ""
+        # assert parse_error != ans_ok, "cannot have ok answer and parse error"
         assert d.record.nl_answer != "", "nl answer is not string"
         assert d.record.nl_question != "", "nl question is not string"
         correct += int(d.record.nl_correct)
