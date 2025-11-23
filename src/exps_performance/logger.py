@@ -42,7 +42,7 @@ class Record(BaseModel):
     code_answer: str = ""  # (or err message)
     code_correct: bool = False
     code_parse_err: bool = False
-    code_gen_err: bool = False
+    code_gen_err: str = ""
     code_err_msg: str = ""
 
     sim_question: str = ""

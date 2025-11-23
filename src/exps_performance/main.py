@@ -23,7 +23,9 @@ Usage examples:
 from __future__ import annotations
 
 import argparse
+import logging
 import os
+import time
 from pathlib import Path
 
 from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4
@@ -33,21 +35,28 @@ from src.exps_performance.logger import create_dir, init_tensorboard, write_text
 from src.exps_performance.metrics import accuracy
 from src.exps_performance.utils import seed_all_and_setup
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)  # Using __name__ is a common practice
+
 
 def run(args):
     seed_all_and_setup(args)
     client = llm(args)
-
+    logger.info("Making Dataset")
     data = make_dataset(args.kinds, args.n, args.digits_list)  # choose the data
+    logger.info("Running Arm2")
     arm2 = Arm2(data, args, client)
     _, data = arm2.run()
+    logger.info("Running Arm3")
     arm3 = Arm3(data, args, client)
     _, data = arm3.run()
+    logger.info("Running Arm4")
     arm4 = Arm4(data, args, client)
     _, data = arm4.run()
+    logger.info("Running Arm1")
     arm1 = Arm1(data, args, client)
     _, data = arm1.run()
-
+    logger.info("Saving Results")
     records = [d.record for d in data]
     df = accuracy(records)
     # summarize here
@@ -149,5 +158,10 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    start_time = time.perf_counter()
     args = parse_args()
     run(args)
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    logger.info(f"Elapsed time: {elapsed_time:.4f} seconds")

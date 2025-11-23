@@ -1,13 +1,0 @@
-cpu-bind=MASK - nlpgpu07, task  0  0 [33733]: mask 0x100000001 set
-`torch_dtype` is deprecated! Use `dtype` instead!
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/8 [00:00<?, ?it/s]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  12% Completed | 1/8 [00:35<04:10, 35.73s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  25% Completed | 2/8 [01:13<03:41, 36.89s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  38% Completed | 3/8 [01:28<02:15, 27.05s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  50% Completed | 4/8 [02:05<02:04, 31.03s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  62% Completed | 5/8 [02:42<01:39, 33.07s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  75% Completed | 6/8 [03:19<01:08, 34.33s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards:  88% Completed | 7/8 [03:54<00:34, 34.66s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards: 100% Completed | 8/8 [04:32<00:00, 35.61s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m Loading safetensors checkpoint shards: 100% Completed | 8/8 [04:32<00:00, 34.04s/it]
-[1;36m(VllmWorker rank=0 pid=34198)[0;0m 

@@ -51,14 +51,6 @@ class ProgramChatInterface:
         self.answer_expr = answer_expr
         self.runtime = GenericRuntime()
 
-    def process_generation_to_code(self, gens: str):
-        if "```python" in gens:
-            gens = gens.split("```python")[1].split("```")[0]
-        elif "```" in gens:
-            gens = gens.split("```")[1].split("```")[0]
-
-        return gens.split("\n")
-
     def run(self, code: str) -> Tuple[str, str]:
         err = "ok"
         exec_result = ""

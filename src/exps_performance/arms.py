@@ -1,5 +1,8 @@
 import copy
+import logging
 from typing import List, Tuple
+
+from tqdm import tqdm
 
 from src.exps_performance.core.executor import ProgramChatInterface
 from src.exps_performance.llm import run_batch
@@ -28,6 +31,9 @@ from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
 from src.exps_performance.utils import cast_float_to_int, clean_code_llm
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)  # Using __name__ is a common practice
+
 FG_PROBS = {
     "add": AddCheckAndFormat,
     "sub": SubCheckAndFormat,
@@ -54,7 +60,7 @@ NPHARD = {
     "ksp": KspCheckAndFormat,
 }
 
-RERUN = 5
+RERUN = 3
 
 
 class BaseArm:
@@ -69,10 +75,13 @@ class BaseArm:
     def run(self) -> Tuple[float, List[Question]]:
         examples = [d.util_pointer(self.run_type).format_one(d) for d in self.problems]
         messages = [[{"role": "user", "content": e}] for e in examples]
+        logger.info(f"Running batches for {self.set_name}")
         answers = run_batch(messages, self.default_args, self.client)
+        logger.info(f"Running parsing for {self.set_name}")
         parsed_answer = self._parse(answers)
         actual_parsed = [p[0] for p in parsed_answer]
         acc, sequence_parity = self._count_correct(actual_parsed)
+        logger.info(f"Setting Results for {self.set_name}")
         edited_problems = self.set_record(answers, parsed_answer, examples, sequence_parity)
         self.parsed_answer = actual_parsed  # for testing
         return acc, edited_problems
@@ -84,7 +93,7 @@ class BaseArm:
             pUtil = q.util_pointer(self.run_type)
             correct, reason = pUtil.decision_check(q, a)
             count += 1 if correct else 0
-            total_correct.append(correct)
+            total_correct.append(bool(correct))
         return count / len(self.problems), total_correct
 
     def _parse(self, answers: List[str]):
@@ -92,7 +101,7 @@ class BaseArm:
         all_parsed = []
         parse_failed = []
 
-        for i, (q, a) in enumerate(zip(self.problems, answers)):
+        for i, (q, a) in enumerate(tqdm(zip(self.problems, answers), desc="parsing")):
             pUtil = q.util_pointer(self.run_type)
             parsed_output, err = pUtil.parse_output(a)
             default = pUtil.PROB_TYPES[self.run_type]()
@@ -100,15 +109,13 @@ class BaseArm:
                 self.parse_fail += 1
                 parse_failed.append((i, q, parsed_output, pUtil, default))
             all_parsed.append((parsed_output, str(err)))
-        import pdb
 
-        pdb.set_trace()
         reparsed = self.rerun(parse_failed)
         for i, reparsed_output, err in reparsed:
-            all_parsed[i] = (reparsed_output, err)
+            all_parsed[i] = copy.deepcopy((reparsed_output, str(err)))
         self.parsed_fail_ind = [p[0] for p in parse_failed]
         self.reparse_ind = [p[0] for p in reparsed]
-        assert self.parsed_fail_ind == self.reparse_ind, "parse_fail and reparse_inds not the same"
+        assert self.parsed_fail_ind == self.reparse_ind, "parse fail and reparse_inds not the same"
         return all_parsed
 
     def each_record(self, q: Question, a, p, e, s) -> Question:
@@ -142,14 +149,14 @@ class BaseArm:
             # assert list of lists of dict
         llm_out = run_batch(to_run, self.default_args, self.client)
         i = 0
+        logger.info(f"Rerunning parsing for {self.set_name}")
         while i < len(llm_out):
             llm_o = llm_out[i]
             prob_index = i // RERUN  # i w.r.t. to given list
             rerun_index = i % RERUN  # 443 -> 3
             parsed, err = pUtil.parse_output(llm_o)
-            i += 1
             og_ind, problem, parsed, pUtil, default = to_reparse[prob_index]
-            if parsed != default or rerun_index == 4:
+            if parsed != default or rerun_index == (RERUN - 1):
                 outs.append((og_ind, parsed, err))
                 i += RERUN - rerun_index
             else:
@@ -186,7 +193,8 @@ class Arm3(BaseArm):
         examples = []
         answers = []
         self.parse_fail = 0
-        for p in self.problems:
+        logger.info("Running Code Execution")
+        for p in tqdm(self.problems, desc="Executing Code"):
             parse_err = "ok"
             if p.code == "":
                 parse_err = "No code recieved from simulation parse"
@@ -195,24 +203,28 @@ class Arm3(BaseArm):
             examples.append(cleaned_code)
             assert "```" not in cleaned_code
             code, gen_err = self.extract_locals(cleaned_code)
+            type_class = pUtil.PROB_TYPES[self.run_type]
+            parsed = type_class()
             # import pdb; pdb.set_trace()
+            if pUtil.type_check_code(str(code)):
+                kwargs = pUtil.get_field_kwargs(code)
+                parsed = type_class(**kwargs)
+            else:
+                self.parse_fail += 1
             code = cast_float_to_int(code)
             code = str(code)
             answers.append(code)
-            type_class = pUtil.PROB_TYPES[self.run_type]
-            kwargs = pUtil.get_field_kwargs(code)
-            parsed = type_class(**kwargs)
             # import pdb; pdb.set_trace()
             correct, reason = pUtil.decision_check(p, parsed)
             # import pdb; pdb.set_trace()
-            sequence_parity.append(correct)
+            sequence_parity.append(bool(correct))
 
             total_correct += 1 if correct else 0
-            if pUtil.type_check_code(code):
-                self.parse_fail += 1
+
             parsed_answer.append((parsed, (parse_err, gen_err)))
         actual_parsed = [p[0] for p in parsed_answer]
         self.parsed_answer = actual_parsed
+        logger.info(f"Setting Results for {self.set_name}")
         edited_problems = self.set_record(answers, parsed_answer, examples, sequence_parity)
         assert edited_problems != [], "empty problems"
         return total_correct / len(self.problems), edited_problems

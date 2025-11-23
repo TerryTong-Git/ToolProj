@@ -1,0 +1,25 @@
+cpu-bind=MASK - nlpgpu07, task  0  0 [26759]: mask 0x100000001 set
+`rope_scaling`'s factor field must be a float >= 1, got 40
+`rope_scaling`'s beta_fast field must be a float, got 32
+`rope_scaling`'s beta_slow field must be a float, got 1
+`torch_dtype` is deprecated! Use `dtype` instead!
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/4 [00:00<?, ?it/s]
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m Loading safetensors checkpoint shards:  25% Completed | 1/4 [00:51<02:33, 51.18s/it]
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m Loading safetensors checkpoint shards:  50% Completed | 2/4 [02:14<02:19, 69.90s/it]
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m Loading safetensors checkpoint shards:  75% Completed | 3/4 [03:38<01:16, 76.29s/it]
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m Loading safetensors checkpoint shards: 100% Completed | 4/4 [05:00<00:00, 78.69s/it]
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m Loading safetensors checkpoint shards: 100% Completed | 4/4 [05:00<00:00, 75.12s/it]
+[1;36m(VllmWorker rank=0 pid=27485)[0;0m 
+2025-11-23 18:33:36,336 - INFO - Making Dataset
+2025-11-23 18:33:40,342 - INFO - Running Arm2
+2025-11-23 18:33:42,950 - INFO - Running batches for sim
+Chatting:   0%|          | 0/4 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/64 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts:   2%|▏         | 1/64 [00:50<53:08, 50.61s/it, est. speed input: 9.19 toks/s, output: 2.90 toks/s][A
+Processed prompts:   3%|▎         | 2/64 [01:04<29:44, 28.78s/it, est. speed input: 14.65 toks/s, output: 5.65 toks/s][A
+Processed prompts:   5%|▍         | 3/64 [01:08<17:53, 17.60s/it, est. speed input: 21.01 toks/s, output: 8.76 toks/s][A
+Processed prompts:   6%|▋         | 4/64 [01:15<13:22, 13.38s/it, est. speed input: 25.66 toks/s, output: 11.58 toks/s][A
+Processed prompts:   8%|▊         | 5/64 [01:16<08:57,  9.11s/it, est. speed input: 32.29 toks/s, output: 15.00 toks/s][A
+Processed prompts:   9%|▉         | 6/64 [01:24<08:11,  8.47s/it, est. speed input: 35.42 toks/s, output: 17.51 toks/s][A
+Processed prompts:  11%|█         | 7/64 [01:25<05:53,  6.20s/it, est. speed input: 40.61 toks/s, output: 21.01 toks/s][A
+Processed prompts:  12%|█▎        | 8/64 [01:37<07:23,  7.93s/it, est. speed input: 41.35 toks/s, output: 22.47 toks/s][A

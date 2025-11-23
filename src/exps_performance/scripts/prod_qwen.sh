@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --job-name=qwen
-#SBATCH --output=QwenOut.txt
-#SBATCH --error=QwenErr.txt
+#SBATCH --output=log/QwenOut.txt
+#SBATCH --error=log/QwenErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     

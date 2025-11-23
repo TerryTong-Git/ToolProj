@@ -27,6 +27,7 @@ def clean_code_llm(code: str) -> str:
     else:
         code = code.replace("```", "")
         code = code.replace("python", "")
+        code = code.replace('"""', "")
         return code
 
 

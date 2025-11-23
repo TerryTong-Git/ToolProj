@@ -59,7 +59,7 @@ def mock_records():
         code_answer="abc",  # (or err message)
         code_correct=True,
         code_parse_err=True,
-        code_gen_err=True,
+        code_gen_err="abc",
         code_err_msg="abc",
         sim_question="abc",
         sim_reasoning="abc",  # attempted reasoning
@@ -97,7 +97,7 @@ def mock_record_1():
         code_answer="efg",  # (or err message)
         code_correct=False,
         code_parse_err=False,
-        code_gen_err=False,
+        code_gen_err="efg",
         code_err_msg="efg",
         sim_question="efg",
         sim_reasoning="efg",  # attempted reasoning
@@ -137,7 +137,7 @@ def llm(default_args):
 
 
 EXAMPLES = 10
-RETRIES = 5
+RETRIES = 3
 
 
 def check(arm, data, types):

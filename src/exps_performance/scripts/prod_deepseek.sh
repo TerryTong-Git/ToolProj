@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --job-name=deepseek
-#SBATCH --output=deepseekOut.txt
-#SBATCH --error=deepseekErr.txt
+#SBATCH --output=log/deepseekOut.txt
+#SBATCH --error=log/deepseekErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
@@ -14,6 +14,7 @@ MODELS=( #7B Models
 # mistralai/Mistral-7B-Instruct-v0.3
 
 )
+
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do
     pixi run python src/exps_performance/main.py \
@@ -23,9 +24,10 @@ for MODEL in ${MODELS[@]}; do
       --hf_dtype float16 \
       --hf_device_map auto \
       --vllm_tensor_parallel 8 \
-      --n 25 --digits 2 4 8 16 32 --kinds  spp bsp edp gcp gcpd tsp tspd ksp msp gsm8k clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
+      --n 12 --digits 2 4 8 16  --kinds  spp bsp edp gcp gcpd tsp tspd ksp msp gsm8k clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
       --exec_code --batch_size 64 --seed ${SEED} --controlled_sim
   done
 done
+
 
 

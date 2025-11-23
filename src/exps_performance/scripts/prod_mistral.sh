@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --job-name=mistral
-#SBATCH --output=MistralOut.txt
-#SBATCH --error=MistralErr.txt
+#SBATCH --output=log/MistralOut.txt
+#SBATCH --error=log/MistralErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
 #SBATCH --constraint=GA102GL     
