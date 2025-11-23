@@ -88,3 +88,32 @@ WARNING 11-23 14:40:11 [utils.py:2282] Methods determine_num_available_blocks,de
 [1;36m(VllmWorker rank=2 pid=34279)[0;0m INFO 11-23 14:40:17 [weight_utils.py:257] Using model weights format ['*.safetensors']
 [1;36m(VllmWorker rank=0 pid=34198)[0;0m INFO 11-23 14:40:17 [weight_utils.py:257] Using model weights format ['*.safetensors']
 [1;36m(VllmWorker rank=5 pid=34395)[0;0m INFO 11-23 14:40:17 [weight_utils.py:257] Using model weights format ['*.safetensors']
+  [2m2025-11-23T19:43:12.972770Z[0m [33m WARN[0m  [33mReqwest(reqwest::Error { kind: Request, url: "https://transfer.xethub.hf.co/xorbs/default/68d3f4b43f9dc5c6fe819c2129ae07a80d0e9049fb4b8a263676bc8f0477c407?X-Xet-Signed-Range=bytes%3D0-43951009&X-Xet-Session-Id=01KAS3PET8Y09G0FPWPR0NJTQ9&Expires=1763930418&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly90cmFuc2Zlci54ZXRodWIuaGYuY28veG9yYnMvZGVmYXVsdC82OGQzZjRiNDNmOWRjNWM2ZmU4MTljMjEyOWFlMDdhODBkMGU5MDQ5ZmI0YjhhMjYzNjc2YmM4ZjA0NzdjNDA3P1gtWGV0LVNpZ25lZC1SYW5nZT1ieXRlcyUzRDAtNDM5NTEwMDkmWC1YZXQtU2Vzc2lvbi1JZD0wMUtBUzNQRVQ4WTA5RzBGUFdQUjBOSlRROSIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc2MzkzMDQxOH19fV19&Signature=KOZEQx0Qc0iKtWGB46gqbJiUzNUhylYPELGsh0n95hanLolwJUzYsdf-OvPl1CekFY3XKxAAYch9R~V0x-Fq7R6Xsymb5Rlk0jZpNmk5JMOd4hEZu~bX4zOPzwyyR9CP53C~ms4SeW4Y3U1eKkOBvTOQbNYrC56zvnBwi--FVI0bUYmxZipJOKgQn3quHFwnWJW-qV6c~ePgxPPZfItjgv~PX7hqqZGiVNXYa7kx8qZuyT~1CsbpvNxU4wwGexccrLBNsjkRWLfP76DfGI4KtTw2ED-keQzFdvf3jGlh5TfODePg9KwbkjGJLIe1LJg-XVxl78NQd0njvXxt2Ri~4w__&Key-Pair-Id=K2L8F4GPSG1IFC", source: hyper_util::client::legacy::Error(SendRequest, hyper::Error(IncompleteMessage)) }). Retrying...[0m
+    [2;3mat[0m /home/conda/feedstock_root/build_artifacts/bld/rattler-build_hf-xet_1756524959/work/cas_client/src/http_client.rs:226
+
+  [2m2025-11-23T19:43:12.974497Z[0m [33m WARN[0m  [33mRetry attempt #0. Sleeping 2.205478465s before the next attempt[0m
+    [2;3mat[0m /home/conda/feedstock_root/build_artifacts/bld/rattler-build_hf-xet_1756524959/build_env/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/reqwest-retry-0.7.0/src/middleware.rs:171
+
+  [2m2025-11-23T19:47:08.966052Z[0m [33m WARN[0m  [33mReqwest(reqwest::Error { kind: Request, url: "https://transfer.xethub.hf.co/xorbs/default/0ef2a83f40f96aa49141bb282469b655956396b14ebe829cb68fc114a64c8f79?X-Xet-Signed-Range=bytes%3D57953219-57983703&X-Xet-Session-Id=01KAS3PEVJ03BHP2691NCNH62T&Expires=1763930690&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly90cmFuc2Zlci54ZXRodWIuaGYuY28veG9yYnMvZGVmYXVsdC8wZWYyYTgzZjQwZjk2YWE0OTE0MWJiMjgyNDY5YjY1NTk1NjM5NmIxNGViZTgyOWNiNjhmYzExNGE2NGM4Zjc5P1gtWGV0LVNpZ25lZC1SYW5nZT1ieXRlcyUzRDU3OTUzMjE5LTU3OTgzNzAzJlgtWGV0LVNlc3Npb24tSWQ9MDFLQVMzUEVWSjAzQkhQMjY5MU5DTkg2MlQiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3NjM5MzA2OTB9fX1dfQ__&Signature=QVfIDuDZVSIfLEsbPT8tmb5i~xqIL86jY4~DyHONWP~CDtCYUdvk5ZnOaUXT22ducZ1pghW0kb-~2pjKQ~X~aOIVVav6861KFDVoMcWUblRqSlZRbb7o8JwkIFk6RqcbFZf9KIxWlUdoVXaUatN28b21OI3yl80aUanAlNd5ECc4-pOiDczePF5rlSuKnJ3EkgLnk-kC~at4Cu9YtIu-RU7CVIEi2-eb2RWX7usLgmjr5sSqM0OqP0EvnOQPX0uuSnuShSBsQ2td~BAtKoCiE1KQ0r88tYEqsbpVb4plLxO5NXh60JteYMsbd-PEPkuoQ6heUOiYN1CF0TefHHk8nA__&Key-Pair-Id=K2L8F4GPSG1IFC", source: hyper_util::client::legacy::Error(SendRequest, hyper::Error(IncompleteMessage)) }). Retrying...[0m
+    [2;3mat[0m /home/conda/feedstock_root/build_artifacts/bld/rattler-build_hf-xet_1756524959/work/cas_client/src/http_client.rs:226
+
+  [2m2025-11-23T19:47:08.967748Z[0m [33m WARN[0m  [33mRetry attempt #0. Sleeping 1.862752904s before the next attempt[0m
+    [2;3mat[0m /home/conda/feedstock_root/build_artifacts/bld/rattler-build_hf-xet_1756524959/build_env/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/reqwest-retry-0.7.0/src/middleware.rs:171
+
+[1;36m(VllmWorker rank=3 pid=34322)[0;0m INFO 11-23 14:53:39 [weight_utils.py:273] Time spent downloading weights for Qwen/Qwen2.5-14B-Instruct: 801.904238 seconds
+[1;36m(VllmWorker rank=2 pid=34279)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 272.94 seconds
+[1;36m(VllmWorker rank=5 pid=34395)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 273.17 seconds
+[1;36m(VllmWorker rank=0 pid=34198)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 272.61 seconds
+[1;36m(VllmWorker rank=6 pid=34432)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 272.77 seconds
+[1;36m(VllmWorker rank=1 pid=34225)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 272.45 seconds
+[1;36m(VllmWorker rank=4 pid=34358)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 272.38 seconds
+[1;36m(VllmWorker rank=3 pid=34322)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 272.27 seconds
+[1;36m(VllmWorker rank=7 pid=34469)[0;0m INFO 11-23 14:58:12 [loader.py:429] Loading weights took 267.03 seconds
+[1;36m(VllmWorker rank=4 pid=34358)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.349017 seconds
+[1;36m(VllmWorker rank=6 pid=34432)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.363269 seconds
+[1;36m(VllmWorker rank=0 pid=34198)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.316662 seconds
+[1;36m(VllmWorker rank=3 pid=34322)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.349434 seconds
+[1;36m(VllmWorker rank=2 pid=34279)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.353829 seconds
+[1;36m(VllmWorker rank=5 pid=34395)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.345013 seconds
+[1;36m(VllmWorker rank=1 pid=34225)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.344365 seconds
+[1;36m(VllmWorker rank=7 pid=34469)[0;0m INFO 11-23 14:58:14 [gpu_model_runner.py:1140] Model loading took 3.4611 GB and 1077.514366 seconds

@@ -136,8 +136,8 @@ def llm(default_args):
         return OpenAIChatClient()
 
 
-EXAMPLES = 5
-RETRIES = 3
+EXAMPLES = 10
+RETRIES = 5
 
 
 def check(arm, data, types):

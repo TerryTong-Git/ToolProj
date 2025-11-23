@@ -88,3 +88,76 @@ WARNING 11-23 14:39:26 [utils.py:2282] Methods determine_num_available_blocks,de
 [1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:39:32 [weight_utils.py:257] Using model weights format ['*.safetensors']
 [1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:39:32 [weight_utils.py:257] Using model weights format ['*.safetensors']
 [1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:39:32 [weight_utils.py:257] Using model weights format ['*.safetensors']
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 441.05 seconds
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 441.41 seconds
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 440.82 seconds
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 441.84 seconds
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 440.90 seconds
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 441.68 seconds
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 440.76 seconds
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:46:54 [loader.py:429] Loading weights took 441.80 seconds
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.065764 seconds
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.087553 seconds
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.069404 seconds
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.052118 seconds
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.062449 seconds
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.340237 seconds
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:46:56 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.119781 seconds
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:46:57 [gpu_model_runner.py:1140] Model loading took 5.4974 GB and 444.153095 seconds
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_3_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_0_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_2_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_1_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_5_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_4_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 78.93 s
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:48:16 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_7_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 78.95 s
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 78.95 s
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 78.94 s
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 78.96 s
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 78.99 s
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:48:16 [backends.py:419] Dynamo bytecode transform time: 79.21 s
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:48:20 [backends.py:409] Using cache directory: /lcars/home/t/tongt1/.cache/vllm/torch_compile_cache/5435fe7d4d/rank_6_0 for vLLM's torch.compile
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:48:21 [backends.py:419] Dynamo bytecode transform time: 83.82 s
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:48:28 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:48:33 [backends.py:115] Directly load the compiled graph for shape None from the cache
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 78.94 s in total
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 78.95 s in total
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 78.93 s in total
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 78.96 s in total
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 78.99 s in total
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 79.21 s in total
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 78.95 s in total
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:49:51 [monitor.py:33] torch.compile takes 83.82 s in total
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+INFO 11-23 14:49:58 [kv_cache_utils.py:537] GPU KV cache size: 1,664,880 tokens
+INFO 11-23 14:49:58 [kv_cache_utils.py:540] Maximum concurrency for 8,192 tokens per request: 203.23x
+[1;36m(VllmWorker rank=5 pid=64451)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=4 pid=64415)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=6 pid=64488)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=7 pid=64526)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=2 pid=64336)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=0 pid=64241)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=3 pid=64379)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+[1;36m(VllmWorker rank=1 pid=64282)[0;0m INFO 11-23 14:53:13 [gpu_model_runner.py:1436] Graph capturing finished in 195 secs, took 1.34 GiB
+INFO 11-23 14:53:14 [core.py:138] init engine (profile, create kv cache, warmup model) took 377.04 seconds

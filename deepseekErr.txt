@@ -346,3 +346,43 @@ cpu-bind=MASK - nlpgpu08, task  0  0 [54070]: mask 0x100000001 set
 Chatting: 100%|██████████| 1/1 [11:58<00:00, 718.21s/it]Chatting: 100%|██████████| 1/1 [11:58<00:00, 718.21s/it]
 Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
 Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:56<00:00, 716.98s/it, est. speed input: 0.64 toks/s, output: 5.85 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:56<00:00, 716.98s/it, est. speed input: 0.64 toks/s, output: 5.85 toks/s]
+Chatting: 100%|██████████| 1/1 [11:57<00:00, 717.01s/it]Chatting: 100%|██████████| 1/1 [11:57<00:00, 717.01s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:54<00:00, 714.90s/it, est. speed input: 0.64 toks/s, output: 5.86 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:54<00:00, 714.90s/it, est. speed input: 0.64 toks/s, output: 5.86 toks/s]
+Chatting: 100%|██████████| 1/1 [11:54<00:00, 714.94s/it]Chatting: 100%|██████████| 1/1 [11:54<00:00, 714.94s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:59<00:00, 719.02s/it, est. speed input: 0.64 toks/s, output: 5.83 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:59<00:00, 719.02s/it, est. speed input: 0.64 toks/s, output: 5.83 toks/s]
+Chatting: 100%|██████████| 1/1 [11:59<00:00, 719.05s/it]Chatting: 100%|██████████| 1/1 [11:59<00:00, 719.05s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:53<00:00, 713.53s/it, est. speed input: 0.64 toks/s, output: 5.88 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:53<00:00, 713.53s/it, est. speed input: 0.64 toks/s, output: 5.88 toks/s]
+Chatting: 100%|██████████| 1/1 [11:53<00:00, 713.55s/it]Chatting: 100%|██████████| 1/1 [11:53<00:00, 713.55s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:56<00:00, 716.20s/it, est. speed input: 0.64 toks/s, output: 5.85 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:56<00:00, 716.21s/it, est. speed input: 0.64 toks/s, output: 5.85 toks/s]
+Chatting: 100%|██████████| 1/1 [11:56<00:00, 716.24s/it]Chatting: 100%|██████████| 1/1 [11:56<00:00, 716.24s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:54<00:00, 714.22s/it, est. speed input: 0.64 toks/s, output: 5.87 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:54<00:00, 714.22s/it, est. speed input: 0.64 toks/s, output: 5.87 toks/s]
+Chatting: 100%|██████████| 1/1 [11:54<00:00, 714.24s/it]Chatting: 100%|██████████| 1/1 [11:54<00:00, 714.24s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:56<00:00, 716.37s/it, est. speed input: 0.64 toks/s, output: 5.85 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:56<00:00, 716.37s/it, est. speed input: 0.64 toks/s, output: 5.85 toks/s]
+Chatting: 100%|██████████| 1/1 [11:56<00:00, 716.41s/it]Chatting: 100%|██████████| 1/1 [11:56<00:00, 716.41s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:55<00:00, 715.11s/it, est. speed input: 0.64 toks/s, output: 5.86 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:55<00:00, 715.11s/it, est. speed input: 0.64 toks/s, output: 5.86 toks/s]
+Chatting: 100%|██████████| 1/1 [11:55<00:00, 715.13s/it]Chatting: 100%|██████████| 1/1 [11:55<00:00, 715.13s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:57<00:00, 717.84s/it, est. speed input: 0.64 toks/s, output: 5.84 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:57<00:00, 717.85s/it, est. speed input: 0.64 toks/s, output: 5.84 toks/s]
+Chatting: 100%|██████████| 1/1 [11:57<00:00, 717.89s/it]Chatting: 100%|██████████| 1/1 [11:57<00:00, 717.89s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
+Processed prompts: 100%|██████████| 1/1 [11:55<00:00, 715.74s/it, est. speed input: 0.64 toks/s, output: 5.86 toks/s][AProcessed prompts: 100%|██████████| 1/1 [11:55<00:00, 715.74s/it, est. speed input: 0.64 toks/s, output: 5.86 toks/s]
+Chatting: 100%|██████████| 1/1 [11:55<00:00, 715.77s/it]Chatting: 100%|██████████| 1/1 [11:55<00:00, 715.77s/it]
+Chatting:   0%|          | 0/1 [00:00<?, ?it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A

@@ -54,6 +54,8 @@ NPHARD = {
     "ksp": KspCheckAndFormat,
 }
 
+RERUN = 5
+
 
 class BaseArm:
     run_type: str
@@ -88,14 +90,25 @@ class BaseArm:
     def _parse(self, answers: List[str]):
         self.parse_fail = 0
         all_parsed = []
-        for q, a in zip(self.problems, answers):
+        parse_failed = []
+
+        for i, (q, a) in enumerate(zip(self.problems, answers)):
             pUtil = q.util_pointer(self.run_type)
             parsed_output, err = pUtil.parse_output(a)
             default = pUtil.PROB_TYPES[self.run_type]()
             if parsed_output == default:
                 self.parse_fail += 1
-                parsed_output, err = self.rerun(q, parsed_output, pUtil, default)
+                parse_failed.append((i, q, parsed_output, pUtil, default))
             all_parsed.append((parsed_output, str(err)))
+        import pdb
+
+        pdb.set_trace()
+        reparsed = self.rerun(parse_failed)
+        for i, reparsed_output, err in reparsed:
+            all_parsed[i] = (reparsed_output, err)
+        self.parsed_fail_ind = [p[0] for p in parse_failed]
+        self.reparse_ind = [p[0] for p in reparsed]
+        assert self.parsed_fail_ind == self.reparse_ind, "parse_fail and reparse_inds not the same"
         return all_parsed
 
     def each_record(self, q: Question, a, p, e, s) -> Question:
@@ -118,15 +131,32 @@ class BaseArm:
         self.edited_problems = edited_problems
         return edited_problems
 
-    def rerun(self, problem, parsed, pUtil, default):
-        default = pUtil.PROB_TYPES[self.run_type]()
-        count = 0
-        while parsed == default and count < 5:
-            a = run_batch([[{"role": "user", "content": pUtil.format_one(problem)}]], self.default_args, self.client)[0]
-            parsed, err = pUtil.parse_output(a)
-            count += 1
-        print(f"Reran parsing {count} times")
-        return parsed, err
+    def rerun(self, to_reparse: List):
+        if to_reparse == []:
+            return []
+        outs = []
+        to_run = []
+        for reparse in to_reparse:
+            i, problem, parsed, pUtil, default = reparse
+            to_run += [[{"role": "user", "content": pUtil.format_one(problem)}] for _ in range(RERUN)]
+            # assert list of lists of dict
+        llm_out = run_batch(to_run, self.default_args, self.client)
+        i = 0
+        while i < len(llm_out):
+            llm_o = llm_out[i]
+            prob_index = i // RERUN  # i w.r.t. to given list
+            rerun_index = i % RERUN  # 443 -> 3
+            parsed, err = pUtil.parse_output(llm_o)
+            i += 1
+            og_ind, problem, parsed, pUtil, default = to_reparse[prob_index]
+            if parsed != default or rerun_index == 4:
+                outs.append((og_ind, parsed, err))
+                i += RERUN - rerun_index
+            else:
+                i += 1
+        if len(to_reparse) != len(outs):
+            outs.append((og_ind, parsed, err))
+        return outs
 
 
 class Arm2(BaseArm):

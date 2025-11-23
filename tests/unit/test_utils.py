@@ -1,4 +1,18 @@
+from src.exps_performance.arms import Arm2
+from src.exps_performance.dataset import make_dataset
 from src.exps_performance.utils import cast_float_to_int, clean_code_llm
+from tests.conftest import EXAMPLES
+
+
+def test_nphard(llm, default_args):
+    # should also test the seed
+    # should also test the exp_id logged correctly
+    data = make_dataset(["ilp_partition"])  # hard one
+    client = llm
+    data_subset = data[:EXAMPLES]
+    arm2 = Arm2(data_subset, default_args, client)
+    accuracy, data_subset = arm2.run()  # assertions built in
+    assert arm2.parsed_fail_ind == arm2.reparse_ind, "parse_fail and reparse_inds not the same"
 
 
 def test_cast():
