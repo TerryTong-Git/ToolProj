@@ -22,7 +22,7 @@ for MODEL in ${MODELS[@]}; do
       --hf_dtype float16 \
       --hf_device_map auto \
       --vllm_tensor_parallel 8 \
-      --n 10 --digits 2 --kinds  add \
+      --n 8 --digits 2 4 8 12 --kinds  add tsp ilp_production \
       --exec_code --batch_size 64 --seed ${SEED} --controlled_sim
   done
 done

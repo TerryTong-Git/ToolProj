@@ -9,10 +9,10 @@
 
 SEEDS=(0)
 MODELS=(
-  # "google/gemma-2-9b-it"
-  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct" #timeout errs?
-  "Qwen/Qwen2.5-14B-Instruct"
-  "mistralai/Mistral-Small-24B-Instruct-2501"
+  "google/gemma-2-9b-it"
+  # "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct" #timeout errs?
+  # "Qwen/Qwen2.5-14B-Instruct"
+  # "mistralai/Mistral-Small-24B-Instruct-2501"
 )
 
 for MODEL in ${MODELS[@]}; do

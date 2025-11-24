@@ -4,7 +4,7 @@ from typing import List
 import pytest
 
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
-from src.exps_performance.logger import Record
+from src.exps_performance.logger import Record, create_big_df, walk_results_folder
 
 
 @dataclass
@@ -151,3 +151,10 @@ def check(arm, data, types):
         if parsed == classtype():
             empties += 1
     assert empties < RETRIES - 1, "too many no parse"
+
+
+@pytest.fixture(scope="session")
+def load_results_to_analyze():
+    files = walk_results_folder("/nlpgpu/data/terry/ToolProj/tests/integration/fixtures/results")  # check files are deepseek and gemma, seed 1 and 2
+    df = create_big_df(files)
+    return df

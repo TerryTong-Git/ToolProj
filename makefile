@@ -19,6 +19,10 @@ ds:
 log:
 	pixi run pytest tests/unit/test_log_results.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 
+
+analysis:
+	pixi run pytest tests/unit/test_analysis.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
+
 metric:
 	pixi run pytest tests/unit/test_metrics.py --pdb -p no:pastebin -p no:nose -p no:doctest --profile-svg
 

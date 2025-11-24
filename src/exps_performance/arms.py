@@ -29,7 +29,7 @@ from src.exps_performance.problems.nphard.msp import MspCheckAndFormat
 from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
 from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
-from src.exps_performance.utils import cast_float_to_int, clean_code_llm
+from src.exps_performance.utils import cast_float_to_int, clean_code_llm, remove_python_triple_quote
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)  # Using __name__ is a common practice
@@ -103,6 +103,7 @@ class BaseArm:
 
         for i, (q, a) in enumerate(tqdm(zip(self.problems, answers), desc="parsing")):
             pUtil = q.util_pointer(self.run_type)
+            a = remove_python_triple_quote(a)
             parsed_output, err = pUtil.parse_output(a)
             default = pUtil.PROB_TYPES[self.run_type]()
             if parsed_output == default:
@@ -154,6 +155,7 @@ class BaseArm:
             llm_o = llm_out[i]
             prob_index = i // RERUN  # i w.r.t. to given list
             rerun_index = i % RERUN  # 443 -> 3
+            llm_o = remove_python_triple_quote(llm_o)  # not accepted by langchain
             parsed, err = pUtil.parse_output(llm_o)
             og_ind, problem, parsed, pUtil, default = to_reparse[prob_index]
             if parsed != default or rerun_index == (RERUN - 1):

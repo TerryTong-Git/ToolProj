@@ -12,6 +12,42 @@ clrs_desc = "Description: You are going to be given a set of algorithmic problem
 
 func_typing = "int"
 
+_DEFAULT_VAL_NUMBER_OF_SAMPLES = 2000
+_DEFAULT_VAL_SEEDS = [0]
+
+_DEFAULT_VAL_ALGOS_AND_LENGTHS = {
+    "activity_selector": list(range(4, 41)),
+    "articulation_points": list(range(4, 20)),
+    "bellman_ford": list(range(4, 33)),
+    "bfs": list(range(4, 42)),
+    "binary_search": list(range(4, 65)),
+    "bridges": list(range(4, 8)),
+    "bubble_sort": list(range(4, 12)),
+    "dag_shortest_paths": list(range(4, 20)),
+    "dfs": list(range(4, 21)),
+    "dijkstra": list(range(4, 26)),
+    "find_maximum_subarray_kadane": list(range(4, 65)),
+    "floyd_warshall": list(range(4, 12)),
+    "graham_scan": list(range(4, 32)),
+    "heapsort": list(range(4, 12)),
+    "insertion_sort": list(range(4, 26)),
+    "jarvis_march": list(range(4, 14)),
+    "kmp_matcher": list(range(4, 65)),
+    "lcs_length": list(range(4, 13)),
+    "matrix_chain_order": list(range(4, 13)),
+    "minimum": list(range(4, 65)),
+    "mst_kruskal": list(range(4, 11)),
+    "mst_prim": list(range(4, 27)),
+    "naive_string_matcher": list(range(4, 65)),
+    "optimal_bst": list(range(4, 11)),
+    "quickselect": list(range(4, 65)),
+    "quicksort": list(range(4, 13)),
+    "segments_intersect": list(range(4, 65)),
+    "strongly_connected_components": list(range(4, 17)),
+    "task_scheduling": list(range(4, 42)),
+    "topological_sort": list(range(4, 22)),
+}
+
 
 class ClrsAnswer(BaseModel):
     Answer: str = Field(description="The answer to the algorithmic problem. Type: int. Example: 1 ", default="")
@@ -66,40 +102,6 @@ class ClrsCheckAndFormat(CheckAndFormat):
         return int(str_ans == instance.answer), ""
 
     def load_data(self) -> Sequence[ClrsQuestion]:
-        _DEFAULT_VAL_ALGOS_AND_LENGTHS = {
-            "activity_selector": list(range(4, 41)),
-            "articulation_points": list(range(4, 20)),
-            "bellman_ford": list(range(4, 33)),
-            "bfs": list(range(4, 42)),
-            "binary_search": list(range(4, 65)),
-            "bridges": list(range(4, 8)),
-            "bubble_sort": list(range(4, 12)),
-            "dag_shortest_paths": list(range(4, 20)),
-            "dfs": list(range(4, 21)),
-            "dijkstra": list(range(4, 26)),
-            "find_maximum_subarray_kadane": list(range(4, 65)),
-            "floyd_warshall": list(range(4, 12)),
-            "graham_scan": list(range(4, 32)),
-            "heapsort": list(range(4, 12)),
-            "insertion_sort": list(range(4, 26)),
-            "jarvis_march": list(range(4, 14)),
-            "kmp_matcher": list(range(4, 65)),
-            "lcs_length": list(range(4, 13)),
-            "matrix_chain_order": list(range(4, 13)),
-            "minimum": list(range(4, 65)),
-            "mst_kruskal": list(range(4, 11)),
-            "mst_prim": list(range(4, 27)),
-            "naive_string_matcher": list(range(4, 65)),
-            "optimal_bst": list(range(4, 11)),
-            "quickselect": list(range(4, 65)),
-            "quicksort": list(range(4, 13)),
-            "segments_intersect": list(range(4, 65)),
-            "strongly_connected_components": list(range(4, 17)),
-            "task_scheduling": list(range(4, 42)),
-            "topological_sort": list(range(4, 22)),
-        }
-        _DEFAULT_VAL_NUMBER_OF_SAMPLES = 2000
-        _DEFAULT_VAL_SEEDS = [0]
         for seed in _DEFAULT_VAL_SEEDS:
             data = clrs_generator(_DEFAULT_VAL_ALGOS_AND_LENGTHS, _DEFAULT_VAL_NUMBER_OF_SAMPLES, use_hints=False, seed=seed)
         return [ClrsQuestion(d["algo_name"], d["length"], answer=re.sub(r"\s+", "", d["answer"]), text_data=d["question"]) for d in data][:100]

@@ -18,12 +18,12 @@ for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do
     pixi run python src/exps_performance/main.py \
       --root src/exps_performance/ \
-      --backend vllm \
+      --backend running \
       --model ${MODEL} \
       --hf_dtype float16 \
       --hf_device_map auto \
       --vllm_tensor_parallel 8 \
-      --n 25 --digits 2 4 8 16 32 --kinds  spp bsp edp gcp gcpd tsp tspd ksp msp gsm8k clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
+      --n 12 --digits 2 4 8 16  --kinds  spp bsp edp gcp gcpd tsp tspd ksp msp gsm8k clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
       --exec_code --batch_size 64 --seed ${SEED} --controlled_sim
   done
 done

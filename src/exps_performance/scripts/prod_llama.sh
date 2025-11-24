@@ -10,6 +10,7 @@
 SEEDS=(0)
 MODELS=( #7B Models
 meta-llama/Llama-3.1-8B-Instruct
+# "google/gemma-2-9b-it"
 )
 
 for MODEL in ${MODELS[@]}; do
@@ -18,7 +19,7 @@ for MODEL in ${MODELS[@]}; do
       --root src/exps_performance/ \
       --backend vllm \
       --model ${MODEL} \
-      --hf_dtype float16 \
+      --hf_dtype bfloat16 \
       --hf_device_map auto \
       --vllm_tensor_parallel 8 \
       --n 12 --digits 2 4 8 16  --kinds  spp bsp edp gcp gcpd tsp tspd ksp msp gsm8k clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \

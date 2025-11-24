@@ -7,6 +7,11 @@ INT_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 FENCE_RE = re.compile(r"```[a-zA-Z0-9]*\s*\n([\s\S]*?)\n```", re.MULTILINE)
 
 
+def remove_python_triple_quote(input: str):
+    """Not accepted by langchain parsing, so remove"""
+    return input.replace('"""', "")
+
+
 def cast_float_to_int(obj):
     if isinstance(obj, float):
         return int(obj)
@@ -23,12 +28,11 @@ def clean_code_llm(code: str) -> str:
     pat = r"\`\`\`python(.*)\`\`\`"
     match = re.search(pat, code, flags=re.DOTALL)
     if match:
-        return match.group(1)
-    else:
-        code = code.replace("```", "")
-        code = code.replace("python", "")
-        code = code.replace('"""', "")
-        return code
+        code = str(match.group(1))
+    code = code.replace("```", "")
+    code = code.replace("python", "")
+    code = code.replace('"""', "")
+    return code
 
 
 def remove_json_backticks(code: str) -> str:

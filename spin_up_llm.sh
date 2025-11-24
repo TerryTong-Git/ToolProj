@@ -1,4 +1,4 @@
-pixi run vllm serve google/gemma-2-9b-it \
+pixi run vllm serve "mistralai/Mistral-Small-24B-Instruct-2501" \
                     --dtype "float16" \
                     -tp 8 \
                     --gpu_memory_utilization 0.95 \
