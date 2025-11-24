@@ -31,7 +31,7 @@ class GenericRuntime:
 
 
 class timeout:
-    def __init__(self, seconds=1, error_message="Timeout"):
+    def __init__(self, seconds=5, error_message="Timeout"):
         self.seconds = seconds
         self.error_message = error_message
 
@@ -54,10 +54,10 @@ class ProgramChatInterface:
     def run(self, code: str) -> Tuple[str, str]:
         err = "ok"
         exec_result = ""
-        with timeout(1):
-            try:
+        try:
+            with timeout(5):
                 self.runtime.exec_code(code)
                 exec_result = self.runtime.eval_code(self.answer_expr)
-            except Exception as e:
-                err = str(e)
+        except Exception as e:
+            err = str(e)
         return exec_result, err

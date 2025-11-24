@@ -8,22 +8,24 @@
 #SBATCH --time=1-6:00:00
 
 SEEDS=(0)
-MODELS=( #7B Models
-#  "deepseek-ai/deepseek-coder-7b-instruct-v1.5"
-#  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
- "google/gemma-2-9b-it"
+MODELS=(
+  # "google/gemma-2-9b-it"
+  "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct" #timeout errs?
+  "Qwen/Qwen2.5-14B-Instruct"
+  "mistralai/Mistral-Small-24B-Instruct-2501"
 )
+
 for MODEL in ${MODELS[@]}; do
   for SEED in ${SEEDS[@]}; do
     pixi run python src/exps_performance/main.py \
       --root src/exps_performance/ \
       --backend vllm \
       --model ${MODEL} \
-      --hf_dtype bfloat16 \
+      --hf_dtype float16 \
       --hf_device_map auto \
       --vllm_tensor_parallel 8 \
       --n 12 --digits 2 4 8 16  --kinds  spp bsp edp gcp gcpd tsp tspd ksp msp gsm8k clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
-      --exec_code --batch_size 128 --seed ${SEED} --controlled_sim
+      --exec_code --batch_size 64 --seed ${SEED} --controlled_sim
   done
 done
 

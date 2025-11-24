@@ -23,3 +23,4 @@ cpu-bind=MASK - nlpgpu07, task  0  0 [26759]: mask 0x100000001 set
 Processed prompts:   9%|▉         | 6/64 [01:24<08:11,  8.47s/it, est. speed input: 35.42 toks/s, output: 17.51 toks/s][A
 Processed prompts:  11%|█         | 7/64 [01:25<05:53,  6.20s/it, est. speed input: 40.61 toks/s, output: 21.01 toks/s][A
 Processed prompts:  12%|█▎        | 8/64 [01:37<07:23,  7.93s/it, est. speed input: 41.35 toks/s, output: 22.47 toks/s][A
+Processed prompts:  14%|█▍        | 9/64 [02:32<20:41, 22.58s/it, est. speed input: 29.76 toks/s, output: 18.76 toks/s][A
