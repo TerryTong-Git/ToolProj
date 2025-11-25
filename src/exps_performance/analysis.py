@@ -18,14 +18,18 @@ def plot_main_fig(df):
     # import pdb; pdb.set_trace()
     df1 = df[df["model"] == "Qwen/Qwen2.5-14B-Instruct"]
     df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    name_map = {
+        "nl_correct": "Arm 1 \n (NL)",
+        "sim_correct": "Arm 2 \n (Code Sim)",
+        "controlsim_correct": "Arm 2.5 \n (Controlled Code Sim)",
+        "code_correct": "Arm 3 \n (Code Exec)",
+    }
+    dfnew = df2.rename(columns=name_map)
 
-    cols = ["code_correct", "nl_correct", "controlsim_correct", "sim_correct"]
-    melted_df = pd.melt(df2, value_vars=cols, id_vars=["kind", "digit"])
-    hue_order = cols
-    import pdb
-
-    pdb.set_trace()
-    g = sns.FacetGrid(melted_df, col="kind", col_wrap=6, hue="variable", hue_order=hue_order, sharex=False)
+    cols = list(name_map.values())
+    mdf = pd.melt(dfnew, value_vars=cols, id_vars=["kind", "digit"])
+    mdf1 = mdf.groupby(["variable", "digit", "kind"]).mean().reset_index()
+    g = sns.FacetGrid(mdf1, col="kind", col_wrap=4, hue="variable", hue_order=cols, sharex=False)
     g.map(sns.lineplot, "digit", "value")
     g.set_titles("{col_name}")
 
@@ -37,7 +41,7 @@ def plot_main_fig(df):
         ax.scatter(train_lengths, np.ones(len(train_lengths)) + 0.05, color="red", s=1.0)
         ax.set_xlim(None, 16)
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    g.axes[11].legend(loc="upper right", bbox_to_anchor=(1.0, 0.95), fontsize=9, title="")
+    g.axes[7].legend(loc="upper right", bbox_to_anchor=(1.0, 0.95), fontsize=9, title="")
     g.set_xlabels("test length")
     plt.show()
     plt.savefig("main.png")
@@ -168,7 +172,9 @@ def plot_p_vals(df):
 def analysis():
     files = walk_results_folder("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")  # check files are deepseek and gemma, seed 1 and 2
     df = create_big_df(files)
-    plot_p_vals(df)
+    # plot_p_vals(df)
+    plot_main_fig(df)
+
     # rows = df.to_dict("records")
     # import pdb
 
