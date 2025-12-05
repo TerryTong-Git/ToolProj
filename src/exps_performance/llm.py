@@ -72,7 +72,7 @@ class DummyClient(LLMClient):
 
 
 openai_api_key = "EMPTY"
-openai_api_base = "http://localhost:8000/v1"
+openai_api_base = "http://localhost:8000/v1/"
 
 
 class OpenAIChatClient(LLMClient):

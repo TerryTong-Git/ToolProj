@@ -9,7 +9,8 @@
 
 SEEDS=(0)
 MODELS=( #7B Models
-meta-llama/Llama-3.1-8B-Instruct
+# meta-llama/Llama-3.1-8B-Instruct
+meta-llama/Llama-4-Scout-17B-16E-Instruct
 # "google/gemma-2-9b-it"
 )
 

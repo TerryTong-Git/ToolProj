@@ -16,7 +16,8 @@ def plot_main_fig(df):
     #     train_lengths_dict[alg] = np.array(train_length)
     sns.reset_defaults()
     # import pdb; pdb.set_trace()
-    df1 = df[df["model"] == "Qwen/Qwen2.5-14B-Instruct"]
+    df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
+    # df1 = df
     df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
@@ -28,8 +29,8 @@ def plot_main_fig(df):
 
     cols = list(name_map.values())
     mdf = pd.melt(dfnew, value_vars=cols, id_vars=["kind", "digit"])
-    mdf1 = mdf.groupby(["variable", "digit", "kind"]).mean().reset_index()
-    g = sns.FacetGrid(mdf1, col="kind", col_wrap=4, hue="variable", hue_order=cols, sharex=False)
+    # mdf1 = mdf.groupby(["variable", "digit", "kind"]).mean().reset_index()
+    g = sns.FacetGrid(mdf, col="kind", col_wrap=4, hue="variable", hue_order=cols, sharex=False)
     g.map(sns.lineplot, "digit", "value")
     g.set_titles("{col_name}")
 
@@ -60,7 +61,9 @@ def plot_v_graph(df):
     rcParams["markers.fillstyle"] = "none"
     fig, ax = plt.subplots(figsize=(6, 6))
     cols = ["nl_correct", "sim_correct", "controlsim_correct", "code_correct"]
-    melted_df = pd.melt(df, value_vars=cols, id_vars=["model"])
+    df1 = df[df["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+
+    melted_df = pd.melt(df1, value_vars=cols, id_vars=["model"])
     # import pdb; pdb.set_trace()
     sns.pointplot(
         data=melted_df,
@@ -71,7 +74,7 @@ def plot_v_graph(df):
         linestyle="",
         alpha=0.8,
         marker="^",
-        palette=sorted(sns.color_palette("tab20", n_colors=5)[2:], key=lambda x: x[0] - x[2]),
+        palette=sorted(sns.color_palette("tab20", n_colors=5), key=lambda x: x[0] - x[2]),
         errorbar=None,
     )
     sns.lineplot(
@@ -90,7 +93,7 @@ def plot_v_graph(df):
     )
     ax.set_ylim([0, 1])
     plt.xlabel("Arm")
-    ax.set_xticklabels(["NL", "Sim", "Code", "ControlSim"])
+    ax.set_xticklabels(["NL", "Sim", "ControlSim", "Code"])
     plt.savefig("line", bbox_inches="tight")
 
 
@@ -121,8 +124,11 @@ def plot_p_vals(df):
     rcParams["legend.fontsize"] = 18
     rcParams["figure.titlesize"] = 18
     rcParams["markers.fillstyle"] = "none"
-    df1 = df[df["model"] == "Qwen/Qwen2.5-14B-Instruct"]
-    df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    # df1 = df[df["model"] == "Qwen/Qwen2.5-14B-Instruct"]
+    # df1 = df
+    df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
+    df2 = df1
+    # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
         "sim_correct": "Arm 2 \n (Code Sim)",
@@ -162,7 +168,7 @@ def plot_p_vals(df):
     ax.set_ylabel("Accuracy")
 
     ax.set_ylim(0, y + 0.5)
-    plt.ylim(0, 1.3)
+    plt.ylim(0, 1.5)
     plt.title("Accuracy across Arms on Fine-grained Tasks")
     plt.tight_layout()
     plt.show()
@@ -172,8 +178,9 @@ def plot_p_vals(df):
 def analysis():
     files = walk_results_folder("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")  # check files are deepseek and gemma, seed 1 and 2
     df = create_big_df(files)
-    # plot_p_vals(df)
+    plot_p_vals(df)
     plot_main_fig(df)
+    plot_v_graph(df)
 
     # rows = df.to_dict("records")
     # import pdb
