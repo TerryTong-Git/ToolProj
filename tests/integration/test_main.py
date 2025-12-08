@@ -1,9 +1,14 @@
+from typing import Any
+
+import pytest
+
 from src.exps_performance.logger import create_big_df, walk_results_folder
 from src.exps_performance.main import run
 
 
+@pytest.mark.slow
 # on add questions of 2 digits, we should have > 80% on all areas. set this result here.
-def test_e2e(tmp_path_factory, default_args):
+def test_e2e(tmp_path_factory: Any, default_args: Any) -> None:
     base = tmp_path_factory.mktemp("base")
     default_args.root = base
     run(default_args)

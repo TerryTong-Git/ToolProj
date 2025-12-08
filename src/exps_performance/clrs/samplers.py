@@ -21,7 +21,7 @@ import copy
 import inspect
 import itertools
 import types
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union, cast
 
 import jax
 import numpy as np
@@ -29,7 +29,8 @@ from absl import logging
 
 from src.exps_performance.clrs import algorithms, probing, specs
 
-_Array = np.ndarray
+_Array = np.ndarray[Any, Any]
+_SampleData = List[Union[_Array, int, float]]
 Trajectory = List[probing.DataPoint]
 Trajectories = List[Trajectory]
 
@@ -71,12 +72,12 @@ class Sampler(abc.ABC):
         algorithm: Algorithm,
         spec: specs.Spec,
         num_samples: int,
-        *args,
+        *args: Any,
         seed: Optional[int] = None,
         track_max_steps: bool = True,
         truncate_decimals: int | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initializes a `Sampler`.
 
         Args:
@@ -128,13 +129,15 @@ class Sampler(abc.ABC):
             logging.info("Creating a dataset with %i samples.", num_samples)
             (self._inputs, self._outputs, self._hints, self._lengths) = self._make_batch(num_samples, spec, 0, algorithm, *args, **kwargs)
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         # Check that the subclass has overridden CAN_TRUNCATE_INPUT_DATA
         if getattr(cls, "CAN_TRUNCATE_INPUT_DATA", None) is None:
             raise NotImplementedError(f"{cls.__name__} must define class attribute 'CAN_TRUNCATE_INPUT_DATA'.")
 
-    def _make_batch(self, num_samples: int, spec: specs.Spec, min_length: int, algorithm: Algorithm, *args, **kwargs):
+    def _make_batch(
+        self, num_samples: int, spec: specs.Spec, min_length: int, algorithm: Algorithm, *args: Any, **kwargs: Any
+    ) -> Tuple[Trajectory, Trajectory, Trajectory, Any]:
         """Generate a batch of data."""
         inputs = []
         outputs = []
@@ -152,10 +155,10 @@ class Sampler(abc.ABC):
                 logging.info("%i samples created", len(hints))
 
         # Batch and pad trajectories to max(T).
-        inputs = _batch_io(inputs)  # type: ignore
-        outputs = _batch_io(outputs)  # type: ignore
-        hints, lengths = _batch_hints(hints, min_length)  # type: ignore
-        return inputs, outputs, hints, lengths
+        batched_inputs: Trajectory = cast(Trajectory, _batch_io(inputs))
+        batched_outputs: Trajectory = cast(Trajectory, _batch_io(outputs))
+        batched_hints, lengths = _batch_hints(hints, min_length)
+        return batched_inputs, batched_outputs, batched_hints, lengths
 
     def next(self, batch_size: Optional[int] = None) -> Feedback:
         """Subsamples trajectories from the pre-generated dataset.
@@ -202,18 +205,27 @@ class Sampler(abc.ABC):
         return Feedback(Features(inputs, hints, lengths), outputs)
 
     @abc.abstractmethod
-    def _sample_data(self, length: int, *args, **kwargs) -> List[_Array]:
+    def _sample_data(self, length: int, *args: Any, **kwargs: Any) -> _SampleData:
         pass
 
-    def _random_sequence(self, length, low=0.0, high=1.0):
+    def _random_sequence(self, length: int, low: float = 0.0, high: float = 1.0) -> Any:
         """Random sequence."""
         return self._rng.uniform(low=low, high=high, size=(length,))
 
-    def _random_string(self, length, chars=4):
+    def _random_string(self, length: int, chars: int = 4) -> Any:
         """Random string."""
         return self._rng.randint(0, high=chars, size=(length,))
 
-    def _random_er_graph(self, nb_nodes, p=0.5, directed=False, acyclic=False, weighted=False, low=0.0, high=1.0):
+    def _random_er_graph(
+        self,
+        nb_nodes: int,
+        p: float = 0.5,
+        directed: bool = False,
+        acyclic: bool = False,
+        weighted: bool = False,
+        low: float = 0.0,
+        high: float = 1.0,
+    ) -> Any:
         """Random Erdos-Renyi graph."""
 
         mat = self._rng.binomial(1, p, size=(nb_nodes, nb_nodes))
@@ -221,17 +233,28 @@ class Sampler(abc.ABC):
             mat *= np.transpose(mat)
         elif acyclic:
             mat = np.triu(mat, k=1)
-            p = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
-            mat = mat[p, :][:, p]
+            perm = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
+            mat = mat[perm, :][:, perm]
         if weighted:
             weights = self._rng.uniform(low=low, high=high, size=(nb_nodes, nb_nodes))
             if not directed:
                 weights *= np.transpose(weights)
                 weights = np.sqrt(weights + 1e-3)  # Add epsilon to protect underflow
-            mat = mat.astype(float) * weights
+            mat = mat.astype(float) * weights  # type: ignore[assignment]
         return mat
 
-    def _random_community_graph(self, nb_nodes, k=4, p=0.5, eps=0.01, directed=False, acyclic=False, weighted=False, low=0.0, high=1.0):
+    def _random_community_graph(
+        self,
+        nb_nodes: int,
+        k: int = 4,
+        p: float = 0.5,
+        eps: float = 0.01,
+        directed: bool = False,
+        acyclic: bool = False,
+        weighted: bool = False,
+        low: float = 0.0,
+        high: float = 1.0,
+    ) -> Any:
         """Random perturbed k-community graph."""
         mat = np.zeros((nb_nodes, nb_nodes))
         if k > nb_nodes:
@@ -255,11 +278,11 @@ class Sampler(abc.ABC):
                 toggle[los[i] : his[i], los[j] : his[j]] *= 0
 
         mat = np.where(toggle > 0.0, (1.0 - (mat > 0.0)) * toggle, mat)
-        p = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
-        mat = mat[p, :][:, p]
+        perm = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
+        mat = mat[perm, :][:, perm]
         return mat
 
-    def _random_bipartite_graph(self, n, m, p=0.25):
+    def _random_bipartite_graph(self, n: int, m: int, p: float = 0.25) -> Any:
         """Random bipartite graph-based flow network."""
         nb_nodes = n + m + 2
         s = 0
@@ -270,7 +293,7 @@ class Sampler(abc.ABC):
         mat[1 : n + 1, n + 1 : n + m + 1] = self._rng.binomial(1, p, size=(n, m))
         return mat
 
-    def _trunc_array(self, data: Any) -> List[_Array]:
+    def _trunc_array(self, data: Any) -> Any:
         """Truncates the data if needed."""
         data = copy.deepcopy(data)
 
@@ -300,11 +323,11 @@ def _is_float_array(data: Any) -> bool:
 def build_sampler(
     name: str,
     num_samples: int,
-    *args,
+    *args: Any,
     seed: Optional[int] = None,
     track_max_steps: bool = True,
     truncate_decimals: int | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[Sampler, specs.Spec]:
     """Builds a sampler. See `Sampler` documentation."""
 
@@ -341,7 +364,7 @@ class SortingSampler(Sampler):
         length: int,
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         arr = self._random_sequence(length=length, low=low, high=high)
         return [arr]
 
@@ -356,7 +379,7 @@ class SearchSampler(Sampler):
         length: int,
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         arr = self._random_sequence(length=length, low=low, high=high)
         arr.sort()
         x = self._rng.uniform(low=low, high=high)
@@ -373,7 +396,7 @@ class MaxSubarraySampler(Sampler):
         length: int,
         low: float = -1.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         arr = self._random_sequence(length=length, low=low, high=high)
         return [arr]
 
@@ -388,7 +411,7 @@ class LCSSampler(Sampler):
         length: int,
         length_2: Optional[int] = None,
         chars: int = 4,
-    ):
+    ) -> _SampleData:
         if length_2 is None:
             # Assume provided length is total length.
             length_2 = length // 2
@@ -406,7 +429,7 @@ class OptimalBSTSampler(Sampler):
     def _sample_data(
         self,
         length: int,
-    ):
+    ) -> _SampleData:
         tot_length = length + (length + 1)
         arr = self._random_sequence(length=tot_length, low=0.0, high=1.0)
         arr /= np.sum(arr)
@@ -425,7 +448,7 @@ class ActivitySampler(Sampler):
         length: int,
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         arr_1 = self._random_sequence(length=length, low=low, high=high)
         arr_2 = self._random_sequence(length=length, low=low, high=high)
         return [np.minimum(arr_1, arr_2), np.maximum(arr_1, arr_2)]
@@ -442,7 +465,7 @@ class TaskSampler(Sampler):
         max_deadline: Optional[int] = None,
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         if max_deadline is None:
             max_deadline = length
         d = self._random_string(length=length, chars=max_deadline) + 1
@@ -459,7 +482,7 @@ class DfsSampler(Sampler):
         self,
         length: int,
         p: Tuple[float, ...] = (0.5,),
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=True, acyclic=False, weighted=False)
         return [graph]
 
@@ -473,7 +496,7 @@ class BfsSampler(Sampler):
         self,
         length: int,
         p: Tuple[float, ...] = (0.5,),
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=False, acyclic=False, weighted=False)
         source_node = self._rng.choice(length)
         return [graph, source_node]
@@ -488,7 +511,7 @@ class TopoSampler(Sampler):
         self,
         length: int,
         p: Tuple[float, ...] = (0.5,),
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=True, acyclic=True, weighted=False)
         return [graph]
 
@@ -502,7 +525,7 @@ class ArticulationSampler(Sampler):
         self,
         length: int,
         p: Tuple[float, ...] = (0.2,),
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=False, acyclic=False, weighted=False)
         return [graph]
 
@@ -518,7 +541,7 @@ class MSTSampler(Sampler):
         p: Tuple[float, ...] = (0.2,),  # lower p to account for class imbalance
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=False, acyclic=False, weighted=True, low=low, high=high)
         return [graph]
 
@@ -534,7 +557,7 @@ class BellmanFordSampler(Sampler):
         p: Tuple[float, ...] = (0.5,),
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=False, acyclic=False, weighted=True, low=low, high=high)
         source_node = self._rng.choice(length)
         return [graph, source_node]
@@ -551,7 +574,7 @@ class DAGPathSampler(Sampler):
         p: Tuple[float, ...] = (0.5,),
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=True, acyclic=True, weighted=True, low=low, high=high)
         source_node = self._rng.choice(length)
         return [graph, source_node]
@@ -568,7 +591,7 @@ class FloydWarshallSampler(Sampler):
         p: Tuple[float, ...] = (0.5,),
         low: float = 0.0,
         high: float = 1.0,
-    ):
+    ) -> _SampleData:
         graph = self._random_er_graph(nb_nodes=length, p=self._rng.choice(p), directed=False, acyclic=False, weighted=True, low=low, high=high)
         return [graph]
 
@@ -584,7 +607,7 @@ class SccSampler(Sampler):
         k: int = 4,
         p: Tuple[float, ...] = (0.5,),
         eps: float = 0.01,
-    ):
+    ) -> _SampleData:
         graph = self._random_community_graph(nb_nodes=length, k=k, p=self._rng.choice(p), eps=eps, directed=True, acyclic=False, weighted=False)
         return [graph]
 
@@ -599,7 +622,7 @@ class BipartiteSampler(Sampler):
         length: int,
         length_2: Optional[int] = None,
         p: Tuple[float, ...] = (0.3,),
-    ):
+    ) -> _SampleData:
         if length_2 is None:
             # Assume provided length is total length.
             length_2 = length // 2
@@ -618,7 +641,7 @@ class MatcherSampler(Sampler):
         length: int,  # length of haystack + needle, i.e., total number of nodes
         length_needle: Optional[int] = None,
         chars: int = 4,
-    ):
+    ) -> _SampleData:
         if length_needle is None:
             if length < 5:
                 length_needle = 1
@@ -639,14 +662,14 @@ class SegmentsSampler(Sampler):
 
     CAN_TRUNCATE_INPUT_DATA = True
 
-    def _sample_data(self, length: int, low: float = 0.0, high: float = 1.0):
+    def _sample_data(self, length: int, low: float = 0.0, high: float = 1.0) -> _SampleData:
         del length  # There are exactly four endpoints.
 
         # Quick CCW check (ignoring collinearity) for rejection sampling
-        def ccw(x_a, y_a, x_b, y_b, x_c, y_c):
+        def ccw(x_a: float, y_a: float, x_b: float, y_b: float, x_c: float, y_c: float) -> bool:
             return (y_c - y_a) * (x_b - x_a) > (y_b - y_a) * (x_c - x_a)
 
-        def intersect(xs, ys):
+        def intersect(xs: _Array, ys: _Array) -> bool:
             return ccw(xs[0], ys[0], xs[2], ys[2], xs[3], ys[3]) != ccw(xs[1], ys[1], xs[2], ys[2], xs[3], ys[3]) and ccw(
                 xs[0], ys[0], xs[1], ys[1], xs[2], ys[2]
             ) != ccw(xs[0], ys[0], xs[1], ys[1], xs[3], ys[3])
@@ -674,7 +697,7 @@ def _cross2d(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     Returns:
       The cross product of the two vectors.
     """
-    return x[..., 0] * y[..., 1] - x[..., 1] * y[..., 0]
+    return np.asarray(x[..., 0] * y[..., 1] - x[..., 1] * y[..., 0])
 
 
 def _is_collinear(
@@ -723,7 +746,7 @@ class ConvexHullSampler(Sampler):
         radius: float = 2.0,
         collinearity_resampling_attempts: int = 1000,
         collineararity_eps: float = 1e-12,
-    ):
+    ) -> _SampleData:
         """Samples a convex hull of points over a disk of radius r.
 
         Args:
@@ -828,7 +851,7 @@ def _batch_io(traj_io: Trajectories) -> Trajectory:
             assert dp.data.shape[0] == 1  # batching axis
             assert traj_io[0][i].name == dp.name
 
-    return jax.tree_util.tree_map(lambda *x: np.concatenate(x), *traj_io)
+    return cast(Trajectory, jax.tree_util.tree_map(lambda *x: np.concatenate(x), *traj_io))
 
 
 def _batch_hints(traj_hints: Trajectories, min_steps: int) -> tuple[Trajectory, np.ndarray[tuple[int], float]]:  # type: ignore [type-var]
@@ -887,9 +910,9 @@ def _subsample_data(
     return sampled_traj
 
 
-def _preprocess_permutations(probes, enforce_permutations):
+def _preprocess_permutations(probes: Trajectory, enforce_permutations: bool) -> Trajectory:
     """Replace should-be permutations with proper permutation pointer + mask."""
-    output = []
+    output: List[probing.DataPoint] = []
     for x in probes:
         if x.type_ != specs.Type.SHOULD_BE_PERMUTATION:
             output.append(x)
@@ -904,10 +927,10 @@ def _preprocess_permutations(probes, enforce_permutations):
     return output
 
 
-def process_permutations(spec, sample_iterator, enforce_permutations):
+def process_permutations(spec: specs.Spec, sample_iterator: Any, enforce_permutations: bool) -> Tuple[specs.Spec, Any]:
     """Replace should-be permutations with proper permutation pointer + mask."""
 
-    def _iterate():
+    def _iterate() -> Any:
         while True:
             feedback = next(sample_iterator)
             features = feedback.features
@@ -932,17 +955,17 @@ def process_permutations(spec, sample_iterator, enforce_permutations):
     return new_spec, _iterate()
 
 
-def process_pred_as_input(spec, sample_iterator):
+def process_pred_as_input(spec: specs.Spec, sample_iterator: Any) -> Tuple[specs.Spec, Any]:
     """Move pred_h hint to pred input."""
 
-    def _iterate():
+    def _iterate() -> Any:
         while True:
             feedback = next(sample_iterator)
             features = feedback.features
-            pred_h = [h for h in features.hints if h.name == "pred_h"]
-            if pred_h:
-                assert len(pred_h) == 1
-                pred_h = pred_h[0]
+            pred_h_list = [h for h in features.hints if h.name == "pred_h"]
+            if pred_h_list:
+                assert len(pred_h_list) == 1
+                pred_h = pred_h_list[0]
                 hints = [h for h in features.hints if h.name != "pred_h"]
                 for i in range(len(features.lengths)):
                     assert np.sum(np.abs(pred_h.data[1 : int(features.lengths[i]), i] - pred_h.data[0, i])) == 0.0
@@ -962,7 +985,7 @@ def process_pred_as_input(spec, sample_iterator):
     return new_spec, _iterate()
 
 
-def process_random_pos(sample_iterator, rng):
+def process_random_pos(sample_iterator: Any, rng: np.random.Generator) -> Any:
     """Randomize the `pos` input from a sampler.
 
     The `pos` input is, by default, a scalar uniformly spaced between 0 and 1
@@ -979,7 +1002,7 @@ def process_random_pos(sample_iterator, rng):
       An iterator returning the samples with randomized `pos` inputs.
     """
 
-    def _iterate():
+    def _iterate() -> Any:
         while True:
             feedback = next(sample_iterator)
             inputs = feedback.features.inputs

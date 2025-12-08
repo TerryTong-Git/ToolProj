@@ -3,7 +3,7 @@
 
 import logging
 from collections import Counter
-from typing import Tuple
+from typing import Tuple, cast
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -119,13 +119,66 @@ def create_theta_new_label(kind: str, digits: int) -> str:
 # ------------------------------------------------------------------------------
 
 
+def _convert_results_csv(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert results CSVs produced by exps_performance (Record schema) into the
+    canonical format expected by the logistic pipeline.
+    """
+    required = {"digit", "kind", "question"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Results CSV missing required columns {missing}. Got: {df.columns.tolist()}")
+
+    rows = []
+    for _, row in df.iterrows():
+        digits = int(row["digit"])
+        base = {
+            "kind": row["kind"],
+            "digits": digits,
+            # Use the original question text for γ parsing / context
+            "prompt": row.get("question", ""),
+        }
+
+        # NL rationale
+        nl = str(row.get("nl_reasoning", "") or "").strip()
+        if nl:
+            rows.append({**base, "rationale": nl, "rep": "nl"})
+
+        # Code rationale (we use the generated code answer as the representation)
+        code = str(row.get("code_answer", "") or "").strip()
+        if code:
+            rows.append({**base, "rationale": code, "rep": "code"})
+
+    if not rows:
+        raise ValueError("No rationale text found in results CSV (nl_reasoning/code_answer were empty).")
+
+    return pd.DataFrame(rows)
+
+
 def load_data(csv_path: str) -> pd.DataFrame:
     """Load data from CSV file."""
     df = pd.read_csv(csv_path)
-    required_cols = {"rationale", "kind", "digits"}
-    if not required_cols.issubset(df.columns):
-        raise ValueError(f"Data must contain columns {required_cols}. Got: {df.columns.tolist()}")
-    return df
+
+    # Already in canonical format (tests/synthetic data)
+    if "rationale" in df.columns and ("digits" in df.columns or "digit" in df.columns):
+        if "digit" in df.columns and "digits" not in df.columns:
+            df = df.rename(columns={"digit": "digits"})
+        return df
+
+    # exps_performance results CSV (Record schema)
+    if {"digit", "kind", "question"} <= set(df.columns):
+        converted = _convert_results_csv(df)
+        logger.info(
+            "Loaded results CSV in Record schema; converted %d rows to %d rationale entries (nl/code).",
+            len(df),
+            len(converted),
+        )
+        return converted
+
+    raise ValueError(
+        "Unsupported CSV format. Expected columns {rationale, kind, digits} or an exps_performance results CSV "
+        f"(digit, kind, question, nl_reasoning/code_answer). Got: {df.columns.tolist()}"
+    )
 
 
 def filter_by_rep(df: pd.DataFrame, rep: str) -> pd.DataFrame:
@@ -204,4 +257,4 @@ def stratified_split_robust(
 
     if verbose:
         logger.warning("Falling back to non-stratified split.")
-    return train_test_split(df, test_size=test_size, random_state=seed, shuffle=True)
+    return cast(Tuple[pd.DataFrame, pd.DataFrame], train_test_split(df, test_size=test_size, random_state=seed, shuffle=True))

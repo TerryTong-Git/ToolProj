@@ -36,12 +36,12 @@ problem_types = {
 }
 
 
-def test_np():
+def test_np() -> None:
     data = NPHARD().load()
     assert data is not None, "no data"
 
 
-def test_make():
+def test_make() -> None:
     for p, probclass in problem_types.items():
         data = make_dataset([p])
         for d in data:

@@ -3,8 +3,9 @@ from __future__ import annotations
 import ast
 import random
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import Any, List, Type
 
+from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
@@ -27,21 +28,21 @@ class FgQuestion(Question):
     question: str = ""
 
     @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type["FgCheckAndFormat"]:
         return FgCheckAndFormat
 
 
 class FgCheckAndFormat(CheckAndFormat):
     k: str
 
-    def __init__(self, prob_type, n: int = 10, digits_list: List[int] = [2], seed: int = 1):
+    def __init__(self, prob_type: str, n: int = 10, digits_list: List[int] = [2], seed: int = 1):
         super().__init__(prob_type, func_typing, clrs_desc, FgAnswer)
         self.instancetype = FgQuestion
         self.n = n
         self.digits_list = digits_list
         self.seed = seed
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -55,24 +56,24 @@ class FgCheckAndFormat(CheckAndFormat):
             return False
 
     # rename to code to class
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Answer=str(result))
 
     @property
-    def prompt(self):
-        return self.prompt_template(["question"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> PromptTemplate:
+        return self.prompt_template("question") if self.prob_type != "sim" else self.prompt_template("code")
 
     def format_one(self, q: FgQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         prompt_text = self.prompt.format_prompt(question=q.question)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
-    def decision_check(self, instance: FgAnswer, solution: BaseModel):
+    def decision_check(self, instance: FgAnswer, solution: BaseModel) -> tuple[bool, str]:
         str_ans = solution.Answer
-        return int(str_ans == instance.answer), ""
+        return str_ans == instance.answer, ""
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         rng1 = random.Random(2)
         a = sample_int(d, rng)
         b = sample_int(d, rng1)
@@ -80,7 +81,7 @@ class FgCheckAndFormat(CheckAndFormat):
         answer = int(float(a) + float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
-    def load_data(self) -> Sequence[FgQuestion]:
+    def load_data(self) -> list[FgQuestion]:
         rng = random.Random(self.seed)
         problems = []
         D = max(1, len(self.digits_list))
@@ -88,7 +89,7 @@ class FgCheckAndFormat(CheckAndFormat):
         for d in self.digits_list:
             for _ in range(per):
                 problems.append(self.make_problem(rng, d))
-        return problems
+        return list(problems)
 
 
 class AddCheckAndFormat(FgCheckAndFormat):
@@ -98,7 +99,7 @@ class AddCheckAndFormat(FgCheckAndFormat):
 class SubCheckAndFormat(FgCheckAndFormat):
     k: str = "sub"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         rng1 = random.Random(2)
         a = sample_int(d, rng)
         b = sample_int(d, rng1)
@@ -112,7 +113,7 @@ class SubCheckAndFormat(FgCheckAndFormat):
 class MulCheckAndFormat(FgCheckAndFormat):
     k: str = "mul"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         rng1 = random.Random(2)
         a = sample_int(d, rng)
         b = sample_int(d, rng1)
@@ -124,7 +125,7 @@ class MulCheckAndFormat(FgCheckAndFormat):
 class LcsCheckAndFormat(FgCheckAndFormat):
     k: str = "lcs"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         n = int(d)  # complexity O(n^2)
         rng1 = random.Random(2)
         s = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
@@ -138,7 +139,7 @@ class LcsCheckAndFormat(FgCheckAndFormat):
 class Knap01CheckAndFormat(FgCheckAndFormat):
     k: str = "knapsack"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         # complexity O(items * Capacity)
         capacity = max(2, int(d))
         n_items = max(2, int(d))
@@ -159,7 +160,7 @@ class Knap01CheckAndFormat(FgCheckAndFormat):
 class RodCheckAndFormat(FgCheckAndFormat):
     k: str = "rod"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         N = max(2, int(d))  # O(n^2)
         price_max = 32
         prices = [rng.randint(1, price_max) for _ in range(N)]
@@ -173,7 +174,7 @@ class RodCheckAndFormat(FgCheckAndFormat):
 class IlpAssignCheckAndFormat(FgCheckAndFormat):
     k: str = "ilp_assign"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         n = max(2, int(d))  # O(2^n)
         C = [[rng.randint(1, 32) for _ in range(n)] for __ in range(n)]
         question = (
@@ -182,13 +183,13 @@ class IlpAssignCheckAndFormat(FgCheckAndFormat):
             f"C = {C}"
         )
         answer = assignment_min_cost(C)
-        return FgQuestion(kind="ilp_assign", digits=d, question=question, answer=answer)
+        return FgQuestion(kind="ilp_assign", digits=d, question=question, answer=str(answer))
 
 
 class IlpPartitionCheckAndFormat(FgCheckAndFormat):
     k: str = "ilp_partition"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         n_items = max(2, int(d))
         w_max = 32
         weights = [rng.randint(1, w_max) for _ in range(n_items)]
@@ -204,7 +205,7 @@ class IlpPartitionCheckAndFormat(FgCheckAndFormat):
 class IlpProdCheckAndFormat(FgCheckAndFormat):
     k: str = "ilp_prod"
 
-    def make_problem(self, rng, d):
+    def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         # scale #products/#resources and magnitudes with d, but cap to keep fallback feasible
         P = max(2, int(d))
         R = max(2, int(d))

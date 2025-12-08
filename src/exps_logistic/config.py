@@ -11,7 +11,6 @@ class ExperimentConfig:
     """Configuration for the logistic regression concept classification experiment."""
 
     # Data sources
-    tbdir: Optional[str] = None
     csv: Optional[str] = None
     rep: str = "all"  # nl, code, or all
 
@@ -28,11 +27,17 @@ class ExperimentConfig:
     pool: str = "mean"  # mean or cls
     device: Optional[str] = None
     batch: int = 128
+    hf_batch: int = 16
+    hf_dtype: str = "auto"
+    hf_window_stride: int = 0
     strip_fences: bool = False
 
     # Classifier
     C: float = 2.0
     max_iter: int = 400
+    logreg_c_grid: tuple[float, ...] = (0.25, 0.5, 1.0, 2.0, 4.0)
+    logreg_max_iter_grid: tuple[int, ...] = (100, 200, 400)
+    logreg_cv_folds: int = 5
 
     # Reporting
     bits: bool = False
@@ -44,8 +49,13 @@ def parse_args() -> ExperimentConfig:
     p = argparse.ArgumentParser(description="CoT -> joint label classification with LM embeddings + multinomial logistic regression.")
 
     # Data sources
-    p.add_argument("--tbdir", type=str, default=None, help="Read rationales directly from TensorBoard logs")
-    p.add_argument("--csv", type=str, default=None, help="CSV with columns: rationale, kind, digits, [prompt], [rep], [split]")
+    p.add_argument(
+        "--csv",
+        type=str,
+        required=True,
+        help="CSV input. Accepts canonical format (rationale, kind, digits, [prompt], [rep]) "
+        "or exps_performance results CSVs (digit, kind, question, nl_reasoning, code_answer).",
+    )
     p.add_argument("--rep", choices=["nl", "code", "all"], default="all")
 
     # Label configuration
@@ -66,11 +76,40 @@ def parse_args() -> ExperimentConfig:
     p.add_argument("--pool", choices=["mean", "cls"], default="mean", help="Pooling for hf-cls.")
     p.add_argument("--device", type=str, default=None, help="Force device for hf-cls/st (e.g. cuda, cpu).")
     p.add_argument("--batch", type=int, default=128, help="Batch size for OpenAI embeddings.")
+    p.add_argument("--hf-batch", type=int, default=16, help="Batch size for hf-cls encoder to reduce memory.")
+    p.add_argument(
+        "--hf-dtype",
+        type=str,
+        default="auto",
+        choices=["auto", "float32", "float16", "bfloat16"],
+        help="Torch dtype for hf-cls encoder to reduce memory.",
+    )
+    p.add_argument(
+        "--hf-window-stride",
+        type=int,
+        default=0,
+        help="Stride for sliding window over long sequences for hf-cls. 0 = truncate to max length (lowest memory).",
+    )
     p.add_argument("--strip-fences", action="store_true", help="Strip ``` code fences before embedding.")
 
     # Classifier
     p.add_argument("--C", type=float, default=2.0, help="Regularization strength")
     p.add_argument("--max_iter", type=int, default=400)
+    p.add_argument(
+        "--logreg-c-grid",
+        type=float,
+        nargs="+",
+        default=[0.25, 0.5, 1.0, 2.0, 4.0],
+        help="Grid of C values for logistic regression CV.",
+    )
+    p.add_argument(
+        "--logreg-max-iter-grid",
+        type=int,
+        nargs="+",
+        default=[100, 200, 400],
+        help="Grid of max_iter values for logistic regression CV.",
+    )
+    p.add_argument("--logreg-cv-folds", type=int, default=5, help="CV folds for logistic regression hyperparameter search.")
 
     # Reporting
     p.add_argument("--bits", action="store_true", help="Report CE in bits and print MI lower bound.")
@@ -79,7 +118,6 @@ def parse_args() -> ExperimentConfig:
     args = p.parse_args()
 
     return ExperimentConfig(
-        tbdir=args.tbdir,
         csv=args.csv,
         rep=args.rep,
         label=args.label,
@@ -92,9 +130,15 @@ def parse_args() -> ExperimentConfig:
         pool=args.pool,
         device=args.device,
         batch=args.batch,
+        hf_batch=args.hf_batch,
+        hf_dtype=args.hf_dtype,
+        hf_window_stride=args.hf_window_stride,
         strip_fences=getattr(args, "strip_fences", False),
         C=args.C,
         max_iter=args.max_iter,
+        logreg_c_grid=tuple(args.logreg_c_grid),
+        logreg_max_iter_grid=tuple(args.logreg_max_iter_grid),
+        logreg_cv_folds=args.logreg_cv_folds,
         bits=args.bits,
         save_preds=getattr(args, "save_preds", None),
     )

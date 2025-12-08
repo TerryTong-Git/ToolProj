@@ -1,19 +1,44 @@
-# pixi environments
+# Environments & tools
+.env
 .pixi/*
 !.pixi/config.toml
-*.json
+/.cursor/*
+.vscode/
+.pymon
+
+# Caches & build artefacts
+**/__pycache__/**
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.pytype_cache/
+*.pyc
+.nfs*
+
+# Data & results (keep old runs out of git)
+/data/*
 /src/models/
 /src/**/out*
-/data/*
 /src/exps_performance/**/tb/
 /src/exps_performance/**/run*
 /src/exps_performance/Data*
 /src/exps_performance/Open/
-/NPHardEval/
-/**/tmp/
+/src/exps_benchmarks/*
+/src/exps_logistic/results/*
+**/results/**
 
-/prof/*
+# Project-specific scratch / temp
+/**/tmp/
+**/prof/*
 /src/exps_pret_corr/data/
 /src/exps_pret_corr/faiss_index/
 /src/exps_code_analysis/
-.env
+
+# Misc
+*.json
+/dotfiles/
+/NPHardEval/

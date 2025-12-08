@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import os
 from dataclasses import dataclass
+from typing import Any, Type, cast
 
 import networkx as nx
 from pydantic import BaseModel, Field
@@ -29,19 +30,18 @@ class GcpdQuestion(NpQuestion):
     dimacs_str: str = ""
     code: str = ""
 
-    @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
         return GcpdCheckAndFormat
 
 
 class GcpdCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, gcp_desc, GcpdAnswer)
         self.instancetype = GcpdQuestion
 
     # tied to inputs, may not be called input
-    def loaded_data_to_class(self, data):
-        return dict(dimacs_str=data)
+    def loaded_data_to_class(self, data: Any) -> dict[str, str]:
+        return dict(dimacs_str=str(data))
 
     def type_check_code(self, code: str) -> bool:
         try:
@@ -60,16 +60,16 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
         return True
 
     # tied to code
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Feasible=str(result))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["total_vertices", "number_of_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> Any:
+        return self.prompt_template(["total_vertices", "number_of_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def format_one(self, q: GcpdQuestion):
+    def format_one(self, q: GcpdQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         inp = q.dimacs_str
         number_of_colors = inp.split("\n")[0].split()[-2]  # last character of the first line
         number_of_vertices = inp.split("\n")[1].split(" ")[2]  # third word of the second line
@@ -80,13 +80,13 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
             this_line = "Vertex {} is connected to vertex {}.".format(vertex_list[1], vertex_list[2])
             graph += this_line + "\n"
         prompt_text = self.prompt.format_prompt(total_vertices=number_of_vertices, number_of_colors=number_of_colors, graph=graph)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
-    def decision_check(self, q: GcpdQuestion, output: BaseModel):
+    def decision_check(self, q: GcpdQuestion, output: BaseModel) -> tuple[bool, str]:
         number_of_colors = int(q.dimacs_str.split("\n")[0].split()[-2])
         return self.gcp_decision_check(q.dimacs_str, output, number_of_colors)
 
-    def gcp_greedy_solution(self, adjacency_list: dict):
+    def gcp_greedy_solution(self, adjacency_list: dict) -> tuple[int, dict[int, int]]:
         """Provides a greedy solution to the GCP problem.
 
         :param adjacency_list: A dictionary of the adjacency list.
@@ -101,7 +101,7 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
         num_colors = max(coloring.values()) + 1
         return num_colors, coloring
 
-    def gcp_decision_check(self, dimacs_str: str, answer, k_colors):
+    def gcp_decision_check(self, dimacs_str: str, answer: BaseModel, k_colors: int) -> tuple[bool, str]:
         """
         Check if the given GCP instance is feasible with k_colors.
 
@@ -124,7 +124,7 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
                 return False, f"Feasibility mismatch: {is_feasible} vs {exist_optimal}"
         return True, "Feasible" if is_feasible else "Infeasible"
 
-    def load_data(self):
+    def load_data(self) -> list[GcpdQuestion]:
         data = []
         n = 10
         start = n - 9
@@ -132,7 +132,10 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
             with open(os.path.join(self.folder_name, "GCP_Decision", "decision_data_GCP_{}.txt".format(file_num))) as f:
                 d = f.read()
             data += d.split("\n\n")[:-1]
-        problem = self.instancetype  # type: ignore
-        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
-        all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        problem_cls = cast(type[GcpdQuestion], self.instancetype)
+        data_func = self.loaded_data_to_class
+        all_data = []
+        for d in data:
+            payload = data_func(d)
+            all_data.append(problem_cls(dimacs_str=payload["dimacs_str"]))
+        return list(all_data)

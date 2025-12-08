@@ -18,7 +18,7 @@ import json
 import os
 import random
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, Iterator, List
 
 from src.exps_performance.clrs import clrs_utils, samplers
 
@@ -29,7 +29,7 @@ def clrs_generator(
     use_hints: bool = False,
     seed: int = 0,
     num_decimals_in_float: int = 3,
-):
+) -> Iterator[Dict[str, str | int | bool]]:
     """Huggingface compatible generator function for CLRS-text dataset.
 
     Example usage for a finite dataset:

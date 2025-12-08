@@ -67,18 +67,18 @@ def compute_metrics(
     )
 
 
-def print_results(metrics: EvaluationMetrics, config) -> None:
+def print_results(metrics: EvaluationMetrics, config: object) -> None:  # type: ignore[no-untyped-def]
     """Print evaluation results."""
-    unit = "bits" if config.bits else "nats"
-    ce_display = metrics.cross_entropy_bits if config.bits else metrics.cross_entropy
+    unit = "bits" if config.bits else "nats"  # type: ignore[attr-defined]
+    ce_display = metrics.cross_entropy_bits if config.bits else metrics.cross_entropy  # type: ignore[attr-defined]
 
     print("\n=== Results (embedding features) ===")
-    print(f"Target label:     {config.label}  (#classes={metrics.n_classes})")
-    print(f"Feats:            {config.feats} | model={config.embed_model or 'n/a'} | pool={config.pool if config.feats == 'hf-cls' else '-'}")
-    print(f"Rep filter:       {config.rep}")
+    print(f"Target label:     {config.label}  (#classes={metrics.n_classes})")  # type: ignore[attr-defined]
+    print(f"Feats:            {config.feats} | model={config.embed_model or 'n/a'} | pool={config.pool if config.feats == 'hf-cls' else '-'}")  # type: ignore[attr-defined]
+    print(f"Rep filter:       {config.rep}")  # type: ignore[attr-defined]
     print(f"N_train / N_test: {metrics.n_train} / {metrics.n_test}")
     print(f"Cross-entropy:    {ce_display:.4f} {unit}")
     print(f"Accuracy:         {metrics.accuracy:.4f}")
     print(f"Macro F1:         {metrics.macro_f1:.4f}")
-    print(f"H({config.label}):  {metrics.empirical_entropy:.4f} bits  (empirical on test)")
-    print(f"I({config.label}; Z_r) ≥ {metrics.mutual_info_lower_bound:.4f} bits   (variational lower bound)")
+    print(f"H({config.label}):  {metrics.empirical_entropy:.4f} bits  (empirical on test)")  # type: ignore[attr-defined]
+    print(f"I({config.label}; Z_r) ≥ {metrics.mutual_info_lower_bound:.4f} bits   (variational lower bound)")  # type: ignore[attr-defined]

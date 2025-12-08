@@ -16,8 +16,12 @@ Embedding backends (choose with --feats):
 
 import logging
 import time
+from datetime import datetime
+from pathlib import Path
+from typing import Tuple
 
 import numpy as np
+import pandas as pd
 
 from .classifier import ConceptClassifier
 from .config import ExperimentConfig, parse_args
@@ -34,13 +38,43 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
+def _infer_metadata(df: pd.DataFrame, config: ExperimentConfig) -> Tuple[str, str]:
+    """Infer model name and seed for serialization."""
+    model = "unknown_model"
+    if "model" in df.columns and len(df["model"].dropna()):
+        model = str(df["model"].iloc[0]).replace("/", "-")
+
+    if "seed" in df.columns and len(df["seed"].dropna()):
+        try:
+            seed = str(int(df["seed"].iloc[0]))
+        except Exception:
+            seed = str(df["seed"].iloc[0])
+    else:
+        seed = str(config.seed)
+    return model, seed
+
+
+def _default_save_path(model: str, seed: str, config: ExperimentConfig) -> Path:
+    """Automatic save path that encodes model/seed/date/rep/featurizer."""
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    feats = config.feats
+    rep = config.rep
+    embed = (config.embed_model or "na").replace("/", "-")
+    fname = f"{model}_seed{seed}_{rep}_{feats}-{embed}_{ts}.csv"
+    out_dir = Path(__file__).resolve().parent / "results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir / fname
+
+
 def run(config: ExperimentConfig) -> None:
     """Main experiment runner."""
 
     # Load data
     logger.info("Loading data...")
+    assert config.csv is not None, "CSV path must be provided"
     df = load_data(config.csv)
     logger.info(f"Loaded {len(df)} samples")
+    model_name, seed_str = _infer_metadata(df, config)
 
     # Filter by representation type
     df = filter_by_rep(df, config.rep)
@@ -50,7 +84,7 @@ def run(config: ExperimentConfig) -> None:
     df = prepare_labels(df, config.label, config.value_bins)
 
     # Log gamma diversity sanity check
-    gb = df.assign(kd=df["kind"].astype(str) + "|d" + df["digits"].astype(str)).groupby("kd")["gamma"].nunique()
+    gb = df.assign(kd=df["kind"].astype(str) + "|d" + df["digits"].astype(str)).groupby("kd")["gamma"].nunique()  # type: ignore[operator]
     logger.info(f"[gamma sanity] distinct bins per (kind,d):\n{gb.value_counts().sort_index()}")
 
     n_empty = (df["prompt"].astype(str).str.len() == 0).sum()
@@ -77,6 +111,9 @@ def run(config: ExperimentConfig) -> None:
         config.strip_fences,
         config.device,
         config.batch,
+        config.hf_batch,
+        config.hf_dtype,
+        config.hf_window_stride,
     )
 
     if hasattr(featurizer, "fit"):
@@ -88,7 +125,17 @@ def run(config: ExperimentConfig) -> None:
 
     # Train classifier
     logger.info("Training classifier...")
-    classifier = ConceptClassifier(C=config.C, max_iter=config.max_iter)
+    # Hyperparameter search (up to 5-fold stratified CV) to reduce overfitting.
+    best_C, best_max_iter, cv_score = ConceptClassifier.tune_hyperparams(
+        X_train,
+        train_df["label"].astype(str).tolist(),
+        config.logreg_c_grid,
+        config.logreg_max_iter_grid,
+        cv_folds=config.logreg_cv_folds,
+    )
+    logger.info(f"CV best accuracy={cv_score:.4f} with C={best_C}, max_iter={best_max_iter}")
+
+    classifier = ConceptClassifier(C=best_C, max_iter=best_max_iter)
     classifier.fit(X_train, train_df["label"].astype(str).tolist())
 
     # Evaluate
@@ -108,12 +155,22 @@ def run(config: ExperimentConfig) -> None:
     print_results(metrics, config)
 
     # Save predictions
+    if config.save_preds is None:
+        config.save_preds = str(_default_save_path(model_name, seed_str, config))
+
     if config.save_preds:
         logger.info(f"Saving predictions to {config.save_preds}...")
         out = test_df[["rationale", "kind", "digits", "prompt"]].copy()
         out["true_label"] = test_df["label"].values
         out["pred_label"] = result.label_encoder.inverse_transform(result.predictions)
         out["neglogp_true_nat"] = -np.log(result.probabilities[np.arange(len(result.probabilities)), result.true_labels] + 1e-15)
+        # metadata columns for downstream analysis
+        out["model"] = model_name
+        out["seed"] = seed_str
+        out["rep"] = config.rep
+        out["feats"] = config.feats
+        out["embed_model"] = config.embed_model or ""
+        out["run_ts"] = datetime.now().isoformat()
         out.to_csv(config.save_preds, index=False)
         logger.info(f"Saved predictions: {config.save_preds}")
 

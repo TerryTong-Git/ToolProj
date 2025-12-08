@@ -62,13 +62,13 @@ def segments_intersect(xs: _Array, ys: _Array) -> _Out:
         },
     )
 
-    def cross_product(x1, y1, x2, y2):
+    def cross_product(x1: float, y1: float, x2: float, y2: float) -> float:
         return x1 * y2 - x2 * y1
 
-    def direction(xs, ys, i, j, k):
+    def direction(xs: _Array, ys: _Array, i: int, j: int, k: int) -> float:
         return cross_product(xs[k] - xs[i], ys[k] - ys[i], xs[j] - xs[i], ys[j] - ys[i])
 
-    def on_segment(xs, ys, i, j, k):
+    def on_segment(xs: _Array, ys: _Array, i: int, j: int, k: int) -> int:
         if min(xs[i], xs[j]) <= xs[k] and xs[k] <= max(xs[i], xs[j]):
             if min(ys[i], ys[j]) <= ys[k] and ys[k] <= max(ys[i], ys[j]):
                 return 1
@@ -180,8 +180,8 @@ def graham_scan(xs: _Array, ys: _Array) -> _Out:
         },
     )
 
-    def counter_clockwise(xs, ys, i, j, k):
-        return ((xs[j] - xs[i]) * (ys[k] - ys[i]) - (ys[j] - ys[i]) * (xs[k] - xs[i])) <= 0
+    def counter_clockwise(xs: _Array, ys: _Array, i: int, j: int, k: int) -> bool:
+        return bool(((xs[j] - xs[i]) * (ys[k] - ys[i]) - (ys[j] - ys[i]) * (xs[k] - xs[i])) <= 0)
 
     best = 0
     for i in range(xs.shape[0]):
@@ -300,10 +300,10 @@ def jarvis_march(xs: _Array, ys: _Array) -> _Out:
         },
     )
 
-    def counter_clockwise(xs, ys, i, j, k):
+    def counter_clockwise(xs: _Array, ys: _Array, i: int, j: int, k: int) -> bool:
         if (k == i) or (k == j):
             return False
-        return ((xs[j] - xs[i]) * (ys[k] - ys[i]) - (ys[j] - ys[i]) * (xs[k] - xs[i])) <= 0
+        return bool(((xs[j] - xs[i]) * (ys[k] - ys[i]) - (ys[j] - ys[i]) * (xs[k] - xs[i])) <= 0)
 
     best = 0
     for i in range(xs.shape[0]):

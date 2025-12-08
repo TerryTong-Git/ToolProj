@@ -1,18 +1,18 @@
 import random
 import re
-from typing import Optional
+from typing import Any, Dict, Optional, Set, Tuple
 
 INT_RE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 
 FENCE_RE = re.compile(r"```[a-zA-Z0-9]*\s*\n([\s\S]*?)\n```", re.MULTILINE)
 
 
-def remove_python_triple_quote(input: str):
+def remove_python_triple_quote(input: str) -> str:
     """Not accepted by langchain parsing, so remove"""
     return input.replace('"""', "")
 
 
-def cast_float_to_int(obj):
+def cast_float_to_int(obj: Any) -> Any:
     if isinstance(obj, float):
         return int(obj)
     if isinstance(obj, list):
@@ -20,7 +20,7 @@ def cast_float_to_int(obj):
     if isinstance(obj, dict):
         return {cast_float_to_int(k): cast_float_to_int(v) for k, v in obj.items()}
     if isinstance(obj, tuple):
-        return (cast_float_to_int(o) for o in obj)
+        return tuple(cast_float_to_int(o) for o in obj)
     return obj
 
 
@@ -46,7 +46,7 @@ def remove_json_backticks(code: str) -> str:
         return code
 
 
-def rand_string(rng: random.Random, alpha="abcd", n: Optional[int] = None, lo=5, hi=12) -> str:
+def rand_string(rng: random.Random, alpha: str = "abcd", n: Optional[int] = None, lo: int = 5, hi: int = 12) -> str:
     if n is None:
         n = rng.randint(lo, hi)
     return "".join(rng.choice(alpha) for _ in range(n))
@@ -69,7 +69,7 @@ def sample_int(digits: int, rng: random.Random) -> int:
     return rng.randint(lo, hi)
 
 
-def seed_all_and_setup(args):
+def seed_all_and_setup(args: Any) -> None:
     random.seed(args.seed)
     import numpy as np
     import torch
@@ -86,17 +86,17 @@ def seed_all_and_setup(args):
         pass
 
 
-def read_dimacs_format(dimacs_str):
+def read_dimacs_format(dimacs_str: str) -> Tuple[int, Dict[int, Set[int]]]:
     lines = dimacs_str.strip().split("\n")
     p_line = next(line for line in lines if line.startswith("p"))
-    _, _, num_vertices, num_edges = p_line.split()
-    num_vertices, num_edges = int(num_vertices), int(num_edges)
+    _, _, num_vertices_str, num_edges_str = p_line.split()
+    num_vertices, _ = int(num_vertices_str), int(num_edges_str)
 
-    adjacency_list = {i: set() for i in range(1, num_vertices + 1)}
+    adjacency_list: Dict[int, Set[int]] = {i: set() for i in range(1, num_vertices + 1)}
     for line in lines:
         if line.startswith("e"):
-            _, vertex1, vertex2 = line.split()
-            vertex1, vertex2 = int(vertex1), int(vertex2)
+            _, vertex1_str, vertex2_str = line.split()
+            vertex1, vertex2 = int(vertex1_str), int(vertex2_str)
             if vertex1 in adjacency_list and vertex2 in adjacency_list:
                 adjacency_list[vertex1].add(vertex2)
                 adjacency_list[vertex2].add(vertex1)

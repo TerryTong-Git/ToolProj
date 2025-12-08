@@ -44,7 +44,7 @@ AR_MIX = re.compile(r"^\s*Compute:\s*\(\s*(\d+)\s*\+\s*(\d+)\s*\)\s*\*\s*(\d+)\s
 # ------------------------------------------------------------------------------
 
 
-def strip_md_code_fences(s: str) -> str:
+def strip_md_code_fences(s: str | None) -> str:
     """Remove markdown code fences, keeping inner text."""
     if not s:
         return ""
@@ -71,10 +71,10 @@ def parse_list_of_list_ints(s: str) -> List[List[int]]:
     return rows
 
 
-def safe_len(x) -> int:
+def safe_len(x: object) -> int:
     """Safe length calculation."""
     try:
-        return len(x)
+        return len(x)  # type: ignore[arg-type]
     except Exception:
         return 0
 
@@ -148,7 +148,10 @@ def parse_lcs_lengths(text: str, d: int) -> Tuple[int, int]:
 
 
 def parse_knap_stats(text: str, d: int) -> Tuple[int, float]:
-    """Parse knapsack statistics from problem text."""
+    """Parse knapsack statistics from problem text.
+
+    Fallback values match finegrained.py: n_items = capacity = max(2, d)
+    """
     Wm = re.search(r"W\s*=\s*\[([^\]]*)\]", text)
     Vm = re.search(r"V\s*=\s*\[([^\]]*)\]", text)
     Cm = re.search(r"C\s*=\s*([0-9]+)", text)
@@ -159,7 +162,7 @@ def parse_knap_stats(text: str, d: int) -> Tuple[int, float]:
         C = int(Cm.group(1)) if Cm else max(1, int(0.5 * sum(W)))
         cap_ratio = C / max(1, sum(W))
     else:
-        n_items = max(3, d)
+        n_items = max(2, d)
         cap_ratio = 0.5
     return n_items, cap_ratio
 
@@ -176,37 +179,46 @@ def parse_rod_N(text: str, d: int) -> int:
 
 
 def parse_ilp_assign_n(text: str, d: int) -> int:
-    """Parse ILP assignment matrix size from problem text."""
+    """Parse ILP assignment matrix size from problem text.
+
+    Fallback values match finegrained.py: n = max(2, d)
+    """
     Cm = re.search(r"C\s*=\s*(\[[\s\S]*\])\s*$", text, re.MULTILINE)
     if Cm:
         mat = parse_list_of_list_ints(Cm.group(1))
         if safe_len(mat) > 0:
             return len(mat)
-    return min(max(2, d), 7)
+    return max(2, d)
 
 
 def parse_ilp_prod_PR(text: str, d: int) -> Tuple[int, int]:
-    """Parse ILP production problem dimensions from problem text."""
+    """Parse ILP production problem dimensions from problem text.
+
+    Fallback values match finegrained.py: P = R = max(2, d)
+    """
     Pm = re.search(r"profit\s*=\s*\[([^\]]*)\]", text)
     Cm = re.search(r"consumption\s*\(rows=resources\)\s*=\s*(\[[\s\S]*\])", text)
 
     if Pm:
         P = len(parse_list_of_ints(Pm.group(1)))
     else:
-        P = min(2 + d // 3, 6)
+        P = max(2, d)
 
     if Cm:
         cons = parse_list_of_list_ints(Cm.group(1))
-        R = len(cons) if safe_len(cons) > 0 else min(2 + d // 4, 4)
+        R = len(cons) if safe_len(cons) > 0 else max(2, d)
     else:
-        R = min(2 + d // 4, 4)
+        R = max(2, d)
 
     return int(P), int(R)
 
 
 def parse_ilp_partition_n(text: str, d: int) -> int:
-    """Parse ILP partition problem size from problem text."""
+    """Parse ILP partition problem size from problem text.
+
+    Fallback values match finegrained.py: n_items = max(2, d)
+    """
     Wm = re.search(r"weights\s*=\s*\[([^\]]*)\]", text)
     if Wm:
         return len(parse_list_of_ints(Wm.group(1)))
-    return min(max(4, d), 24)
+    return max(2, d)

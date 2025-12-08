@@ -15,15 +15,15 @@ def accuracy(records: List[Record]) -> pd.DataFrame:
     return bykind[["nl_correct", "code_correct", "sim_correct", "controlsim_correct"]].mean()
 
 
-def parse_fails(records: List[Record]):
+def parse_fails(records: List[Record]) -> pd.DataFrame:
     to_df = []
     for r in records:
         to_df.append(r.model_dump())
     df = pd.DataFrame(to_df)
-    df[["nl_correct", "code_correct", "sim_correct", "controlsim_correct"]]
+    return df[["nl_correct", "code_correct", "sim_correct", "controlsim_correct"]]
 
 
-def summary():
+def summary() -> None:
     pass
 
 

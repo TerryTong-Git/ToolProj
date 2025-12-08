@@ -15,6 +15,8 @@
 
 """Unit tests for `strings.py`."""
 
+from typing import Any
+
 import numpy as np
 from absl.testing import absltest, parameterized
 from clrs._src.algorithms import strings
@@ -25,7 +27,7 @@ class StringsTest(parameterized.TestCase):
         ("Naive string matching", strings.naive_string_matcher),
         ("KMP string matching", strings.kmp_matcher),
     )
-    def test_string_matching(self, algorithm):
+    def test_string_matching(self, algorithm: Any) -> None:
         offset, _ = algorithm(np.array([1, 2, 3]), np.array([1, 2, 3]))
         self.assertEqual(offset, 0)
         offset, _ = algorithm(np.array([1, 2, 3, 1, 2]), np.array([1, 2, 3]))

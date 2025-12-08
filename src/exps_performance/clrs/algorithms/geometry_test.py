@@ -15,6 +15,8 @@
 
 """Unit tests for `geometry.py`."""
 
+from typing import Any
+
 import numpy as np
 from absl.testing import absltest, parameterized
 
@@ -22,7 +24,7 @@ from src.exps_performance.clrs._src.algorithms import geometry
 
 
 class GeometryTest(parameterized.TestCase):
-    def test_segments_simple(self):
+    def test_segments_simple(self) -> None:
         xs_no = np.array([0, 0, 1, 1])
         ys_no = np.array([0, 1, 0, 1])
         out, _ = geometry.segments_intersect(xs_no, ys_no)
@@ -38,7 +40,7 @@ class GeometryTest(parameterized.TestCase):
         out, _ = geometry.segments_intersect(xs_just, ys_just)
         self.assertTrue(out)
 
-    def test_segments_colinear(self):
+    def test_segments_colinear(self) -> None:
         xs_no = np.array([-1, 1, 2, 4])
         ys_no = np.array([-1, 1, 2, 4])
         out, _ = geometry.segments_intersect(xs_no, ys_no)
@@ -58,7 +60,7 @@ class GeometryTest(parameterized.TestCase):
         ("Graham scan convex hull", geometry.graham_scan),
         ("Jarvis' march convex hull", geometry.jarvis_march),
     )
-    def test_convex_hull_simple(self, algorithm):
+    def test_convex_hull_simple(self, algorithm: Any) -> None:
         tt = np.linspace(-np.pi, np.pi, 10)[:-1]
         xs = np.cos(tt)
         ys = np.sin(tt)
@@ -75,7 +77,7 @@ class GeometryTest(parameterized.TestCase):
         ("Graham scan convex hull", geometry.graham_scan),
         ("Jarvis' march convex hull", geometry.jarvis_march),
     )
-    def test_convex_hull_points(self, algorithm):
+    def test_convex_hull_points(self, algorithm: Any) -> None:
         xs = np.array([0, 15, 20, 30, 50, 50, 55, 70])
         ys = np.array([30, 25, 0, 60, 40, 10, 20, 30])
         expected = np.array([1, 0, 1, 1, 0, 1, 0, 1])

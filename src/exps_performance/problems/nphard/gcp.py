@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 import os
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Any, Tuple, Type, cast
 
 from pydantic import BaseModel, Field
 
@@ -25,8 +25,7 @@ class GcpQuestion(NpQuestion):
     dimacs_str: str = ""
     code: str = ""
 
-    @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
         return GcpCheckAndFormat
 
 
@@ -35,12 +34,12 @@ class GcpAnswer(BaseModel):
 
 
 class GcpCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, gcp_desc, GcpAnswer)
         self.instancetype = GcpQuestion
 
-    def loaded_data_to_class(self, data):
-        return dict(dimacs_str=data)
+    def loaded_data_to_class(self, data: Any) -> dict[str, str]:
+        return dict(dimacs_str=str(data))
 
     def type_check_code(self, code: str) -> bool:
         try:
@@ -59,17 +58,17 @@ class GcpCheckAndFormat(NpCheckAndFormat):
         return True
 
     # tied to code
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Colors=str(result))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["max_vertices", "max_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> Any:
+        return self.prompt_template(["max_vertices", "max_colors", "graph"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def format_one(self, q: GcpQuestion):
+    def format_one(self, q: GcpQuestion) -> str:
         inp = q.dimacs_str
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         chromatic_number = inp.split("\n")[0][-1]  # last character of the first line
         number_of_vertices = inp.split("\n")[1].split(" ")[2]  # third word of the second line
         graph = "\n The graph is below: \n"
@@ -78,7 +77,7 @@ class GcpCheckAndFormat(NpCheckAndFormat):
             this_line = "Vertex {} is connected to vertex {}.".format(vertex_list[1], vertex_list[2])
             graph += this_line + "\n"
         prompt_text = self.prompt.format_prompt(max_vertices=number_of_vertices, max_colors=chromatic_number, graph=graph)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
     def gcpCheck(self, dimacs_str: str, answer: str) -> Tuple[bool, str]:
         num_vertices, adjacency_list = read_dimacs_format(dimacs_str)
@@ -98,10 +97,10 @@ class GcpCheckAndFormat(NpCheckAndFormat):
                     return False, "Invalid input."  # dealing with hullucination
         return True, f"Valid coloring found with {len(set(answer_colors.values()))} colors: {answer_colors}"
 
-    def decision_check(self, q: GcpQuestion, output: BaseModel):
+    def decision_check(self, q: GcpQuestion, output: BaseModel) -> tuple[bool, str]:
         return self.gcpCheck(q.dimacs_str, output.Colors)
 
-    def load_data(self):
+    def load_data(self) -> list[GcpQuestion]:
         n = 11
         start = n - 10
         data = []
@@ -109,7 +108,10 @@ class GcpCheckAndFormat(NpCheckAndFormat):
             with open(os.path.join(self.folder_name, "GCP", "synthesized_data_GCP_{}.txt".format(file_num))) as f:
                 d = f.read()
             data += d.split("\n\n")[:-1]
-        problem = self.instancetype  # type: ignore
-        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
-        all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        problem_cls = cast(type[GcpQuestion], self.instancetype)
+        data_func = self.loaded_data_to_class
+        all_data = []
+        for d in data:
+            payload = data_func(d)
+            all_data.append(problem_cls(dimacs_str=payload["dimacs_str"]))
+        return list(all_data)

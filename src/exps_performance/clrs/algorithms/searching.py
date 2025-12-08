@@ -121,17 +121,17 @@ def binary_search(x: _Numeric, A: _Array) -> _Out:
 
 def quickselect(
     A: _Array,
-    A_pos=None,
-    p=None,
-    r=None,
-    i=None,
-    probes=None,
+    A_pos: _Array | None = None,
+    p: int | None = None,
+    r: int | None = None,
+    i: int | None = None,
+    probes: probing.ProbesDict | None = None,
 ) -> _Out:
     """Quickselect (Hoare, 1961)."""
 
     chex.assert_rank(A, 1)
 
-    def partition(A, A_pos, p, r, target, probes):
+    def partition(A: _Array, A_pos: _Array, p: int, r: int, target: int, probes: probing.ProbesDict) -> int:
         x = A[r]
         i = p - 1
         for j in range(p, r):

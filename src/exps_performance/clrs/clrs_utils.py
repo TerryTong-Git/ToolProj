@@ -121,7 +121,7 @@ def _get_output_names(
         return [spec_name for spec_name in spec if spec[spec_name][0] == specs.Stage.OUTPUT]
 
 
-def _get_output_str(sample: samplers.Feedback, spec, algo_name: str, use_hints: bool) -> list[str]:
+def _get_output_str(sample: samplers.Feedback, spec: specs.Spec, algo_name: str, use_hints: bool) -> list[str]:
     """Gets the output string for a CLRS algorithm."""
     if algo_name in CLRS_SEARCH_TAKS_OUTPUT_REPLACER and use_hints:
         output_results = []
@@ -522,7 +522,7 @@ def _convert_edge_features_to_str(
     spec: specs.Spec,
     spec_type: str,
     edge_masks_as_edge_list: bool,
-):
+) -> str:
     """Converts edge features into string."""
 
     if edge_masks_as_edge_list:

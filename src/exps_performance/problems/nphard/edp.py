@@ -2,6 +2,7 @@ import ast
 import json
 import os
 from dataclasses import dataclass
+from typing import Any, Type
 
 from pydantic import BaseModel, Field
 
@@ -27,18 +28,17 @@ class EdpQuestion(NpQuestion):
     string_b: str = ""
     code: str = ""
 
-    @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
         return EdpCheckAndFormat
 
 
 class EdpCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, edp_desc, EdpAnswer)
         self.instancetype = EdpQuestion
 
     # tied to inputs, may not be called input
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -51,23 +51,23 @@ class EdpCheckAndFormat(NpCheckAndFormat):
         return True
 
     # tied to code
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Operations=str(result))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["string_a", "string_b"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> Any:
+        return self.prompt_template(["string_a", "string_b"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def format_one(self, q: EdpQuestion):
+    def format_one(self, q: EdpQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         string_a = q.string_a
         string_b = q.string_b
         prompt_text = self.prompt.format_prompt(string_a=string_a, string_b=string_b)
-        return prompt_text.to_string() + "Answer:\n"
+        return str(prompt_text.to_string()) + "Answer:\n"
 
     @staticmethod
-    def compute_min_edit_distance(string_a, string_b):
+    def compute_min_edit_distance(string_a: str, string_b: str) -> int:
         """Computes the minimum edit distance between two strings using dynamic programming."""
         m, n = len(string_a), len(string_b)
         dp = [[0] * (n + 1) for _ in range(m + 1)]
@@ -84,7 +84,7 @@ class EdpCheckAndFormat(NpCheckAndFormat):
                     dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
         return dp[m][n]
 
-    def decision_check(self, q: EdpQuestion, output: BaseModel):
+    def decision_check(self, q: EdpQuestion, output: BaseModel) -> tuple[bool, str]:
         """Check if the edit distance solution is valid.
 
         :param instance: The instance dictionary with 'string_a' and 'string_b'.
@@ -106,10 +106,10 @@ class EdpCheckAndFormat(NpCheckAndFormat):
             return False, f"The reported edit distance ({reported_distance}) is incorrect. Actual distance: {actual_distance}."
         return True, "The solution is valid."
 
-    def load_data(self):
+    def load_data(self) -> list[EdpQuestion]:
         with open(os.path.join(self.folder_name, "EDP", "edp_instances.json"), "r") as f:
             data = json.load(f)
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        return list(all_data)

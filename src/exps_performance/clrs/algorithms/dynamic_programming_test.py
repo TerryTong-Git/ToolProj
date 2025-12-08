@@ -22,7 +22,7 @@ from src.exps_performance.clrs._src.algorithms import dynamic_programming
 
 
 class DynamicProgrammingTest(absltest.TestCase):
-    def test_matrix_chain_order_1(self):
+    def test_matrix_chain_order_1(self) -> None:
         expected = np.array(
             [
                 [0, 1, 1, 3, 3, 3],
@@ -39,7 +39,7 @@ class DynamicProgrammingTest(absltest.TestCase):
                 order, _ = dynamic_programming.matrix_chain_order(ps)
                 np.testing.assert_array_equal(expected, order)
 
-    def test_matrix_chain_order_2(self):
+    def test_matrix_chain_order_2(self) -> None:
         expected = np.array(
             [
                 [0, 1, 2, 2, 4, 2],
@@ -57,7 +57,7 @@ class DynamicProgrammingTest(absltest.TestCase):
                 order, _ = dynamic_programming.matrix_chain_order(ps)
                 np.testing.assert_array_equal(expected, order)
 
-    def test_lcs_length(self):
+    def test_lcs_length(self) -> None:
         xs = np.array([0, 1, 2, 1, 3, 0, 1])
         ys = np.array([1, 3, 2, 0, 1, 0])
 
@@ -75,7 +75,7 @@ class DynamicProgrammingTest(absltest.TestCase):
         out, _ = dynamic_programming.lcs_length(xs, ys)
         np.testing.assert_array_equal(expected, out)
 
-    def test_optimal_bst(self):
+    def test_optimal_bst(self) -> None:
         p = np.array([0.15, 0.10, 0.05, 0.10, 0.2])
         q = np.array([0.05, 0.10, 0.05, 0.05, 0.05, 0.10])
         assert p.sum() + q.sum() == 1.0

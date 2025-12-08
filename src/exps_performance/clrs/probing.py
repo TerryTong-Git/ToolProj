@@ -24,7 +24,7 @@ format (`ProbesDict`) to facilate efficient contest-based look-up.
 """
 
 import functools
-from typing import Dict, List, Tuple, TypeAlias, Union
+from typing import Any, Dict, List, Tuple, TypeAlias, Union
 
 import attr
 import jax
@@ -48,11 +48,15 @@ _DataOrType: TypeAlias = Union[_Data, str]
 ProbesDict = Dict[str, Dict[str, Dict[str, Dict[str, _DataOrType]]]]
 
 
-def _convert_to_str(element):
-    if isinstance(element, (np.ndarray, bytes)):
+def _convert_to_str(element: Any) -> str:
+    if isinstance(element, bytes):
         return element.decode("utf-8")
-    else:
-        return element
+    if isinstance(element, np.ndarray):
+        item = element.item()
+        if isinstance(item, (bytes, bytearray)):
+            return item.decode("utf-8")
+        return str(item)
+    return str(element)
 
 
 @jax.tree_util.register_pytree_node_class
@@ -65,35 +69,35 @@ class DataPoint:
     _type_: str
     data: _Array
 
-    def __init__(self, name, location, type_, data):
+    def __init__(self, name: str, location: str, type_: str, data: _Array):
         self._name = name
         self._location = location
         self._type_ = type_
         self.data = data
 
     @property
-    def name(self):
+    def name(self) -> str:
         return _convert_to_str(self._name)
 
     @property
-    def location(self):
+    def location(self) -> str:
         return _convert_to_str(self._location)
 
     @property
-    def type_(self):
+    def type_(self) -> str:
         return _convert_to_str(self._type_)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = f'DataPoint(name="{self.name}",\tlocation={self.location},\t'
         return s + f"type={self.type_},\tdata=Array{self.data.shape})"
 
-    def tree_flatten(self):
+    def tree_flatten(self) -> Tuple[Tuple[_Array], Tuple[str, str, str]]:
         data = (self.data,)
         meta = (self.name, self.location, self.type_)
         return data, meta
 
     @classmethod
-    def tree_unflatten(cls, meta, data):
+    def tree_unflatten(cls, meta: Tuple[str, str, str], data: Tuple[_Array]) -> "DataPoint":
         name, location, type_ = meta
         (subdata,) = data
         return DataPoint(name, location, type_, subdata)
@@ -121,7 +125,7 @@ def initialize(spec: specs.Spec) -> ProbesDict:
     return probes  # pytype: disable=bad-return-type
 
 
-def push(probes: ProbesDict, stage: str, next_probe):
+def push(probes: ProbesDict, stage: str, next_probe: Dict[str, _DataOrType]) -> None:
     """Pushes a probe into an existing `ProbesDict`."""
     for loc in [_Location.NODE, _Location.EDGE, _Location.GRAPH]:
         for name in probes[stage][loc]:
@@ -132,7 +136,7 @@ def push(probes: ProbesDict, stage: str, next_probe):
             probes[stage][loc][name]["data"].append(next_probe[name])  # type: ignore[union-attr]
 
 
-def finalize(probes: ProbesDict):
+def finalize(probes: ProbesDict) -> None:
     """Finalizes a `ProbesDict` by stacking/squeezing `data` field."""
     for stage in [_Stage.INPUT, _Stage.OUTPUT, _Stage.HINT]:
         for loc in [_Location.NODE, _Location.EDGE, _Location.GRAPH]:
@@ -230,7 +234,7 @@ def graph(A: np.ndarray) -> np.ndarray:
     """Constructs a `graph` probe."""
     probe = (A != 0) * 1.0
     probe = ((A + np.eye(A.shape[0])) != 0) * 1.0
-    return probe
+    return np.array(probe)
 
 
 def mask_one(i: int, n: int) -> np.ndarray:

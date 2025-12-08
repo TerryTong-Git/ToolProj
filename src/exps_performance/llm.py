@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import json
+import logging
+import os
 import re
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import torch
 from tqdm import tqdm
+from tqdm.asyncio import tqdm as async_tqdm
 from transformers import AutoTokenizer
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+# Reduce verbose HTTP logging from clients.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
 
 try:
     from vllm import LLM as VLLMEngine
@@ -71,20 +82,22 @@ class DummyClient(LLMClient):
         return json.dumps(out)
 
 
-openai_api_key = "EMPTY"
-openai_api_base = "http://localhost:8000/v1/"
+openai_api_key = os.getenv("OPENAI_API_KEY", "EMPTY")
+openai_api_base = os.getenv("OPENAI_API_BASE", "http://localhost:8000/v1/")
+openrouter_api_base = os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
 
 
 class OpenAIChatClient(LLMClient):
-    def __init__(self, seed=0):
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, seed: int = 0):
         try:
             from openai import OpenAI  # type: ignore
         except Exception as e:
             raise RuntimeError("pip install openai>=1.0 required") from e
-        self.client = OpenAI(
-            api_key=openai_api_key,
-            base_url=openai_api_base,
-        )
+        _api_key = api_key or openai_api_key
+        _base_url = base_url or openai_api_base
+        if not _api_key or _api_key == "EMPTY":
+            raise RuntimeError("OPENAI_API_KEY is required for backend=openai/running")
+        self.client = OpenAI(api_key=_api_key, base_url=_base_url)
         self.seed = seed
         print("Instantiated OPENAI!")
 
@@ -105,7 +118,103 @@ class OpenAIChatClient(LLMClient):
             stop=stop,
             # seed=self.seed,
         )
-        return resp.choices[0].message.content
+        return str(resp.choices[0].message.content or "")
+
+
+class OpenRouterChatClient(LLMClient):
+    """Simple OpenRouter client using the OpenAI SDK."""
+
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, seed: int = 0):
+        try:
+            from openai import OpenAI  # type: ignore
+        except Exception as e:
+            raise RuntimeError("pip install openai>=1.0 required") from e
+        self._api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        if not self._api_key:
+            raise RuntimeError("Set OPENROUTER_API_KEY or pass --openrouter_api_key")
+        self._base_url = base_url or openrouter_api_base
+        self.client = OpenAI(api_key=self._api_key, base_url=self._base_url)
+        self.seed = seed
+        print("Instantiated OpenRouter client!")
+
+    @staticmethod
+    def _extract_text(resp: Any) -> str:
+        # Defensive guard so errors are clearer than a NoneType subscript failure.
+        if resp is None or getattr(resp, "choices", None) in (None, []):
+            return ""
+            # raise RuntimeError(f"OpenRouter response missing choices: {resp}")
+        choice0 = resp.choices[0]
+        if getattr(choice0, "message", None) is None:
+            raise RuntimeError(f"OpenRouter choice missing message: {resp}")
+        return str(choice0.message.content or "")
+
+    def chat(
+        self,
+        model: str,
+        messages: List[Dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        stop: Optional[List[str]] = None,
+    ) -> str:
+        resp = self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            top_p=top_p,
+            max_completion_tokens=max_tokens,
+            stop=stop,
+            # seed=self.seed,  # OpenRouter may ignore seed; kept for symmetry
+        )
+        return self._extract_text(resp)
+
+    def chat_many(
+        self,
+        model: str,
+        messages_list: List[List[Dict[str, str]]],
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        stop: Optional[List[str]] = None,
+        request_timeout: float = 120.0,
+    ) -> List[str]:
+        # Create a fresh async client per batch to avoid event-loop reuse issues.
+        from openai import AsyncOpenAI  # type: ignore
+
+        async def _one(idx: int, msgs: List[Dict[str, str]]) -> tuple[int, str]:
+            async with AsyncOpenAI(api_key=self._api_key, base_url=self._base_url) as async_client:
+                try:
+                    resp = await asyncio.wait_for(
+                        async_client.chat.completions.create(
+                            model=model,
+                            messages=msgs,
+                            top_p=top_p,
+                            max_completion_tokens=max_tokens,
+                            stop=stop,
+                            timeout=request_timeout,
+                        ),
+                        timeout=request_timeout + 5,
+                    )
+                    return idx, self._extract_text(resp)
+                except asyncio.TimeoutError:
+                    return idx, ""
+
+        async def _run() -> List[str]:
+            tasks = [asyncio.create_task(_one(i, m)) for i, m in enumerate(messages_list)]
+            results: List[Optional[str]] = [None] * len(messages_list)
+            try:
+                async for task in async_tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Chatting (openrouter)"):
+                    idx, text = await task
+                    results[idx] = text
+            finally:
+                for t in tasks:
+                    if not t.done():
+                        t.cancel()
+                for t in tasks:
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await t
+            return [r if r is not None else "" for r in results]  # All slots should be filled
+
+        return asyncio.run(_run())
 
 
 class VLLMClient(LLMClient):
@@ -126,7 +235,7 @@ class VLLMClient(LLMClient):
         trust_remote_code: bool = False,
         seed: int = 0,
     ):
-        assert dtype == "float16", "Wrong dtype"
+        # assert dtype == "float16", "Wrong dtype"
         if VLLMEngine is None:
             raise RuntimeError("vLLM is not installed. Install a CUDA-matching vLLM wheel (e.g. vllm-cu121) or build from source.")
         # vLLM engine (persistent)
@@ -141,15 +250,16 @@ class VLLMClient(LLMClient):
             download_dir=download_dir,
             seed=seed,
             tokenizer_mode="auto",
+            enable_prefix_caching=True,
         )
         # Use HF tokenizer to format chat prompts if available
-        self.tok = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
+        self.tok = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code, use_fast=True)
         self.has_template = hasattr(self.tok, "apply_chat_template") and (self.tok.chat_template is not None)
 
     def _to_prompt(self, messages: List[Dict[str, str]]) -> str:
         if self.has_template:
             # Mirrors your HFLocalClient behavior
-            return self.tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            return str(self.tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False))
         # Fallback: use the last user content (same as HFLocalClient fallback)
         return messages[-1]["content"]
 
@@ -173,7 +283,7 @@ class VLLMClient(LLMClient):
         # vLLM can batch; here we keep semantics identical (one request per call)
         outs = self.llm.generate([prompt], sp)
         # outs is a List[RequestOutput]; take first, first candidate
-        return outs[0].outputs[0].text
+        return str(outs[0].outputs[0].text)
 
     def chat_many(
         self,
@@ -194,7 +304,7 @@ class VLLMClient(LLMClient):
         )
         outs = self.llm.generate(prompts, sp)
         # preserve order, one candidate per request
-        return [o.outputs[0].text for o in outs]
+        return [str(o.outputs[0].text) for o in outs]
 
 
 class HFLocalClient(LLMClient):
@@ -260,10 +370,10 @@ class HFLocalClient(LLMClient):
             if idxs:
                 cut = min(i for i in idxs if i >= 0)
                 text = text[:cut]
-        return text
+        return str(text)
 
 
-def llm(args):
+def llm(args: Any) -> Any:
     if args.backend == "vllm":
         client = VLLMClient(
             model_name=args.model,
@@ -279,24 +389,39 @@ def llm(args):
     elif args.backend == "dummy":
         return DummyClient()
     elif args.backend == "running":
-        return OpenAIChatClient()
+        return OpenAIChatClient(seed=args.seed)
+    elif args.backend == "openai":
+        return OpenAIChatClient(seed=args.seed)
+    elif args.backend == "openrouter":
+        return OpenRouterChatClient(api_key=args.openrouter_api_key, base_url=args.openrouter_base_url, seed=args.seed)
 
 
-def run_batch(messages_list, args, client):
+def run_batch(messages_list: List[List[Dict[str, str]]], args: Any, client: Any) -> List[str]:
+    total = len(messages_list)
     if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
         outs = []
-        for start in tqdm(range(0, len(messages_list), args.batch_size), desc="Chatting"):
-            chunk = messages_list[start : start + args.batch_size]
-            outs.extend(
-                client.chat_many(
-                    args.model,
-                    chunk,
-                    max_tokens=args.max_tokens,
-                    temperature=args.temperature,
-                    top_p=args.top_p,
-                    stop=None,
-                )
-            )
+        with tqdm(total=total, desc="Chatting (overall)", unit="req") as overall:
+            for start in range(0, total, args.batch_size):
+                chunk = messages_list[start : start + args.batch_size]
+                with tqdm(total=len(chunk), desc="Batch", unit="req", leave=False) as batchbar:
+                    chunk_outs = client.chat_many(
+                        args.model,
+                        chunk,
+                        max_tokens=args.max_tokens,
+                        temperature=args.temperature,
+                        top_p=args.top_p,
+                        stop=None,
+                        request_timeout=getattr(args, "request_timeout", 120),
+                    )
+                    outs.extend(chunk_outs)
+                    batchbar.update(len(chunk))
+                overall.update(len(chunk))
         return outs
     else:
-        return [client.chat(args.model, m, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None) for m in tqdm(messages_list)]
+        outs = []
+        with tqdm(total=total, desc="Chatting (overall)", unit="req") as pbar:
+            for m in messages_list:
+                out = client.chat(args.model, m, max_tokens=args.max_tokens, temperature=args.temperature, top_p=args.top_p, stop=None)
+                outs.append(out)
+                pbar.update(1)
+        return outs

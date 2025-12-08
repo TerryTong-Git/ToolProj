@@ -19,7 +19,7 @@ import os
 import random
 import re
 from collections import defaultdict
-from typing import List
+from typing import Any, Dict, List, Tuple
 
 from datasets import load_dataset
 from huggingface_hub import list_repo_files
@@ -43,7 +43,7 @@ def choose_text_column(colnames: List[str]) -> str:
     return prefs[0]  # placeholder; we’ll handle row-level fallback
 
 
-def _list_shards(repo_id: str, split: str):
+def _list_shards(repo_id: str, split: str) -> List[str]:
     files = list_repo_files(repo_id, repo_type="dataset")
     # prefer split-scoped paths like data/*/<split>/*.json.gz or *.parquet
     cand = [f for f in files if f"/{split}/" in f or f.startswith(f"{split}/")]
@@ -56,7 +56,7 @@ def _list_shards(repo_id: str, split: str):
     return sorted(cand)
 
 
-def load_olmo_mix(repo_id: str, split: str):
+def load_olmo_mix(repo_id: str, split: str) -> Tuple[Any, str, str, str]:
     paths = _list_shards(repo_id, split)
     urls = [f"hf://datasets/{repo_id}/{p}" for p in paths]
     if paths[0].endswith(".parquet"):
@@ -87,7 +87,7 @@ def infer_rep(txt: str, src: str) -> str:
     return "code" if looks_like_code(txt) else "nl"
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="allenai/olmo-mix-1124")
     ap.add_argument("--split", default="train")
@@ -104,8 +104,8 @@ def main():
     k_code = k_total // 2
     k_nl = k_total - k_code
 
-    kept = {"code": [], "nl": []}
-    per_source = defaultdict(int)
+    kept: Dict[str, List[Dict[str, str]]] = {"code": [], "nl": []}
+    per_source: Dict[str, int] = defaultdict(int)
 
     # Reservoir-like fill until targets met
     for row in tqdm(ds, desc="inferring"):

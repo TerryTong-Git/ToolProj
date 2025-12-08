@@ -16,6 +16,8 @@
 """Unit tests for `divide_and_conquer.py`."""
 # pylint: disable=invalid-name
 
+from typing import Any
+
 import numpy as np
 from absl.testing import absltest, parameterized
 from algorithms import divide_and_conquer
@@ -26,7 +28,7 @@ class DivideAndConquerTest(parameterized.TestCase):
         ("Maximum subarray", divide_and_conquer.find_maximum_subarray),
         ("Kadane's variant", divide_and_conquer.find_maximum_subarray_kadane),
     )
-    def test_find_maximum_subarray_pos(self, algorithm):
+    def test_find_maximum_subarray_pos(self, algorithm: Any) -> None:
         A = np.random.randint(0, 100, size=(13,))
         (low, high, sum_), _ = algorithm(A)
         self.assertEqual(low, 0)
@@ -37,7 +39,7 @@ class DivideAndConquerTest(parameterized.TestCase):
         ("Maximum subarray", divide_and_conquer.find_maximum_subarray),
         ("Kadane's variant", divide_and_conquer.find_maximum_subarray_kadane),
     )
-    def test_find_maximum_subarray(self, algorithm):
+    def test_find_maximum_subarray(self, algorithm: Any) -> None:
         A = np.random.randint(-100, 100, size=(13,))
         (low, high, sum_), _ = algorithm(A.copy())
 

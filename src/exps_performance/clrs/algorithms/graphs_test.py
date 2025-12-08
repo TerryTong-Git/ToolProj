@@ -132,7 +132,7 @@ BIPARTITE_2 = np.array(
 
 
 class GraphsTest(absltest.TestCase):
-    def test_dfs(self):
+    def test_dfs(self) -> None:
         expected_directed = np.array([0, 0, 2, 4, 1, 2])
         out, _ = graphs.dfs(DIRECTED)
         np.testing.assert_array_equal(expected_directed, out)
@@ -141,7 +141,7 @@ class GraphsTest(absltest.TestCase):
         out, _ = graphs.dfs(UNDIRECTED)
         np.testing.assert_array_equal(expected_undirected, out)
 
-    def test_bfs(self):
+    def test_bfs(self) -> None:
         expected_directed = np.array([0, 0, 2, 0, 1, 5])
         out, _ = graphs.bfs(DIRECTED, 0)
         np.testing.assert_array_equal(expected_directed, out)
@@ -150,17 +150,17 @@ class GraphsTest(absltest.TestCase):
         out, _ = graphs.bfs(UNDIRECTED, 0)
         np.testing.assert_array_equal(expected_undirected, out)
 
-    def test_topological_sort(self):
+    def test_topological_sort(self) -> None:
         expected_dag = np.array([3, 4, 0, 1, 4])
         out, _ = graphs.topological_sort(DAG)
         np.testing.assert_array_equal(expected_dag, out)
 
-    def test_articulation_points(self):
+    def test_articulation_points(self) -> None:
         expected = np.array([1, 0, 0, 1, 0])
         out, _ = graphs.articulation_points(ANOTHER_UNDIRECTED)
         np.testing.assert_array_equal(expected, out)
 
-    def test_bridges(self):
+    def test_bridges(self) -> None:
         expected = np.array(
             [
                 [0, 0, 0, 1, -1],
@@ -173,7 +173,7 @@ class GraphsTest(absltest.TestCase):
         out, _ = graphs.bridges(ANOTHER_UNDIRECTED)
         np.testing.assert_array_equal(expected, out)
 
-    def test_strongly_connected_components(self):
+    def test_strongly_connected_components(self) -> None:
         expected_directed = np.array([0, 1, 2, 1, 1, 5])
         out, _ = graphs.strongly_connected_components(DIRECTED)
         np.testing.assert_array_equal(expected_directed, out)
@@ -182,7 +182,7 @@ class GraphsTest(absltest.TestCase):
         out, _ = graphs.strongly_connected_components(UNDIRECTED)
         np.testing.assert_array_equal(expected_undirected, out)
 
-    def test_mst_kruskal(self):
+    def test_mst_kruskal(self) -> None:
         expected = np.array(
             [
                 [0, 1, 0, 0, 0],
@@ -195,32 +195,32 @@ class GraphsTest(absltest.TestCase):
         out, _ = graphs.mst_kruskal(WEIGHTED_UNDIRECTED)
         np.testing.assert_array_equal(expected, out)
 
-    def test_mst_prim(self):
+    def test_mst_prim(self) -> None:
         expected = np.array([0, 0, 1, 1, 2])
         out, _ = graphs.mst_prim(WEIGHTED_UNDIRECTED, 0)
         np.testing.assert_array_equal(expected, out)
 
-    def test_bellman_ford(self):
+    def test_bellman_ford(self) -> None:
         expected = np.array([0, 2, 0, 2, 3])
         out, _ = graphs.bellman_ford(WEIGHTED_DIRECTED, 0)
         np.testing.assert_array_equal(expected, out)
 
-    def test_dag_shortest_paths(self):
+    def test_dag_shortest_paths(self) -> None:
         expected = np.array([0, 0, 0, 2, 3])
         out, _ = graphs.bellman_ford(WEIGHTED_DAG, 0)
         np.testing.assert_array_equal(expected, out)
 
-    def test_dijkstra(self):
+    def test_dijkstra(self) -> None:
         expected = np.array([0, 2, 0, 2, 3])
         out, _ = graphs.dijkstra(WEIGHTED_DIRECTED, 0)
         np.testing.assert_array_equal(expected, out)
 
-    def test_floyd_warshall(self):
+    def test_floyd_warshall(self) -> None:
         expected = np.array([0, 2, 0, 2, 3])
         out, _ = graphs.floyd_warshall(WEIGHTED_DIRECTED)
         np.testing.assert_array_equal(expected, out[0])
 
-    def test_bipartite_matching(self):
+    def test_bipartite_matching(self) -> None:
         expected = np.array(
             [
                 [1, 1, 1, 1, 0, 0, -1, -1, -1, -1, -1],

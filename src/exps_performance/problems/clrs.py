@@ -1,8 +1,9 @@
 import ast
 import re
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Any, Type
 
+from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.clrs.huggingface_generators import clrs_generator
@@ -61,16 +62,16 @@ class ClrsQuestion(Question):
     text_data: str = ""
 
     @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type["ClrsCheckAndFormat"]:
         return ClrsCheckAndFormat
 
 
 class ClrsCheckAndFormat(CheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, clrs_desc, ClrsAnswer)
         self.instancetype = ClrsQuestion
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -84,24 +85,34 @@ class ClrsCheckAndFormat(CheckAndFormat):
             return False
 
     # rename to code to class
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Answer=str(result))
 
     @property
-    def prompt(self):
-        return self.prompt_template(["question"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> PromptTemplate:
+        return self.prompt_template("question") if self.prob_type != "sim" else self.prompt_template("code")
 
     def format_one(self, q: ClrsQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         prompt_text = self.prompt.format_prompt(question=q.text_data)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
-    def decision_check(self, instance: ClrsAnswer, solution: BaseModel):
+    def decision_check(self, instance: ClrsAnswer, solution: BaseModel) -> tuple[bool, str]:
         str_ans = solution.Answer
-        return int(str_ans == instance.answer), ""
+        return str_ans == instance.answer, ""
 
-    def load_data(self) -> Sequence[ClrsQuestion]:
+    def load_data(self) -> list[ClrsQuestion]:
+        combined: list[ClrsQuestion] = []
         for seed in _DEFAULT_VAL_SEEDS:
             data = clrs_generator(_DEFAULT_VAL_ALGOS_AND_LENGTHS, _DEFAULT_VAL_NUMBER_OF_SAMPLES, use_hints=False, seed=seed)
-        return [ClrsQuestion(d["algo_name"], d["length"], answer=re.sub(r"\s+", "", d["answer"]), text_data=d["question"]) for d in data][:100]
+            combined.extend(
+                ClrsQuestion(
+                    kind=str(d["algo_name"]),
+                    digits=int(d["length"]),
+                    answer=re.sub(r"\s+", "", str(d["answer"])),
+                    text_data=str(d["question"]),
+                )
+                for d in data
+            )
+        return combined[:100]

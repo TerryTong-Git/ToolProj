@@ -4,7 +4,7 @@ import ast
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple, Type
 
 from pydantic import BaseModel, Field
 
@@ -32,17 +32,16 @@ class KspQuestion(NpQuestion):
     items: List[Dict[str, int]] = field(default_factory=[])  # type: ignore
     code: str = ""
 
-    @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
         return KspCheckAndFormat
 
 
 class KspCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, ksp_desc, KspAnswer)
         self.instancetype = KspQuestion
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -68,16 +67,16 @@ class KspCheckAndFormat(NpCheckAndFormat):
         return True
 
     # tied to code
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Tuple[bool, int, List[int]]) -> dict[str, str]:
         return dict(Feasible=str(result[0]), TotalValue=str(result[1]), SelectedItemIds=str(result[2]))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["knapsacks", "itemweights"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> Any:
+        return self.prompt_template(["knapsacks", "itemweights"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def format_one(self, q: KspQuestion):
+    def format_one(self, q: KspQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         knapsack_capacity = q.knapsack_capacity
         items = q.items
         itemweights = "\n The items details are as below: \n"
@@ -85,20 +84,20 @@ class KspCheckAndFormat(NpCheckAndFormat):
             this_line = f"Item {item['id']} has weight {item['weight']} and value {item['value']}."
             itemweights += this_line + "\n"
         prompt_text = self.prompt.format_prompt(knapsack_capacity=knapsack_capacity, itemweights=itemweights)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
-    def load_data(self):
+    def load_data(self) -> list[KspQuestion]:
         with open(os.path.join(self.folder_name, "KSP", "ksp_instances.json"), "r") as f:
             data = json.load(f)
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        return list(all_data)
 
-    def decision_check(self, q, output):
+    def decision_check(self, q: KspQuestion, output: BaseModel) -> tuple[bool, str]:
         return self.kspCheck(q, output)
 
-    def ksp_optimal_solution(self, knapsacks, capacity):
+    def ksp_optimal_solution(self, knapsacks: Dict[int, Tuple[int, int]], capacity: int) -> int:
         """Provides the optimal solution for the KSP instance with dynamic programming.
 
         :param knapsacks: A dictionary of the knapsacks.
@@ -114,7 +113,7 @@ class KspCheckAndFormat(NpCheckAndFormat):
         return dp[capacity]
 
     # KSP
-    def kspCheck(self, instance: KspQuestion, solution: BaseModel):
+    def kspCheck(self, instance: KspQuestion, solution: BaseModel) -> tuple[bool, str]:
         """Validates the solution for the KSP instance.
 
         :param instance: A dictionary of the KSP instance.

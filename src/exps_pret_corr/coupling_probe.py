@@ -29,7 +29,7 @@ import random
 import re
 import time
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -137,19 +137,19 @@ def gen_probes(num_per_kind: int, seed: int = 0) -> Dict[str, List[dict]]:
 # Evaluators (deterministic)
 
 
-def eval_add(x):
+def eval_add(x: dict[str, Any]) -> Any:
     return x["a"] + x["b"]
 
 
-def eval_sub(x):
+def eval_sub(x: dict[str, Any]) -> Any:
     return x["a"] - x["b"]
 
 
-def eval_mul(x):
+def eval_mul(x: dict[str, Any]) -> Any:
     return x["a"] * x["b"]
 
 
-def eval_lcs(x):
+def eval_lcs(x: dict[str, Any]) -> int:
     s1, s2 = x["s1"], x["s2"]
     n, m = len(s1), len(s2)
     dp = [[0] * (m + 1) for _ in range(n + 1)]
@@ -162,17 +162,17 @@ def eval_lcs(x):
     return dp[0][0]
 
 
-def eval_knap(x):
+def eval_knap(x: dict[str, Any]) -> int:
     w, v, cap = x["w"], x["v"], x["cap"]
     n = len(w)
     dp = [0] * (cap + 1)
     for i in range(n):
         for c in range(cap, w[i] - 1, -1):
             dp[c] = max(dp[c], dp[c - w[i]] + v[i])
-    return dp[cap]
+    return int(dp[cap])
 
 
-def eval_rod(x):
+def eval_rod(x: dict[str, Any]) -> int:
     prices = x["prices"]
     n = x["n"]
     dp = [0] * (n + 1)
@@ -181,10 +181,10 @@ def eval_rod(x):
         for cut in range(1, i + 1):
             best = max(best, prices[cut - 1] + dp[i - cut])
         dp[i] = best
-    return dp[n]
+    return int(dp[n])
 
 
-def eval_ilp_assign(x):
+def eval_ilp_assign(x: dict[str, Any]) -> float:
     # min cost perfect assignment (Hungarian via simple DP/bitmask for small sizes)
     C = x["C"]
     m = len(C)
@@ -207,17 +207,17 @@ def eval_ilp_assign(x):
     return dp[N - 1]
 
 
-def eval_ilp_prod(x):
+def eval_ilp_prod(x: dict[str, Any]) -> int:
     # maximize sum p_i * x_i s.t. a_i x_i <= b_i, x_i integer>=0 (independent knapsacks)
     a, b, p = x["a"], x["b"], x["p"]
     tot = 0
     for ai, bi, pi in zip(a, b, p):
         xi = bi // ai
         tot += pi * xi
-    return tot
+    return int(tot)
 
 
-def eval_ilp_partition(x):
+def eval_ilp_partition(x: dict[str, Any]) -> int:
     arr = x["arr"]
     S = sum(arr)
     T = S // 2
@@ -227,7 +227,7 @@ def eval_ilp_partition(x):
         for s in range(T, v - 1, -1):
             dp[s] = dp[s] or dp[s - v]
     best = max(s for s in range(T + 1) if dp[s])
-    return S - 2 * best
+    return int(S - 2 * best)
 
 
 EVALS = {
@@ -244,9 +244,9 @@ EVALS = {
 
 
 # Build prompts to APPLY the procedure text to an input instance
-def apply_prompt(z_text: str, x: dict) -> str:
+def apply_prompt(z_text: str, x: dict[str, Any]) -> str:
     # Serialize probe x compactly
-    def ser(d):
+    def ser(d: Any) -> str:
         if isinstance(d, dict):
             items = []
             for k, v in d.items():
@@ -276,11 +276,11 @@ def normalize_answer(s: str) -> str:
 # ----------------------------- HF LM for APPLY -----------------------------
 
 
-def build_hf(model_name: str, dtype: str = "auto", device: str = "auto"):
+def build_hf(model_name: str, dtype: str = "auto", device: str = "auto") -> Any:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    def pick_dtype(flag):
+    def pick_dtype(flag: str) -> Any:
         if flag == "auto":
             if torch.cuda.is_available():
                 return torch.bfloat16 if getattr(torch.cuda, "is_bf16_supported", lambda: False)() else torch.float16
@@ -297,7 +297,7 @@ def build_hf(model_name: str, dtype: str = "auto", device: str = "auto"):
     return tok, model
 
 
-def hf_generate_batch(tok, model, prompts: List[str], max_new_tokens: int = 32) -> List[str]:
+def hf_generate_batch(tok: Any, model: Any, prompts: List[str], max_new_tokens: int = 32) -> List[str]:
     import torch
 
     enc = tok(prompts, return_tensors="pt", padding=True, truncation=True)
@@ -323,9 +323,9 @@ def precompute_reference_vectors(R_by_kind: Dict[str, List[dict]]) -> Dict[str, 
 
 def assign_semantic_label(
     z_text: str,
-    tok,
-    model,
-    R_by_kind: Dict[str, List[dict]],
+    tok: Any,
+    model: Any,
+    R_by_kind: Dict[str, List[dict[str, Any]]],
     ref_vecs: Dict[str, List[str]],
     max_new_tokens: int = 32,
     batch_size: int = 64,
@@ -375,11 +375,11 @@ def proportional_subsample(datasets: List[List[dict]], rate: float, seed: int = 
 
 
 def train_eval_bow_lr(
-    rows_labeled: List[dict],
+    rows_labeled: List[dict[str, Any]],
     min_df: int = 20,
     max_features: int = 200000,
     svd_dim: Optional[int] = None,
-):
+) -> Dict[str, Any]:
     from sklearn.decomposition import TruncatedSVD
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.linear_model import LogisticRegression
@@ -405,7 +405,7 @@ def train_eval_bow_lr(
     xent = log_loss(yte, prob, labels=clf.classes_)
 
     # per-channel
-    def subset_metrics(mask):
+    def subset_metrics(mask: np.ndarray[Any, Any]) -> Tuple[float, float]:
         from sklearn.metrics import accuracy_score, log_loss
 
         idx = np.where(mask)[0]
@@ -431,7 +431,7 @@ def train_eval_bow_lr(
 # ----------------------------- Main -----------------------------
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--datasets",

@@ -2,7 +2,7 @@ import ast
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Any, Dict, List, Type
 
 from pydantic import BaseModel, Field
 
@@ -27,22 +27,21 @@ class MspQuestion(NpQuestion):
     kind: str = "spp"
     type: str = "code"  # could be sim, nl etc
     time_slots: int = -1  # type: ignore
-    meetings: List[Dict[str, int]] = field(default_factory=[])  # type: ignore
-    participants: Dict[int, Dict[str, List[int]]] = field(default_factory={})  # type: ignore
+    meetings: List[Dict[str, int]] = field(default_factory=list)
+    participants: Dict[int, Dict[str, List[int]]] = field(default_factory=dict)
     complexity_level: int = -1
     code: str = ""
 
-    @property
-    def util_pointer(self):
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
         return MspCheckAndFormat
 
 
 class MspCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, msp_desc, MspAnswer)
         self.instancetype = MspQuestion
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -64,11 +63,11 @@ class MspCheckAndFormat(NpCheckAndFormat):
         return True
 
     # tied to code
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Meet2Time=str(result))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
+    def prompt(self) -> Any:
         return (
             self.prompt_template(["total_participants", "total_timeslots", "meetingdetails"])
             if self.prob_type != "sim"
@@ -77,7 +76,7 @@ class MspCheckAndFormat(NpCheckAndFormat):
 
     def format_one(self, q: MspQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         participants = q.participants
         meetingdetails = "\n The meetings and participants details are as below: \n"
         for meeting in q.meetings:
@@ -89,9 +88,9 @@ class MspCheckAndFormat(NpCheckAndFormat):
             )
             meetingdetails += this_line + "\n"
         prompt_text = self.prompt.format_prompt(total_participants=participants, total_timeslots=q.time_slots, meetingdetails=meetingdetails)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
-    def decision_check(self, q: MspQuestion, output: BaseModel):
+    def decision_check(self, q: MspQuestion, output: BaseModel) -> tuple[bool, str]:
         """
         Validate the MSP solution.
 
@@ -103,10 +102,6 @@ class MspCheckAndFormat(NpCheckAndFormat):
         - A tuple (is_valid, message). is_valid is True if the solution is valid, False otherwise.
         message contains information about the validity of the solution.
         """
-        if isinstance(output.Meet2Time, dict):
-            import pdb
-
-            pdb.set_trace()
         try:
             output_dict = ast.literal_eval(output.Meet2Time)
         except (SyntaxError, TypeError):
@@ -156,10 +151,10 @@ class MspCheckAndFormat(NpCheckAndFormat):
 
         return True, "The output is valid."
 
-    def load_data(self):
+    def load_data(self) -> list[MspQuestion]:
         with open(os.path.join(self.folder_name, "MSP", "msp_instances.json"), "r") as f:
             data = json.load(f)
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        return list(all_data)

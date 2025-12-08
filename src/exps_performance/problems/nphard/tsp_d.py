@@ -1,9 +1,11 @@
 import ast
 import os
 from dataclasses import dataclass, field
+from typing import Any, List, Type, cast
 
 import networkx as nx
 import pandas as pd
+from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
@@ -22,9 +24,8 @@ class TspdQuestion(NpQuestion):
     threshold: int = -1
     code: str = ""
 
-    @property
-    def util_pointer(self):
-        return TspdCheckAndFormat
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
+        return cast(Type[NpCheckAndFormat], TspdCheckAndFormat)
 
 
 class TspdAnswer(BaseModel):
@@ -35,18 +36,18 @@ func_typing = "Bool"  # (Feasible yes or no)
 
 
 class TspdCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, tsp_desc, TspdAnswer)
         self.instancetype = TspdQuestion
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["total_cities", "distance_limit", "citystring"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> PromptTemplate:
+        return self.prompt_template(["total_cities", "distance_limit", "citystring"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Feasible=str(result))
 
-    def load_data(self):
+    def load_data(self) -> list[TspdQuestion]:
         n = 11
         start = n - 10
         data = []
@@ -58,11 +59,11 @@ class TspdCheckAndFormat(NpCheckAndFormat):
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        return list(all_data)
 
-    def format_one(self, q: TspdQuestion):
+    def format_one(self, q: TspdQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         dm = q.distance_matrix
         total_cities = dm.shape[0]
         citystring = "The distances between cities are below: \n"
@@ -73,7 +74,7 @@ class TspdCheckAndFormat(NpCheckAndFormat):
                     this_line = "The path between City {} and City {} is with distance {}.".format(i, j, dm.iloc[i, j])
                     citystring += this_line + "\n"
         prompt_text = self.prompt.format_prompt(total_cities=total_cities, distance_limit=str(q.threshold), citystring=citystring)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
     def type_check_code(self, code: str) -> bool:
         try:
@@ -82,21 +83,21 @@ class TspdCheckAndFormat(NpCheckAndFormat):
             return False  # f"Syntax or Value Error {e}"
         return isinstance(evaluated, bool)
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: pd.DataFrame) -> dict[str, Any]:
         threshold = data.iloc[-1, 0]  # therashold is the last row
         distance_matrix = data.iloc[:-1].values
         return dict(threshold=threshold, distance_matrix=pd.DataFrame(distance_matrix))
 
-    def tsp_approx(self, distance_matrix: pd.DataFrame):
+    def tsp_approx(self, distance_matrix: pd.DataFrame) -> List[int]:
         """Returns an approximate solution to the TSP problem.
 
         :param distance_matrix: A 2D numpy array representing the distance matrix.
         :return: A list of the cities in the order they were visited.
         """
         G = nx.from_numpy_array(distance_matrix.to_numpy())
-        return nx.approximation.traveling_salesman_problem(G)
+        return list(nx.approximation.traveling_salesman_problem(G))
 
-    def tsp_decision_check(self, distance_matrix: pd.DataFrame, threshold, tour):
+    def tsp_decision_check(self, distance_matrix: pd.DataFrame, threshold: float, tour: TspdAnswer) -> tuple[bool, str]:
         """
         Checks if a given TSP tour is valid and within the threshold distance.
 
@@ -115,5 +116,5 @@ class TspdCheckAndFormat(NpCheckAndFormat):
             return False, f"Feasibility mismatch: {is_feasible} vs {tour_distance} > {threshold}"
         return True, "Feasible: {} <= {}".format(tour_distance, threshold)
 
-    def decision_check(self, q: TspdQuestion, output: BaseModel):
+    def decision_check(self, q: TspdQuestion, output: BaseModel) -> tuple[bool, str]:
         return self.tsp_decision_check(q.distance_matrix, q.threshold, output)

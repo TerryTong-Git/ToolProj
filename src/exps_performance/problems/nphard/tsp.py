@@ -1,9 +1,11 @@
 import ast
 import os
 from dataclasses import dataclass, field
+from typing import List, Type, cast
 
 import numpy as np
 import pandas as pd
+from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
@@ -21,13 +23,12 @@ class TspQuestion(NpQuestion):
     distance_matrix: pd.DataFrame = field(default_factory=[])  # type: ignore
     code: str = ""
 
-    @property
-    def util_pointer(self):
-        return TspCheckAndFormat
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
+        return cast(Type[NpCheckAndFormat], TspCheckAndFormat)
 
 
 class TspAnswer(BaseModel):
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    Path: List[int] = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default_factory=list)
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
@@ -35,13 +36,13 @@ func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
 class TspCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, tsp_desc, TspAnswer)
         self.instancetype = TspQuestion
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["total_cities", "citystring"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> PromptTemplate:
+        return self.prompt_template(["total_cities", "citystring"]) if self.prob_type != "sim" else self.prompt_template("code")
 
     def type_check_code(self, code: str) -> bool:
         try:
@@ -53,9 +54,9 @@ class TspCheckAndFormat(NpCheckAndFormat):
         else:
             return False
 
-    def format_one(self, q: TspQuestion):
+    def format_one(self, q: TspQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         dm = q.distance_matrix
         total_cities = dm.shape[0]
         citystring = "The distances between cities are below: \n"
@@ -66,9 +67,9 @@ class TspCheckAndFormat(NpCheckAndFormat):
                     this_line = "The path between City {} and City {} is with distance {}.".format(i, j, dm.iloc[i, j])
                     citystring += this_line + "\n"
         prompt_text = self.prompt.format_prompt(total_cities=total_cities, citystring=citystring)
-        return prompt_text.to_string()
+        return str(prompt_text.to_string())
 
-    def load_data(self):
+    def load_data(self) -> list[TspQuestion]:
         n = 11
         data = []
         start = n - 10
@@ -77,15 +78,18 @@ class TspCheckAndFormat(NpCheckAndFormat):
                 file_name = os.path.join(self.folder_name, "TSP", "synthesized_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
                 df = pd.read_csv(file_name, header=None, index_col=False)
                 data.append(df)
-        problem = self.instancetype  # type: ignore
-        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
-        all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        problem_cls = cast(type[TspQuestion], self.instancetype)
+        data_func = self.loaded_data_to_class
+        all_data = []
+        for d in data:
+            payload = data_func(d)
+            all_data.append(problem_cls(distance_matrix=payload["distance_matrix"]))
+        return list(all_data)
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: pd.DataFrame) -> dict[str, pd.DataFrame]:
         return dict(distance_matrix=data)
 
-    def greedy_tsp(self, distance_matrix):
+    def greedy_tsp(self, distance_matrix: np.ndarray) -> tuple[list[int], float]:
         """
         Solve the Traveling Salesman Problem using a greedy algorithm.
 
@@ -113,13 +117,13 @@ class TspCheckAndFormat(NpCheckAndFormat):
         total_distance += distance_matrix[current_city, tour[0]]
         tour.append(tour[0])
 
-        return tour, total_distance
+        return tour, float(total_distance)
 
     # tied to the formatting
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: tuple[list[int], float]) -> dict[str, str]:
         return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 
-    def decision_check(self, instance: TspQuestion, solution: BaseModel):
+    def decision_check(self, instance: TspQuestion, solution: BaseModel) -> tuple[bool, str]:
         """
         Check if the TSP solution is complete and if the distance matches the greedy solution.
 

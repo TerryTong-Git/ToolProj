@@ -1,6 +1,8 @@
 import os
 import re
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Sequence, Union
 
 from tbparse import SummaryReader
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -20,12 +22,14 @@ File Naming convention?
 """
 
 
-def search(res):
+def search(res: str) -> str:
     pat = r"```\n(.*)\n```"
-    return re.search(pat, res).group(1)
+    match = re.search(pat, res)
+    assert match is not None, f"Pattern not found in: {res}"
+    return match.group(1)
 
 
-def test_log_text(tmp_path_factory, default_args, mock_records):
+def test_log_text(tmp_path_factory: Any, default_args: Any, mock_records: Any) -> None:
     base = tmp_path_factory.mktemp("base")
     args = default_args
     exp_dir = create_dir(args, base)
@@ -40,7 +44,7 @@ def test_log_text(tmp_path_factory, default_args, mock_records):
         assert result in mock_data, "wrong mock data"
 
 
-def test_csv_log(tmp_path_factory, default_args, mock_records):
+def test_csv_log(tmp_path_factory: Any, default_args: Any, mock_records: Any) -> None:
     base = tmp_path_factory.mktemp("base")
     args = default_args
     exp_dir = create_dir(args, base)
@@ -50,7 +54,7 @@ def test_csv_log(tmp_path_factory, default_args, mock_records):
     assert records == mock_records, "serialization write and read not the same"
 
 
-def test_aggregate_results(tmp_path_factory, default_args, mock_records, mock_records_1):
+def test_aggregate_results(tmp_path_factory: Any, default_args: Any, mock_records: Any, mock_records_1: Any) -> None:
     base = tmp_path_factory.mktemp("base")
     logdirs = []
     arg_list = [default_args, SimpleNamespace(model="deepseek/deepseek", seed=2)]
@@ -61,10 +65,11 @@ def test_aggregate_results(tmp_path_factory, default_args, mock_records, mock_re
         write_to_csv(csv_path, rec)
         logdirs.append(exp_dir)
     files = walk_results_folder(base)  # check files are deepseek and gemma, seed 1 and 2
+    typed_files: Sequence[Union[str, Path]] = files
     for f in files:
         assert "deepseek" in f or "gemma" in f, "wrong models"
         assert "seed1" in f or "seed2" in f, "wrong seed"
-    df = create_big_df(files)
+    df = create_big_df(typed_files)
     rows = df.to_dict("records")
     # mock_data = ["abc", "1", "True"]
     # mock_data1 = ['efg', "2", "False"]

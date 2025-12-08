@@ -102,7 +102,7 @@ class NPHARD(Dataset):
             all_data += classInstance.load_data()[: self.n]  # type: ignore[abstract]
         return all_data
 
-    def load_subset(self, subset: List[str]):
+    def load_subset(self, subset: List[str]) -> Sequence[Question]:
         for s in subset:
             assert s in list(problem_types.keys()), "invalid subset"
         all_data: List[Question] = []
@@ -146,7 +146,7 @@ class FG(Dataset):
             all_data += classInstance.load_data()  # type: ignore[abstract]
         return all_data
 
-    def load_subset(self, subset: List[str]):
+    def load_subset(self, subset: List[str]) -> Sequence[Question]:
         for s in subset:
             assert s in list(fg_problem_types.keys()), "invalid subset"
         all_data: List[Question] = []
@@ -158,8 +158,10 @@ class FG(Dataset):
         return all_data
 
 
-def make_dataset(kinds, n=3, digits_list=[32]) -> Sequence[Question]:
-    # accepts both single a subset
+def make_dataset(kinds: Sequence[str], n: int = 3, digits_list: List[int] = [32]) -> Sequence[Question]:
+    """
+    Build dataset deterministically and attach original positional order.
+    """
     np = []
     clrs = False
     gsm = False
@@ -186,4 +188,7 @@ def make_dataset(kinds, n=3, digits_list=[32]) -> Sequence[Question]:
         ).load_subset(fg)
     if np:
         all_data += NPHARD(n).load_subset(np)
+    # attach stable original order
+    for i, q in enumerate(all_data):
+        setattr(q, "original_pos", i)
     return all_data

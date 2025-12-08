@@ -1,19 +1,24 @@
 from dataclasses import dataclass, field
-from typing import List
+from pathlib import Path
+from typing import Any, List, Sequence, Union
 
+import pandas as pd
 import pytest
 
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
 from src.exps_performance.logger import Record, create_big_df, walk_results_folder
 
+pytestmark = pytest.mark.slow  # marks the whole file
 
+
+# TODO: Do not test vllm spin up on upstream github, make this a fixed object.
 @dataclass
 class CreateArgs:
     n: int = 10
     root: str = "."
     kinds: List[str] = field(default_factory=lambda: ["add"])
     seed: int = 1
-    backend: str = "running"
+    backend: str = "dummy"
     hf_dtype: str = "float16"
     sim_code_only: bool = True
     exec_code_only: bool = True
@@ -35,12 +40,12 @@ class CreateArgs:
 
 
 @pytest.fixture(scope="session")
-def default_args():
+def default_args() -> CreateArgs:
     return CreateArgs()
 
 
 @pytest.fixture(scope="session")
-def mock_records():
+def mock_records() -> List[Record]:
     fake_record = Record(
         model="abc",  # answers depend on this
         seed=1,  # answers depend on this
@@ -78,7 +83,7 @@ def mock_records():
 
 
 @pytest.fixture(scope="session")
-def mock_record_1():
+def mock_record_1() -> List[Record]:
     fake_record = Record(
         model="efg",  # answers depend on this
         seed=2,  # answers depend on this
@@ -116,7 +121,12 @@ def mock_record_1():
 
 
 @pytest.fixture(scope="session")
-def llm(default_args):
+def mock_records_1(mock_record_1: List[Record]) -> List[Record]:
+    return mock_record_1
+
+
+@pytest.fixture(scope="session")
+def llm(default_args: CreateArgs) -> Any:
     args = default_args
     if args.backend == "vllm":
         client = VLLMClient(
@@ -140,7 +150,7 @@ EXAMPLES = 10
 RETRIES = 3
 
 
-def check(arm, data, types):
+def check(arm: Any, data: List[Any], types: str) -> None:
     parsed_answer = arm.parsed_answer
     assert arm.parse_fail <= EXAMPLES * RETRIES - 1, "parse failed too much"
     pUtil = data[0].util_pointer(types)
@@ -154,7 +164,8 @@ def check(arm, data, types):
 
 
 @pytest.fixture(scope="session")
-def load_results_to_analyze():
+def load_results_to_analyze() -> pd.DataFrame:
     files = walk_results_folder("/nlpgpu/data/terry/ToolProj/tests/integration/fixtures/results")  # check files are deepseek and gemma, seed 1 and 2
-    df = create_big_df(files)
+    typed_files: Sequence[Union[str, Path]] = files
+    df = create_big_df(typed_files)
     return df

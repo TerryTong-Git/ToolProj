@@ -1,6 +1,6 @@
 import copy
 import logging
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from tqdm import tqdm
 
@@ -67,7 +67,7 @@ class BaseArm:
     run_type: str
     set_name: str
 
-    def __init__(self, data_subset: List[Question], default_args, client):
+    def __init__(self, data_subset: List[Question], default_args: Any, client: Any):
         self.problems: List[Question] = data_subset
         self.default_args = default_args
         self.client = client
@@ -86,7 +86,7 @@ class BaseArm:
         self.parsed_answer = actual_parsed  # for testing
         return acc, edited_problems
 
-    def _count_correct(self, parsed_answer):
+    def _count_correct(self, parsed_answer: List[Any]) -> Tuple[float, List[bool]]:
         total_correct = []
         count = 0
         for q, a in zip(self.problems, parsed_answer):
@@ -96,7 +96,7 @@ class BaseArm:
             total_correct.append(bool(correct))
         return count / len(self.problems), total_correct
 
-    def _parse(self, answers: List[str]):
+    def _parse(self, answers: List[str]) -> List[Tuple[Any, str]]:
         self.parse_fail = 0
         all_parsed = []
         parse_failed = []
@@ -119,7 +119,7 @@ class BaseArm:
         assert self.parsed_fail_ind == self.reparse_ind, "parse fail and reparse_inds not the same"
         return all_parsed
 
-    def each_record(self, q: Question, a, p, e, s) -> Question:
+    def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
         setattr(q.record, self.set_name + "_question", e)
         if self.run_type != "code":
             setattr(q.record, self.set_name + "_reasoning", p[0].simulation)
@@ -129,7 +129,7 @@ class BaseArm:
         setattr(q.record, self.set_name + "_correct", s)
         return q
 
-    def set_record(self, answers, parsed, examples, sequence_parity):
+    def set_record(self, answers: List[Any], parsed: List[Tuple[Any, str]], examples: List[str], sequence_parity: List[bool]) -> List[Question]:
         edited_problems = []
         for q, a, p, e, s in zip(self.problems, answers, parsed, examples, sequence_parity):
             changed_q = self.each_record(q, a, p, e, s)
@@ -139,7 +139,7 @@ class BaseArm:
         self.edited_problems = edited_problems
         return edited_problems
 
-    def rerun(self, to_reparse: List):
+    def rerun(self, to_reparse: List[Tuple[int, Question, Any, Any, Any]]) -> List[Tuple[int, Any, Any]]:
         if to_reparse == []:
             return []
         outs = []
@@ -172,10 +172,11 @@ class Arm2(BaseArm):
     run_type: str = "code"
     set_name: str = "sim"
 
-    def each_record(self, q: Question, a, p, e, s):
+    def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
         q.record.question = str(q.question)
         q.record.answer = str(q.answer)
         q.code = p[0].code
+        q.record.sim_code = q.code
         q.record.kind = q.kind
         q.record.digit = q.digits
         q.record.model = self.default_args.model
@@ -189,55 +190,66 @@ class Arm3(BaseArm):
     set_name: str = "code"
 
     def run(self) -> Tuple[float, List[Question]]:
-        sequence_parity = []
-        parsed_answer = []
-        total_correct = 0
-        examples = []
-        answers = []
-        self.parse_fail = 0
         logger.info("Running Code Execution")
-        for p in tqdm(self.problems, desc="Executing Code"):
+        self.parse_fail = 0
+        sequence_parity: List[bool] = [False] * len(self.problems)
+        parsed_answer: List[Tuple[Any, str]] = [("", "")] * len(self.problems)
+        answers: List[str] = [""] * len(self.problems)
+        examples: List[str] = [""] * len(self.problems)
+
+        def _run_one(idx: int, p: Question) -> Tuple[int, str, str, Tuple[Any, str], bool, str | None]:
+            pUtil = p.util_pointer(self.run_type)
             parse_err = "ok"
             if p.code == "":
-                parse_err = "No code recieved from simulation parse"
-            pUtil = p.util_pointer(self.run_type)
+                default_parsed = pUtil.PROB_TYPES[self.run_type]()
+                return idx, "", "", (default_parsed, "no_code"), False, "no_code"
             cleaned_code = clean_code_llm(p.code)
-            examples.append(cleaned_code)
             assert "```" not in cleaned_code
             code, gen_err = self.extract_locals(cleaned_code)
             type_class = pUtil.PROB_TYPES[self.run_type]
             parsed = type_class()
-            # import pdb; pdb.set_trace()
             if pUtil.type_check_code(str(code)):
                 kwargs = pUtil.get_field_kwargs(code)
                 parsed = type_class(**kwargs)
             else:
-                self.parse_fail += 1
+                parse_err = "type_check_failed"
             code = cast_float_to_int(code)
             code = str(code)
-            answers.append(code)
-            # import pdb; pdb.set_trace()
             correct, reason = pUtil.decision_check(p, parsed)
-            # import pdb; pdb.set_trace()
-            sequence_parity.append(bool(correct))
+            err_msg = f"{parse_err},{gen_err}"
+            return idx, cleaned_code, code, (parsed, err_msg), bool(correct), None
 
-            total_correct += 1 if correct else 0
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-            parsed_answer.append((parsed, (parse_err, gen_err)))
-        actual_parsed = [p[0] for p in parsed_answer]
+        with ThreadPoolExecutor(max_workers=getattr(self.default_args, "exec_workers", 4)) as ex:
+            futures = [ex.submit(_run_one, i, p) for i, p in enumerate(self.problems)]
+            for fut in as_completed(futures):
+                idx, cleaned_code, code, parsed_tuple, is_correct, parse_err_flag = fut.result()
+                if parsed_tuple is None:
+                    default_parsed = self.problems[idx].util_pointer(self.run_type).PROB_TYPES[self.run_type]()
+                    parsed_tuple = (default_parsed, ("unknown_err", ""))
+                examples[idx] = cleaned_code
+                answers[idx] = code
+                parsed_answer[idx] = parsed_tuple
+                sequence_parity[idx] = bool(is_correct)
+                if parse_err_flag:
+                    self.parse_fail += 1
+
+        total_correct = sum(sequence_parity)
+        actual_parsed = [p[0] for p in parsed_answer if p is not None]  # type: ignore[index]
         self.parsed_answer = actual_parsed
         logger.info(f"Setting Results for {self.set_name}")
         edited_problems = self.set_record(answers, parsed_answer, examples, sequence_parity)
         assert edited_problems != [], "empty problems"
         return total_correct / len(self.problems), edited_problems
 
-    def extract_locals(self, code) -> Tuple[str, str]:
-        itf = ProgramChatInterface(answer_expr="solution()")
+    def extract_locals(self, code: str) -> Tuple[str, str]:
+        itf = ProgramChatInterface(answer_expr="solution()", timeout_seconds=5)
         return itf.run(code)
 
-    def each_record(self, q: Question, a, p, e, s):
-        q = super().each_record(q, a, (p[0], p[1][0]), e, s)
-        q.record.code_gen_err = p[1][1]  # bug
+    def each_record(self, q: Question, a: Any, p: Tuple[Any, str], e: str, s: bool) -> Question:
+        q = super().each_record(q, a, (p[0], p[1]), e, s)
+        q.record.code_gen_err = p[1]  # bug
         return q
 
 

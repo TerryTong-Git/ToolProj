@@ -2,6 +2,7 @@ import ast
 import json
 import os
 from dataclasses import dataclass, field
+from typing import Any, Type, cast
 
 from pydantic import BaseModel, Field
 
@@ -24,21 +25,20 @@ class BspQuestion(NpQuestion):
     kind: str = "edp"
     type: str = "code"  # could be sim, nl etc
     target: str = ""
-    array: list[int] = field(default_factory=[])  # type: ignore
+    array: list[int] = field(default_factory=list)
     code: str = ""
 
-    @property
-    def util_pointer(self):
-        return BspCheckAndFormat
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
+        return cast(Type[NpCheckAndFormat], BspCheckAndFormat)
 
 
 class BspCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, bsp_desc, BspAnswer)
         self.instancetype = BspQuestion
 
     # tied to inputs, may not be called input
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -51,24 +51,24 @@ class BspCheckAndFormat(NpCheckAndFormat):
         return True
 
     # tied to code
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Any) -> dict[str, str]:
         return dict(Position=str(result))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["target_value", "arr"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> Any:
+        return self.prompt_template(["target_value", "arr"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def format_one(self, q: BspQuestion):
+    def format_one(self, q: BspQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         target_value = q.target
         array = sorted(q.array)
         array_formatted = "\n The sorted array elements are: " + ", ".join(map(str, array)) + "\n"
         prompt_text = self.prompt.format_prompt(target_value=target_value, arr=array_formatted).to_string() + "Answer:\n"
 
-        return prompt_text
+        return str(prompt_text)
 
-    def decision_check(self, q: BspQuestion, output: BspAnswer):
+    def decision_check(self, q: BspQuestion, output: BspAnswer) -> tuple[bool, str]:
         """Check if the binary search solution is valid.
 
         :param instance: The instance dictionary with array and target value.
@@ -89,10 +89,10 @@ class BspCheckAndFormat(NpCheckAndFormat):
             return False, "The target index is incorrect."
         return True, "The solution is valid."
 
-    def load_data(self):
+    def load_data(self) -> list[BspQuestion]:
         with open(os.path.join(self.folder_name, "BSP", "bsp_instances.json"), "r") as f:
             data = json.load(f)
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        return list(all_data)

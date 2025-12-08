@@ -5,6 +5,7 @@ from src.exps_performance.dataset import make_dataset
 from tests.conftest import EXAMPLES, check
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "data_name",
     [
@@ -30,13 +31,13 @@ from tests.conftest import EXAMPLES, check
         # "ilp_partition",
     ],
 )
-def test_nphard(llm, data_name, default_args):
+def test_nphard(llm, data_name, default_args):  # type: ignore[no-untyped-def]
     # should also test the seed
     # should also test the exp_id logged correctly
 
-    data = make_dataset([data_name])
+    data = list(make_dataset([data_name]))
     client = llm
-    data_subset = data[:EXAMPLES]
+    data_subset = list(data[:EXAMPLES])
     arm2 = Arm2(data_subset, default_args, client)
     accuracy, data_subset = arm2.run()
     assert data_subset == arm2.edited_problems

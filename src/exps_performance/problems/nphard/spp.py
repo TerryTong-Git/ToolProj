@@ -2,9 +2,10 @@ import ast
 import json
 import os
 from dataclasses import dataclass, field
-from typing import List, Sequence, Tuple
+from typing import Any, List, Tuple, Type, cast
 
 import networkx as nx
+from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
@@ -18,7 +19,7 @@ func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
 class SppAnswer(BaseModel):
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+    Path: List[int] = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default_factory=list)
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
 
 
@@ -26,22 +27,21 @@ class SppAnswer(BaseModel):
 class SppQuestion(NpQuestion):
     kind: str = "spp"
     type: str = "code"  # could be sim, nl etc
-    nodes: List[int] = field(default_factory=[])  # type: ignore
-    edges: List[tuple] = field(default_factory=[])  # type: ignore
+    nodes: List[int] = field(default_factory=list)
+    edges: List[dict[str, Any]] = field(default_factory=list)
     complexity_level: int = -1
     code: str = ""
 
-    @property
-    def util_pointer(self):
-        return SppCheckAndFormat
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
+        return cast(Type[NpCheckAndFormat], SppCheckAndFormat)
 
 
 class SppCheckAndFormat(NpCheckAndFormat):
-    def __init__(self, prob_type):
+    def __init__(self, prob_type: str):
         super().__init__(prob_type, func_typing, spp_desc, SppAnswer)
         self.instancetype = SppQuestion
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
     def type_check_code(self, code: str) -> bool:
@@ -54,16 +54,16 @@ class SppCheckAndFormat(NpCheckAndFormat):
         else:
             return False
 
-    def get_field_kwargs(self, result):
+    def get_field_kwargs(self, result: Tuple[List[int], int]) -> dict[str, str]:
         return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        return self.prompt_template(["start_node", "end_node", "edges"]) if self.prob_type != "sim" else self.prompt_template(["code"])
+    def prompt(self) -> PromptTemplate:
+        return self.prompt_template(["start_node", "end_node", "edges"]) if self.prob_type != "sim" else self.prompt_template("code")
 
     def format_one(self, q: SppQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         start_node = q.nodes[0]
         end_node = q.nodes[-1]
         edges = q.edges
@@ -74,17 +74,17 @@ class SppCheckAndFormat(NpCheckAndFormat):
             edge_string += this_line + "\n"
         prompt_text = self.prompt.format_prompt(start_node=start_node, end_node=end_node, edges=edge_string)
         string_prompt = prompt_text.to_string()
-        return string_prompt
+        return str(string_prompt)
 
-    def load_data(self) -> Sequence[SppQuestion]:
+    def load_data(self) -> list[SppQuestion]:
         with open(os.path.join(self.folder_name, "SPP", "spp_instances.json"), "r") as f:
             data = json.load(f)
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
         all_data = [problem(**data_func(d)) for d in data]
-        return all_data
+        return list(all_data)
 
-    def ssp_optimal_solution(self, instance, source, target):
+    def ssp_optimal_solution(self, instance: SppQuestion, source: int, target: int) -> Tuple[int | None, list[int] | None]:
         """Provides the optimal solution for the SSP instance.
 
         :param instance: The SSP instance as a dictionary with 'nodes' and 'edges'.
@@ -104,7 +104,9 @@ class SppCheckAndFormat(NpCheckAndFormat):
 
     # SPP
 
-    def decision_check(self, instance: SppQuestion, solution: BaseModel, start_node=None, end_node=None) -> Tuple[bool, str]:
+    def decision_check(
+        self, instance: SppQuestion, solution: BaseModel, start_node: int | None = None, end_node: int | None = None
+    ) -> Tuple[bool, str]:
         """Validate the solution of the SPP problem.
 
         :param instance: The instance dictionary with nodes and edges.
