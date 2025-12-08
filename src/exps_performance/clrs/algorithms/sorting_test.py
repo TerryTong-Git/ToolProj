@@ -16,6 +16,8 @@
 """Unit tests for `sorting.py`."""
 # pylint: disable=invalid-name
 
+from typing import Any
+
 import numpy as np
 from absl.testing import absltest, parameterized
 from clrs._src.algorithms import sorting
@@ -28,7 +30,7 @@ class SortingTest(parameterized.TestCase):
         ("Heapsort", sorting.heapsort),
         ("Quicksort", sorting.quicksort),
     )
-    def test_sorted(self, algorithm):
+    def test_sorted(self, algorithm: Any) -> None:
         for _ in range(17):
             A = np.random.randint(0, 100, size=(13,))
             output, _ = algorithm(A)

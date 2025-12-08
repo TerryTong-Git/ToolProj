@@ -5,7 +5,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -16,18 +16,18 @@ from statsmodels.stats.contingency_tables import mcnemar
 csv.field_size_limit(sys.maxsize)
 
 
-def acc(vals):
+def acc(vals: List[float]) -> float:
     return sum(vals) / len(vals) if vals else float("nan")
 
 
-def literal_eval(row):
+def literal_eval(row: str) -> Any:
     import ast
 
     row_dict = ast.literal_eval(row)
     return row_dict
 
 
-def create_big_df(csv_files: List[Path]):
+def create_big_df(csv_files: List[Path]) -> pd.DataFrame:
     pattern = r"seed_(\d)"
     big_df = []
     for csv_file in csv_files:
@@ -43,13 +43,13 @@ def create_big_df(csv_files: List[Path]):
 # add mcnemar t-test between nl and code exec and nl and code run to see difference
 
 
-def mcnemar_stat(df, col1: str, col2: str):
+def mcnemar_stat(df: pd.DataFrame, col1: str, col2: str) -> Any:
     ct1 = pd.crosstab(df[col1], df[col2])
     table1 = sm.stats.Table2x2(ct1)  # when code is executable 1.9 times more likely to observe correct code sim
     return mcnemar(table1.table_orig)
 
 
-def analyze_contingency_table(df, col1: str, col2: str, name: str):
+def analyze_contingency_table(df: pd.DataFrame, col1: str, col2: str, name: str) -> None:
     ct1 = pd.crosstab(df[col1], df[col2])
     table1 = sm.stats.Table2x2(ct1)  # when code is executable 1.9 times more likely to observe correct code sim
     print(f"We are {table1.oddsratio} more likely to observe {col1} with {col2} than with not {col1}. We have p-value, {table1.oddsratio_pvalue()}")
@@ -62,7 +62,7 @@ def analyze_contingency_table(df, col1: str, col2: str, name: str):
     plt.close()
 
 
-def plot_df(summary, df):
+def plot_df(summary: Any, df: pd.DataFrame) -> None:
     import pdb
 
     import plotly.graph_objects as go
@@ -77,7 +77,7 @@ def plot_df(summary, df):
     plt.show()
 
 
-def get_csv_stats(df: pd.DataFrame, name: str):
+def get_csv_stats(df: pd.DataFrame, name: str) -> None:
     """
     Get the mean and the variance
     """
@@ -151,7 +151,7 @@ def get_csv_stats(df: pd.DataFrame, name: str):
     print(f"Overall NL: {df['correct_nl'].describe()[['mean', 'std']]}")
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv-folder", help="Path to csv folder (the row-level file)")
     ap.add_argument(

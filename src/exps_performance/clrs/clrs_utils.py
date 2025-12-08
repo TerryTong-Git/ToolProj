@@ -17,7 +17,8 @@
 from typing import Any, Optional
 
 import numpy as np
-from clrs import samplers, specs
+
+from src.exps_performance.clrs import samplers, specs
 
 CLRS_TASKS_WITH_HINTS = tuple(
     [
@@ -120,7 +121,7 @@ def _get_output_names(
         return [spec_name for spec_name in spec if spec[spec_name][0] == specs.Stage.OUTPUT]
 
 
-def _get_output_str(sample: samplers.Feedback, spec, algo_name: str, use_hints: bool) -> list[str]:
+def _get_output_str(sample: samplers.Feedback, spec: specs.Spec, algo_name: str, use_hints: bool) -> list[str]:
     """Gets the output string for a CLRS algorithm."""
     if algo_name in CLRS_SEARCH_TAKS_OUTPUT_REPLACER and use_hints:
         output_results = []
@@ -382,8 +383,8 @@ def _create_hint_feature_strs(
         if len(unrolled_hints_lengths) != 1:
             raise ValueError(f"Output hints have to have equal length. Spec: {spec}")
 
-        for hints in zip(*unrolled_hints_strs):
-            output_hint_strs.append(_format_hint(hints, algo_name))
+        for hints in zip(*unrolled_hints_strs):  # type: ignore
+            output_hint_strs.append(_format_hint(hints, algo_name))  # type: ignore
 
     output_hint_str = DEFAULT_SEPARATOR.join(output_hint_strs)
 
@@ -464,7 +465,7 @@ def _convert_node_features_to_str(
         case specs.Type.SHOULD_BE_PERMUTATION:
             # For the text version of CLRS, if the output is a permutation, we present
             # the "key" input values in the order given by the permutation.
-            nonsorted_values = _get_feature_by_name(inputs, "key").data[0]
+            nonsorted_values = _get_feature_by_name(inputs, "key").data[0]  # type: ignore
             permutation_indexes = np.array(predecessors_to_order(x)).astype(int)
             sorted_values = np.array([nonsorted_values[index] for index in permutation_indexes])
 
@@ -521,7 +522,7 @@ def _convert_edge_features_to_str(
     spec: specs.Spec,
     spec_type: str,
     edge_masks_as_edge_list: bool,
-):
+) -> str:
     """Converts edge features into string."""
 
     if edge_masks_as_edge_list:

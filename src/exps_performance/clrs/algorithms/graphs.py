@@ -39,7 +39,8 @@ from typing import Tuple
 
 import chex
 import numpy as np
-from clrs import probing, specs
+
+from src.exps_performance.clrs import probing, specs
 
 _Array = np.ndarray
 _Out = Tuple[_Array, probing.ProbesDict]
@@ -914,7 +915,7 @@ def mst_kruskal(A: _Array) -> _Out:
 
     pi = np.arange(A.shape[0])
 
-    def mst_union(u, v, in_mst, probes):
+    def mst_union(u: int, v: int, in_mst: _Array, probes: probing.ProbesDict) -> None:
         root_u = u
         root_v = v
 

@@ -22,382 +22,217 @@ Usage examples:
 
 from __future__ import annotations
 
-import argparse
-import math
+import logging
 import os
-import random
 import time
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, List, Optional, cast
 
-import torch
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
+from simple_parsing import parse
 
-from src.exps_performance.code_exec import exec_from_rationale
+from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, BaseArm
 from src.exps_performance.dataset import make_dataset
-from src.exps_performance.llm import DummyClient, HFLocalClient, LLMClient, OpenAIChatClient, VLLMClient, run_batch
-from src.exps_performance.parsing import parse_response
-from src.exps_performance.prompts import CODE_PROMPT, NL_PROMPT, SIM_PROMPT
+from src.exps_performance.llm import llm
+from src.exps_performance.logger import (
+    CheckpointManager,
+    create_dir,
+    init_tensorboard,
+    make_request_id,
+    write_text_to_tensorboard,
+)
+from src.exps_performance.metrics import accuracy
+from src.exps_performance.problems import Question
+from src.exps_performance.utils import seed_all_and_setup
 
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.deterministic = True
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)  # Using __name__ is a common practice
 
-try:
-    torch.set_float32_matmul_precision("high")
-except Exception:
-    pass
 
-# ------------------------------- Utilities ----------------------------------
+def run(args: Any) -> None:
+    seed_all_and_setup(args)
+    client = llm(args)
+    exp_dir = create_dir(args, Path(args.root))
+    exp_id = Path(exp_dir).name
+    checkpoint_path = os.path.join(exp_dir, "res.csv")
+    checkpoint = CheckpointManager(checkpoint_path)
+    logger.info(f"Using exp_dir={exp_dir} (exp_id={exp_id}) for model={args.model} seed={args.seed}")
+    logger.info(f"Restored {len(checkpoint._records)} unique records from checkpoint " f"({checkpoint_path})")
+    if os.path.exists(checkpoint_path):
+        try:
+            import pandas as pd
+
+            df_counts = pd.read_csv(checkpoint_path)
+            logger.info(f"Checkpoint rows in file: {len(df_counts)}; " f"unique request_ids: {len(checkpoint._records)}")
+        except Exception:
+            logger.info("Could not read checkpoint CSV for counts.")
+    # main workflow
+    logger.info("Making Dataset")
+    data = make_dataset(args.kinds, args.n, args.digits_list)  # choose the data
+
+    def _done_sim(rec: Any) -> bool:
+        return bool(rec.sim_question) or bool(rec.sim_answer) or bool(rec.sim_parse_err) or bool(rec.sim_err_msg)
+
+    def _done_code(rec: Any) -> bool:
+        return bool(rec.code_question) or bool(rec.code_answer) or bool(rec.code_parse_err) or bool(rec.code_err_msg)
+
+    def _done_control(rec: Any) -> bool:
+        return bool(rec.controlsim_question) or bool(rec.controlsim_answer) or bool(rec.controlsim_parse_err) or bool(rec.controlsim_err_msg)
+
+    def _done_nl(rec: Any) -> bool:
+        return bool(rec.nl_question) or bool(rec.nl_answer) or bool(rec.nl_parse_err) or bool(rec.nl_err_msg)
+
+    def _fully_done(rec: Any) -> bool:
+        return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
+
+    # Populate identifiers and restore from checkpoint using stable per-kind indexing (digit, original_pos)
+    per_kind_counter: dict[str, int] = {}
+    restored_idx = 0
+    restored_by_kind: dict[str, int] = {}
+    # Build stable index map per kind
+    kind_groups: dict[str, list[Question]] = {}
+    for q in data:
+        kind_groups.setdefault(q.kind, []).append(q)
+    for k, qs in kind_groups.items():
+        qs_sorted = sorted(qs, key=lambda x: (x.digits, getattr(x, "original_pos", 0)))
+        for idx, q in enumerate(qs_sorted, start=1):
+            setattr(q, "_stable_index_in_kind", idx)
+    # Enforce per-kind cap (args.n) to guarantee exactly n indices per kind at most.
+    capped_data: list[Question] = []
+    dropped_by_kind: dict[str, int] = {}
+    for q in data:
+        idx_in_kind = getattr(q, "_stable_index_in_kind", 0)
+        if idx_in_kind <= args.n:
+            capped_data.append(q)
+        else:
+            dropped_by_kind[q.kind] = dropped_by_kind.get(q.kind, 0) + 1
+    if dropped_by_kind:
+        logger.warning(f"Dropped items exceeding n per kind: {dropped_by_kind}")
+    data = capped_data
+    # Debug: show first few assigned IDs and track consistency against checkpoint.
+    debug_assigned: list[tuple[str, str, int, int, int]] = []
+    for q in data:
+        idx_in_kind = getattr(q, "_stable_index_in_kind", 0)
+        per_kind_counter[q.kind] = idx_in_kind
+        q.record.model = args.model
+        q.record.seed = args.seed
+        q.record.exp_id = exp_id
+        q.record.kind = q.kind
+        q.record.digit = q.digits
+        q.record.index_in_kind = idx_in_kind
+        q.record.request_id = make_request_id(q.kind, q.digits, idx_in_kind, args.seed, args.model)
+        existing = checkpoint.get(q.record.request_id)
+        if existing:
+            restored_by_kind[q.kind] = restored_by_kind.get(q.kind, 0) + 1
+            restored_idx += 1  # request_id match implies index match
+            q.record = existing
+            if existing.sim_code:
+                q.code = existing.sim_code
+        if len(debug_assigned) < 10:
+            debug_assigned.append((q.record.request_id, q.kind, q.digits, idx_in_kind, getattr(q, "original_pos", -1)))
+    rows_in_file = len(checkpoint._records)
+    unique_req_ids = len(set(checkpoint._records.keys()))
+    pending_expected = len(data) - rows_in_file
+    logger.info(f"Sample assigned IDs (first 10): {debug_assigned}")
+    logger.info(f"Restore summary: total={len(data)}, restored_by_index={restored_idx}, " f"pending={len(data) - restored_idx}")
+    logger.info(
+        f"Checkpoint consistency: rows={rows_in_file}, unique_request_ids={unique_req_ids}, "
+        f"restored_by_index={restored_idx}, pending_expected={pending_expected}"
+    )
+    if rows_in_file != unique_req_ids or unique_req_ids != restored_idx:
+        logger.warning("Mismatch detected: rows, unique request IDs, and restored_by_index differ; " "dedupe/checkpoint compaction recommended.")
+    logger.info(f"Restored per kind: {restored_by_kind}")
+    # Debug: detect duplicate request_ids assigned in this dataset build
+    seen_ids = set()
+    dup_ids = []
+    for q in data:
+        if q.record.request_id in seen_ids:
+            dup_ids.append(q.record.request_id)
+        seen_ids.add(q.record.request_id)
+    if dup_ids:
+        logger.warning(f"Duplicate request_ids assigned in dataset build: {set(dup_ids)}")
+
+    def run_stage(pending: List[Question], ArmCls: type[BaseArm], stage_name: str) -> List[Question]:
+        if not pending:
+            return pending
+        logger.info(f"Running {stage_name} for {len(pending)} questions")
+        chunk_size = max(1, args.checkpoint_every)
+        updated_all = []
+        for start in range(0, len(pending), chunk_size):
+            batch = pending[start : start + chunk_size]
+            arm = ArmCls(batch, args, client)
+            _, updated = arm.run()
+            for q in updated:
+                checkpoint.upsert(q.record, flush=False)
+            checkpoint.flush()  # flush every batch
+            updated_all.extend(updated)
+        return updated_all
+
+    # Arm2 (sim/code generation)
+    arm2_pending = [q for q in data if not _fully_done(q.record) and not _done_sim(q.record)]
+    logger.info(f"Arm2 pending {len(arm2_pending)} / total {len(data)}")
+    updated_arm2 = run_stage(arm2_pending, Arm2, "Arm2")
+    # propagate code back to main list
+    if updated_arm2:
+        updated_map = {q.record.request_id: q for q in updated_arm2}
+        for i, q in enumerate(data):
+            if q.record.request_id in updated_map:
+                data[i] = updated_map[q.record.request_id]
+                data[i].code = data[i].record.sim_code or data[i].code
+
+    # Arm3 (code execution)
+    arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
+    logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
+    updated_arm3 = run_stage(arm3_pending, Arm3, "Arm3")
+    if updated_arm3:
+        updated_map = {q.record.request_id: q for q in updated_arm3}
+        for i, q in enumerate(data):
+            if q.record.request_id in updated_map:
+                data[i] = updated_map[q.record.request_id]
+
+    # Arm4 (control simulation)
+    arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
+    logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
+    updated_arm4 = run_stage(arm4_pending, Arm4, "Arm4")
+    if updated_arm4:
+        updated_map = {q.record.request_id: q for q in updated_arm4}
+        for i, q in enumerate(data):
+            if q.record.request_id in updated_map:
+                data[i] = updated_map[q.record.request_id]
+
+    # Arm1 (nl)
+    arm1_pending = [q for q in data if not _fully_done(q.record) and not _done_nl(q.record)]
+    logger.info(f"Arm1 pending {len(arm1_pending)} / total {len(data)}")
+    updated_arm1 = run_stage(arm1_pending, Arm1, "Arm1")
+    if updated_arm1:
+        updated_map = {q.record.request_id: q for q in updated_arm1}
+        for i, q in enumerate(data):
+            if q.record.request_id in updated_map:
+                data[i] = updated_map[q.record.request_id]
+    completed = data
+
+    logger.info("Saving Results")
+    records = [d.record for d in completed]
+    df = accuracy(records)
+    # summarize here
+    for kind in df.values:
+        for val in kind:
+            continue
+
+    # serialize results
+    writer = init_tensorboard(args, exp_dir)
+    write_text_to_tensorboard(records, writer, args)
+    checkpoint.flush()
 
 
 @dataclass
-class Record:
-    idx: int
-    problem: str
-    kind: str
-    digits: int
-    truth: int
-    answer_nl: Optional[int]
-    correct_nl: int
-    answer_code: Optional[int]
-    correct_code: int
-    answer_code_exec: Optional[int]
-    correct_code_exec: int
-    raw_nl: str
-    raw_code: str
-    raw_sim: str
-    answer_sim: Optional[int]
-    correct_sim_ans: int
-
-    exec_ok: Optional[int] = None
-    exec_retcode: Optional[int] = None
-    exec_timeout: Optional[int] = None
-    exec_stdout: Optional[str] = None
-    exec_stderr: Optional[str] = None
-
-
-def mcnemar_exact_p(b: int, c: int) -> float:
-    n = b + c
-    if n == 0:
-        return 1.0
-    k = min(b, c)
-
-    def binom_cdf_leq(n, k):
-        s = 0.0
-        for i in range(0, k + 1):
-            s += math.comb(n, i)
-        return s * (0.5**n)
-
-    p = 2.0 * binom_cdf_leq(n, k)
-    return min(1.0, p)
-
-
-# ------------------------------- Runner -------------------------------------
-
-
-# break this down so its testable, like writing to logdir etc.
-def run(args):
-    # backend
-    random.seed(args.seed)
-    import numpy as np
-
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
-    if args.backend == "dummy":
-        client: LLMClient = DummyClient()
-    elif args.backend == "openai":
-        client = OpenAIChatClient(seed=args.seed)
-    elif args.backend == "hf":
-        client = HFLocalClient(
-            model_name=args.model,
-            dtype=args.hf_dtype,
-            device_map=args.hf_device_map,
-            trust_remote_code=args.hf_trust_remote_code,
-        )
-    elif args.backend == "vllm":
-        print("Instantiating VLLM")
-        client = VLLMClient(
-            model_name=args.model,
-            dtype=args.vllm_dtype,
-            tensor_parallel_size=args.vllm_tensor_parallel,
-            gpu_memory_utilization=args.vllm_gpu_mem_util,
-            max_model_len=args.vllm_max_model_len,
-            download_dir=args.vllm_download_dir,
-            trust_remote_code=args.hf_trust_remote_code,
-            seed=args.seed,
-        )
-    else:
-        raise ValueError("backend must be one of {dummy, openai, hf}")
-
-    problems = make_dataset(args.n, args.digits, args.kinds, seed=args.seed)
-
-    # TensorBoard
-    outdir: str = args.model.split("/")[1]
-    if args.kinds[0] == "gsm8k":
-        outdir += "_gsm8k"
-
-    os.makedirs(outdir, exist_ok=True)
-    exp_id = time.strftime("run_%Y%m%d_%H%M%S")
-    tb = None if args.tb_disable else SummaryWriter(log_dir=os.path.join(outdir, "tb", exp_id))
-
-    def tb_text(tag: str, title: str, body: str, step: int = 0):
-        if tb is None:
-            return
-        body = body or ""
-        n = args.tb_text_chars
-        body_show = body if len(body) <= n else (body[: max(0, n - 3)] + "...")
-        tb.add_text(tag, f"**{title}**\n\n```\n{body_show}\n```", global_step=step)
-
-    nl_msgs = [[{"role": "user", "content": NL_PROMPT.format(problem=pb.text())}] for pb in problems]
-    code_msgs = [[{"role": "user", "content": CODE_PROMPT.format(problem=pb.text())}] for pb in problems]
-
-    # === Generate all NL outputs, then all Code outputs (order preserved) ===
-    nl_raw_all = run_batch(nl_msgs, args, client)
-    code_raw_all = run_batch(code_msgs, args, client)
-
-    records: List[Record] = []
-    for i, pb in enumerate(tqdm(problems, total=len(problems), desc="eval")):
-        problem_text = pb.text()
-
-        nl_raw = nl_raw_all[i]
-        nl_parsed = parse_response(nl_raw)
-        ans_nl = nl_parsed.answer
-        correct_nl = pb.decision_check(ans_nl, problem_text)  # have their own decision check
-
-        base_nl = f"{args.model}/nl/d{pb.digits}/{pb.kind}/i{i}"
-        tb_text(f"{base_nl}/prompt", "Prompt (NL-CoT)", NL_PROMPT.format(problem=problem_text))
-        tb_text(f"{base_nl}/rationale", "NL Rationale", nl_parsed.rationale or "")
-        tb_text(f"{base_nl}/raw_json", "Raw NL JSON", nl_parsed.raw)
-        tb_text(f"{base_nl}/answer", "Final Answer (NL)", "" if ans_nl is None else str(ans_nl))
-
-        code_raw = code_raw_all[i]
-        code_parsed = parse_response(code_raw)
-        ans_code = code_parsed.answer
-        correct_code = pb.decision_check(ans_code, problem_text)
-
-        base_code = f"{args.model}/code/d{pb.digits}/{pb.kind}/i{i}"
-        tb_text(f"{base_code}/prompt", "Prompt (Code-CoT)", CODE_PROMPT.format(problem=problem_text))
-        tb_text(f"{base_code}/rationale", "Code Rationale (fenced)", code_parsed.rationale or "")
-        tb_text(f"{base_code}/raw_json", "Raw Code JSON", code_parsed.raw)
-        tb_text(f"{base_code}/answer", "Final Answer (Code)", "" if ans_code is None else str(ans_code))
-
-        ans_code_exec = {
-            "ok": False,
-            "value": None,
-            "stdout": "",
-            "stderr": "",
-            "retcode": None,
-            "timeout": False,
-        }
-
-        if args.exec_code:
-            ans_code_exec = exec_from_rationale(code_parsed.rationale, allow_imports=True)
-            tb_text(
-                f"{base_code}/exec_answer",
-                "Executed Answer (subprocess)",
-                "" if ans_code_exec is None else str(ans_code_exec),
-            )
-            tb_text(f"{base_code}/exec_stdout", "Executed STDOUT", ans_code_exec.get("stdout", ""))
-            tb_text(f"{base_code}/exec_stderr", "Executed STDERR", ans_code_exec.get("stderr", ""))
-            tb_text(
-                f"{base_code}/exec_meta",
-                "Exec Meta",
-                f"retcode={ans_code_exec.get('retcode')} timeout={ans_code_exec.get('timeout')} \
-                ok={ans_code_exec.get('ok')} value={ans_code_exec.get('value')}",
-            )
-        correct_code_exec = pb.decision_check(ans_code_exec.get("value"), problem_text) if ans_code_exec is not None else 0
-        correct_sim_ans = 0
-        answer_sim = 0
-        sim_raw = ""
-        if args.controlled_sim:
-            message = [{"role": "user", "content": SIM_PROMPT.format(problem=code_parsed.rationale)}]
-            llm_output = client.chat(args.model, message, max_tokens=args.max_tokens, temperature=0.0, top_p=1.0, stop=None)
-            parsed_output = parse_response(llm_output)
-            # import pdb; pdb.set_trace()
-            answer_sim = parsed_output.answer
-            sim_raw = parsed_output.raw
-            correct_sim_ans = pb.decision_check(answer_sim, problem_text)
-        truth = pb.ground_truth()
-        records.append(
-            Record(
-                idx=i,
-                problem=problem_text,
-                kind=pb.kind,
-                digits=pb.digits,
-                truth=truth,
-                answer_nl=ans_nl,
-                correct_nl=correct_nl,
-                answer_code=ans_code,
-                correct_code=correct_code,
-                answer_code_exec=ans_code_exec,
-                correct_code_exec=correct_code_exec,
-                raw_nl=nl_raw,
-                raw_code=code_raw,
-                raw_sim=sim_raw,
-                answer_sim=answer_sim,
-                correct_sim_ans=correct_sim_ans,
-            )
-        )
-
-    # CSV
-    import csv
-
-    csv_path = os.path.join(outdir, f"{exp_id}_results_seed_{args.seed}.csv")
-    with open(csv_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(
-            [
-                "idx",
-                "kind",
-                "digits",
-                "truth",
-                "answer_nl",
-                "correct_nl",
-                "answer_code",
-                "correct_code",
-                "answer_code_exec",
-                "correct_code_exec",
-                "answer_sim",
-                "correct_sim",
-                "problem",
-            ]
-        )
-        for r in records:
-            w.writerow(
-                [
-                    r.idx,
-                    r.kind,
-                    r.digits,
-                    r.truth,
-                    r.answer_nl,
-                    r.correct_nl,
-                    r.answer_code,
-                    r.correct_code,
-                    r.answer_code_exec,
-                    r.correct_code_exec,
-                    r.answer_sim,
-                    r.correct_sim_ans,
-                    r.problem,
-                ]
-            )
-
-    # Summary (overall + per kind)
-    def acc(xs):
-        return sum(xs) / max(1, len(xs))
-
-    acc_nl = acc([r.correct_nl for r in records])
-    acc_code = acc([r.correct_code for r in records])
-    has_exec = any(r.answer_code_exec is not None for r in records)
-    acc_exec = acc([r.correct_code_exec for r in records if r.answer_code_exec is not None]) if has_exec else float("nan")
-    acc_sim = acc([r.correct_sim_ans for r in records])
-
-    # b = sum(1 for r in records if r.correct_code == 1 and r.correct_nl == 0)
-    # c = sum(1 for r in records if r.correct_code == 0 and r.correct_nl == 1)
-    # p_mc = mcnemar_exact_p(b, c)
-
-    by_kind: Dict[str, List[Record]] = {}
-    for r in records:
-        by_kind.setdefault(r.kind, []).append(r)
-
-    lines: List[str] = []
-    lines.append(f"N={len(records)}  exp_id={exp_id}")
-    lines.append(f"Accuracy NL-CoT (overall):   {acc_nl:.4f}")
-    lines.append(f"Accuracy Code-CoT (overall): {acc_code:.4f}")
-    if has_exec:
-        lines.append(f"Execution condition (subprocess): acc={acc_exec:.4f}")
-    lines.append(f"Accuracy Sim (overall): {acc_sim:.4f}")
-
-    # lines.append(f"Discordant pairs b=code>nl: {b}, c=nl>code: {c}, McNemar exact p={p_mc:.4g}")
-    lines.append("Per-kind bins:")
-    # --- Per-kind × digit breakdown (printed) ---
-    by_kd: Dict[Tuple[str, int], List[Record]] = {}
-    for r in records:
-        by_kd.setdefault((r.kind, r.digits), []).append(r)
-
-    def _acc(lst):
-        return sum(lst) / max(1, len(lst))
-
-    lines.append("")
-    lines.append("Per-kind × digit bins:")
-    for kind in sorted({k for (k, _) in by_kd.keys()}):
-        lines.append(f"  kind={kind}")
-        for d in sorted({d for (k, d) in by_kd.keys() if k == kind}):
-            grp = by_kd[(kind, d)]
-            N = len(grp)
-            acc_nl = _acc([x.correct_nl for x in grp])
-            acc_code = _acc([x.correct_code for x in grp])
-            acc_sim = _acc([x.correct_sim_ans for x in grp])
-
-            # Exec accuracy only for items that actually executed (and if exec requested)
-            if args.exec_code:
-                exec_vals = [x.correct_code_exec for x in grp if x.answer_code_exec is not None]
-                acc_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float("nan")
-            else:
-                acc_exec = float("nan")
-
-            lines.append(f"    digits={d:2d}: N={N:3d}  NL={acc_nl:.4f}  Code={acc_code:.4f}  Exec={acc_exec:.4f} Sim={acc_sim}")
-
-            # Optional: log to TensorBoard as kind/digit tags
-            if tb is not None:
-                tb.add_scalar(f"{args.model}/acc_nl/{kind}/d{d}", acc_nl)
-                tb.add_scalar(f"{args.model}/acc_code/{kind}/d{d}", acc_code)
-                tb.add_scalar(f"{args.model}/acc_sim/{kind}/d{d}", acc_sim)
-                if args.exec_code and not math.isnan(acc_exec):
-                    tb.add_scalar(f"{args.model}/acc_exec/{kind}/d{d}", acc_exec)
-    csv_kd_path = os.path.join(outdir, f"{exp_id}_by_kind_digit.csv")
-    with open(csv_kd_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["kind", "digits", "N", "acc_nl", "acc_code", "acc_exec", "acc_sim"])
-        for kind in sorted({k for (k, _) in by_kd.keys()}):
-            for d in sorted({d for (k, d) in by_kd.keys() if k == kind}):
-                grp = by_kd[(kind, d)]
-                N = len(grp)
-                acc_nl = sum(x.correct_nl for x in grp) / N if N else float("nan")
-                acc_code = sum(x.correct_code for x in grp) / N if N else float("nan")
-                acc_sim = sum(x.correct_sim_ans for x in grp) / N if N else float("nan")
-
-                if args.exec_code:
-                    exec_vals = [x.correct_code_exec for x in grp if x.answer_code_exec is not None]
-                    acc_exec = (sum(exec_vals) / len(exec_vals)) if exec_vals else float("nan")
-                else:
-                    acc_exec = float("nan")
-                w.writerow([kind, d, N, f"{acc_nl:.6f}", f"{acc_code:.6f}", "" if math.isnan(acc_exec) else f"{acc_exec:.6f}", f"{acc_sim:.6f}"])
-
-    summary_path = os.path.join(outdir, f"{exp_id}_summary.txt")
-    with open(summary_path, "w") as f:
-        f.write("\n".join(lines) + "\n")
-
-    print("\n".join(lines))
-    print(f"\nWrote: {csv_path}\nWrote: {summary_path}")
-    if tb is not None:
-        tb.flush()
-        tb.close()
-
-
-# ------------------------------- CLI ----------------------------------------
-
-
-# add simple parsing type checking to this.
-def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument("--n", type=int, default=100, help="total problems (balanced over kinds)")
-    p.add_argument(
-        "--digits",
-        type=int,
-        nargs="+",
-        default=[2, 4, 8],
-        help="Global hardness levels. For arithmetic: number magnitude. "
-        "LCS: string length; knap: #items; rod: rod length; "
-        "ilp_assign: n×n size; ilp_prod: scales products/resources/bounds; "
-        "ilp_partition: #items.",
-    )
-    p.add_argument(
-        "--kinds",
-        type=str,
-        nargs="+",
-        default=[
+class Args:
+    root: str = "."
+    n: int = 1
+    digits_list: List[int] = field(default_factory=lambda: [2, 4, 8])
+    kinds: List[str] = field(
+        default_factory=lambda: [
+            # fine-grained arithmetic / DP / ILP
             "add",
             "sub",
             "mul",
@@ -407,77 +242,94 @@ def parse_args():
             "ilp_assign",
             "ilp_prod",
             "ilp_partition",
-        ],
-        choices=[
-            "add",
-            "sub",
-            "mul",
-            "mix",
-            "lcs",
-            "knap",
-            "rod",
-            "ilp_assign",
-            "ilp_prod",
-            "ilp_partition",
+            # CLRS
+            "clrs",
+            # GSM8K
             "gsm8k",
-            "nphardeval",
-            "clrs30",
+            # NP-hard suite
+            "spp",
+            "tsp",
+            "tsp_d",
+            "msp",
+            "ksp",
+            "gcp",
+            "gcp_d",
+            "bsp",
+            "edp",
         ],
+        metadata={
+            "choices": [
+                # fine-grained
+                "add",
+                "sub",
+                "mul",
+                "lcs",
+                "knap",
+                "rod",
+                "ilp_assign",
+                "ilp_prod",
+                "ilp_partition",
+                # CLRS
+                "clrs30",
+                # GSM8K
+                "gsm8k",
+                # NP-hard
+                "spp",
+                "tsp",
+                "tspd",
+                "msp",
+                "ksp",
+                "gcp",
+                "gcpd",
+                "bsp",
+                "edp",
+            ]
+        },
     )
-    p.add_argument("--seed", type=int, default=1)
+    seed: int = 1
+    backend: str = field(
+        default="dummy",
+        metadata={
+            "choices": ["dummy", "openai", "openrouter", "running", "vllm"],
+            "help": "LLM backend to use. 'running' hits an already-running OpenAI-compatible server; 'openrouter' uses https://openrouter.ai via the OpenAI SDK.",
+        },
+    )
+    model: str = "gpt-4o"
+    hf_dtype: str = field(default="bfloat16", metadata={"choices": ["auto", "float16", "bfloat16", "float32"]})
+    hf_device_map: str = "auto"
+    hf_trust_remote_code: bool = False
+    openrouter_api_key: Optional[str] = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    max_tokens: int = 4192
+    temperature: float = 0.1
+    top_p: float = 0.90
+    sim_code_only: bool = False
+    exec_code: bool = False
+    exec_workers: int = 4
+    controlled_sim: bool = False
+    log_every: int = 50
+    checkpoint_every: int = 1
+    tb_text_chars: int = 10000
+    tb_disable: bool = False
+    exp_id: Optional[str] = None
+    resume: bool = False
+    batch_size: int = 8
+    vllm_dtype: str = field(default="float32", metadata={"choices": ["auto", "float16", "bfloat16", "float32"]})
+    vllm_tensor_parallel: int = 8
+    vllm_gpu_mem_util: float = 0.90
+    vllm_max_model_len: int = 8192
+    vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
 
-    p.add_argument("--backend", type=str, default="dummy", choices=["dummy", "openai", "hf", "vllm"])
-    p.add_argument(
-        "--model",
-        type=str,
-        default="gpt-4o",
-        help="OpenAI model name or HF repo/path when --backend=hf",
-    )
-    p.add_argument(
-        "--hf_dtype",
-        type=str,
-        default="bfloat16",
-        choices=["auto", "float16", "bfloat16", "float32"],
-    )
-    p.add_argument("--hf_device_map", type=str, default="auto")
-    p.add_argument("--hf_trust_remote_code", action="store_true")
 
-    p.add_argument("--max_tokens", type=int, default=4192)
-    p.add_argument("--temperature", type=int, default=0.1)
-    p.add_argument("--top_p", type=int, default=0.90)
-
-    p.add_argument("--sim_code_only", action="store_true", help="Simulate only the generated code, not any NL input for fair comparison with arm 3")
-    p.add_argument(
-        "--exec_code",
-        action="store_true",
-        help="execute code-CoT in sandboxed subprocess (imports allowed)",
-    )
-    p.add_argument(
-        "--controlled_sim",
-        action="store_true",
-        help="do fair controlled simulation w/o prompt",
-    )
-    p.add_argument("--log_every", type=int, default=50)
-
-    # TensorBoard text limits
-    p.add_argument("--tb_text_chars", type=int, default=10000)
-    p.add_argument("--tb_disable", action="store_true")
-
-    # vLLM options (kept minimal; defaults are conservative)
-    p.add_argument(
-        "--batch_size",
-        type=int,
-        default=8,
-        help="Batch size for backends that support chat_many (vLLM).",
-    )
-    p.add_argument("--vllm_dtype", type=str, default="float16", choices=["auto", "float16", "bfloat16"])
-    p.add_argument("--vllm_tensor_parallel", type=int, default=8)
-    p.add_argument("--vllm_gpu_mem_util", type=float, default=0.90)
-    p.add_argument("--vllm_max_model_len", type=int, default=None)
-    p.add_argument("--vllm_download_dir", type=str, default="../models")
-    return p.parse_args()
+def parse_args() -> Args:
+    return cast(Args, parse(Args))
 
 
 if __name__ == "__main__":
+    start_time = time.perf_counter()
     args = parse_args()
     run(args)
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    logger.info(f"Elapsed time: {elapsed_time:.4f} seconds")

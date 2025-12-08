@@ -21,14 +21,14 @@ from clrs._src.algorithms import greedy
 
 
 class GreedyTest(absltest.TestCase):
-    def test_greedy_activity_selector(self):
+    def test_greedy_activity_selector(self) -> None:
         s = np.array([1, 3, 0, 5, 3, 5, 6, 8, 8, 2, 12])
         f = np.array([4, 5, 6, 7, 9, 9, 10, 11, 12, 14, 16])
         expected = np.array([1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1])
         out, _ = greedy.activity_selector(s, f)
         np.testing.assert_array_equal(expected, out)
 
-    def test_task_scheduling(self):
+    def test_task_scheduling(self) -> None:
         d = np.array([4, 2, 4, 3, 1, 4, 6])
         w = np.array([70, 60, 50, 40, 30, 20, 10])
         expected = np.array([1, 1, 1, 0, 0, 1, 1])

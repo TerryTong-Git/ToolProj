@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
-def _try_import_pulp():
+def _try_import_pulp() -> Optional[Any]:
     try:
         import pulp  # type: ignore
 
@@ -49,16 +49,19 @@ def rod_cut_max(P: List[int]) -> int:
 
 
 def assignment_min_cost(C: List[List[int]]) -> int:
-    n = len(C)
+    n_rows = len(C)
+    n_cols = len(C[0]) if C else 0
+    if n_rows == 0 or n_cols == 0:
+        return 0
     pulp = _try_import_pulp()
     if pulp is not None:
         prob = pulp.LpProblem("assign", pulp.LpMinimize)
-        x = [[pulp.LpVariable(f"x_{i}_{j}", 0, 1, cat="Binary") for j in range(n)] for i in range(n)]
-        prob += pulp.lpSum(C[i][j] * x[i][j] for i in range(n) for j in range(n))
-        for i in range(n):
-            prob += pulp.lpSum(x[i][j] for j in range(n)) == 1
-        for j in range(n):
-            prob += pulp.lpSum(x[i][j] for i in range(n)) == 1
+        x = [[pulp.LpVariable(f"x_{i}_{j}", 0, 1, cat="Binary") for j in range(n_cols)] for i in range(n_rows)]
+        prob += pulp.lpSum(C[i][j] * x[i][j] for i in range(n_rows) for j in range(n_cols))
+        for i in range(n_rows):
+            prob += pulp.lpSum(x[i][j] for j in range(n_cols)) == 1
+        for j in range(n_cols):
+            prob += pulp.lpSum(x[i][j] for i in range(n_rows)) <= 1
         prob.solve(pulp.PULP_CBC_CMD(msg=False))
         val = int(round(pulp.value(prob.objective)))
         return val
@@ -66,8 +69,8 @@ def assignment_min_cost(C: List[List[int]]) -> int:
     import itertools
 
     best = float("inf")
-    for perm in itertools.permutations(range(n)):
-        cost = sum(C[i][perm[i]] for i in range(n))
+    for perm in itertools.permutations(range(n_cols), min(n_rows, n_cols)):
+        cost = sum(C[i][perm[i]] for i in range(min(n_rows, n_cols)))
         best = min(best, cost)
     return int(best)
 
@@ -92,7 +95,7 @@ def prodplan_max_profit(d: Dict[str, Any]) -> int:
     # bounded brute force (P<=4, bounds small)
     best = 0
 
-    def dfs(j, cur_prof, use):
+    def dfs(j: int, cur_prof: int, use: List[int]) -> None:
         nonlocal best
         if j == P:
             best = max(best, cur_prof)

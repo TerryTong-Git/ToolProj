@@ -1,7 +1,36 @@
-from src.exps_performance.utils import clean_code_llm
+import pytest
+
+from src.exps_performance.arms import Arm2
+from src.exps_performance.dataset import make_dataset
+from src.exps_performance.utils import cast_float_to_int, clean_code_llm
+from tests.conftest import EXAMPLES
 
 
-def test_clean_code():
+@pytest.mark.slow
+def test_nphard(llm, default_args):  # type: ignore[no-untyped-def]
+    # should also test the seed
+    # should also test the exp_id logged correctly
+    data = make_dataset(["ilp_partition"])  # hard one
+    client = llm
+    data_subset = list(data[:EXAMPLES])
+    arm2 = Arm2(data_subset, default_args, client)
+    accuracy, data_subset = arm2.run()  # assertions built in
+    assert arm2.parsed_fail_ind == arm2.reparse_ind, "parse_fail and reparse_inds not the same"
+
+
+def test_cast() -> None:
+    assert 0 == cast_float_to_int(0.2), "not casting"
+
+    floatList = [0.1, 0.2, 2.2, 3.3]
+    castedList = [0, 0, 2, 3]
+    assert castedList == cast_float_to_int(floatList), "cast not working"
+
+    complexList = [{"hi": 0.1}, 0.22, [0.1, 2, 3]]
+    complexAns = [{"hi": 0}, 0, [0, 2, 3]]
+    assert complexAns == cast_float_to_int(complexList), "complex not casting"
+
+
+def test_clean_code() -> None:
     sample = """
     ```python abc```
     """

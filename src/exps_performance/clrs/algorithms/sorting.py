@@ -30,7 +30,8 @@ from typing import Tuple
 
 import chex
 import numpy as np
-from clrs import probing, specs
+
+from src.exps_performance.clrs import probing, specs
 
 _Array = np.ndarray
 _Out = Tuple[_Array, probing.ProbesDict]
@@ -69,8 +70,8 @@ def insertion_sort(A: _Array) -> _Out:
             specs.Stage.HINT,
             next_probe={
                 "pred_h": probing.array(np.copy(A_pos)),
-                "i": probing.mask_one(stor_pos, np.copy(A.shape[0])),
-                "j": probing.mask_one(j, np.copy(A.shape[0])),
+                "i": probing.mask_one(stor_pos, np.copy(A.shape[0])),  # type: ignore
+                "j": probing.mask_one(j, np.copy(A.shape[0])),  # type: ignore
             },
         )
 
@@ -108,8 +109,8 @@ def bubble_sort(A: _Array) -> _Out:
                 specs.Stage.HINT,
                 next_probe={
                     "pred_h": probing.array(np.copy(A_pos)),
-                    "i": probing.mask_one(A_pos[i], np.copy(A.shape[0])),
-                    "j": probing.mask_one(A_pos[j], np.copy(A.shape[0])),
+                    "i": probing.mask_one(A_pos[i], np.copy(A.shape[0])),  # type: ignore
+                    "j": probing.mask_one(A_pos[j], np.copy(A.shape[0])),  # type: ignore
                 },
             )
 
@@ -148,7 +149,7 @@ def heapsort(A: _Array) -> _Out:
         },
     )
 
-    def max_heapify(A, i, heap_size, ind, phase):
+    def max_heapify(A: _Array, i: int, heap_size: int, ind: int, phase: int) -> None:
         l = 2 * i + 1  # noqa: E741
         r = 2 * i + 2
         if l < heap_size and A[l] > A[i]:
@@ -178,7 +179,7 @@ def heapsort(A: _Array) -> _Out:
         if largest != i:
             max_heapify(A, largest, heap_size, ind, phase)
 
-    def build_max_heap(A):
+    def build_max_heap(A: _Array) -> None:
         for i in reversed(range(A.shape[0])):
             max_heapify(A, i, A.shape[0], i, 0)
 
@@ -217,12 +218,18 @@ def heapsort(A: _Array) -> _Out:
     return A, probes
 
 
-def quicksort(A: _Array, A_pos=None, p=None, r=None, probes=None) -> _Out:
+def quicksort(
+    A: _Array,
+    A_pos: _Array | None = None,
+    p: int | None = None,
+    r: int | None = None,
+    probes: probing.ProbesDict | None = None,
+) -> _Out:
     """Quicksort (Hoare, 1962)."""
 
     chex.assert_rank(A, 1)
 
-    def partition(A, A_pos, p, r, probes):
+    def partition(A: _Array, A_pos: _Array, p: int, r: int, probes: probing.ProbesDict) -> int:
         x = A[r]
         i = p - 1
         for j in range(p, r):

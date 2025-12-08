@@ -6,7 +6,7 @@ import os
 import pstats
 from pathlib import Path
 from pstats import SortKey
-from typing import Dict, List
+from typing import Any, Dict, List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,7 +72,7 @@ def add_task(text_splitter: RecursiveCharacterTextSplitter, doc: Document) -> Do
     return text_splitter.split_documents([doc])[0]
 
 
-def convert_to_docs(data: Dataset, column_name, text_splitter) -> List[Document]:
+def convert_to_docs(data: Dataset, column_name: str, text_splitter: RecursiveCharacterTextSplitter) -> List[Document]:
     RAW_KNOWLEDGE_BASE: List[Document] = [
         Document(page_content=doc[column_name]) for doc in tqdm(data)
     ]  ## so far this is faster, what if we scale up?
@@ -90,23 +90,23 @@ def convert_to_docs(data: Dataset, column_name, text_splitter) -> List[Document]
     return processed_docs
 
 
-def convert_to_str(data: Dataset, column_name: str, *args) -> List[str]:
-    return data[column_name]
+def convert_to_str(data: Dataset, column_name: str, *args: Any) -> List[str]:
+    return [str(x) for x in data[column_name]]
 
 
-def convert_to_ray(dataset: Dataset, column_name) -> ray.data.Dataset:
+def convert_to_ray(dataset: Dataset, column_name: Union[str, List[str]]) -> ray.data.Dataset:
     ds = ray.data.from_huggingface(dataset)
     return ds.select_columns(column_name)
 
 
 class Embed:
-    def __init__(self):
+    def __init__(self) -> None:
         model_name = "sentence-transformers/all-MiniLM-L6-v2"
         self.transformer = SentenceTransformer(model_name, device="cuda", cache_folder="../models")
 
-    def __call__(self, text_batch: Dict[str, List[str]]):
+    def __call__(self, text_batch: Dict[str, List[str]]) -> Dict[str, List[tuple[str, List[float]]]]:
         assert isinstance(text_batch, Dict), f"not a dict, type {type(text_batch)}, with {text_batch}"
-        embedding: List[float] = self.transformer.encode(text_batch["content"], batch_size=64, show_progress_bar=True, device="cuda").tolist()
+        embedding: List[List[float]] = self.transformer.encode(text_batch["content"], batch_size=64, show_progress_bar=True, device="cuda").tolist()
 
         return dict(results=list(zip(text_batch["content"], embedding)))
 
@@ -121,7 +121,7 @@ def dedup_docs(processed_docs: List[Document]) -> List[Document]:
     return dedupped_docs
 
 
-def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: bool = False):
+def load_datasets(to_load: List[DataRecord], tokenizer: AutoTokenizer, profile: bool = False) -> None:
     for dataRecord in tqdm(to_load, desc="loading data"):
         dataset = load_dataset(dataRecord.file_type, data_dir=dataRecord.path)
 
@@ -185,23 +185,23 @@ def serialize_filtered_datasets(data: Dataset, datapath: Path) -> None:
     logging.info(f"Saved Dataset to: {datapath.name}")
 
 
-def get_data_statistics():
+def get_data_statistics() -> None:
     pass
 
 
-def get_data_per_label():
+def get_data_per_label() -> None:
     pass
 
 
-def get_total_tokens():
+def get_total_tokens() -> None:
     pass
 
 
-def train_logistic():
+def train_logistic() -> None:
     pass
 
 
-def evaluate():
+def evaluate() -> None:
     pass
 
 

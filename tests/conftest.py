@@ -1,18 +1,24 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, List, Sequence, Union
 
+import pandas as pd
 import pytest
 
-from src.exps_performance.dataset import NPHARD
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
+from src.exps_performance.logger import Record, create_big_df, walk_results_folder
+
+pytestmark = pytest.mark.slow  # marks the whole file
 
 
+# TODO: Do not test vllm spin up on upstream github, make this a fixed object.
 @dataclass
 class CreateArgs:
-    n: int = 1000
-    digits: int = 2
-    kinds: str = "add"
+    n: int = 10
+    root: str = "."
+    kinds: List[str] = field(default_factory=lambda: ["add"])
     seed: int = 1
-    backend: str = "running"
+    backend: str = "dummy"
     hf_dtype: str = "float16"
     sim_code_only: bool = True
     exec_code_only: bool = True
@@ -21,32 +27,106 @@ class CreateArgs:
     vllm_dtype: str = "float16"
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.95
-    vllm_max_model_len: int = 2048
+    vllm_max_model_len: int = 8192
     vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
     hf_trust_remote_code: bool = True
     batch_size: int = 16
-    max_tokens: int = 1024
+    max_tokens: int = 2048
     temperature: float = 0
     top_p: float = 1
+    log_every: int = 50
+    tb_text_chars: int = 10000
+    digits_list: int = field(default_factory=lambda: [2])  # type: ignore
 
 
 @pytest.fixture(scope="session")
-def default_args():
+def default_args() -> CreateArgs:
     return CreateArgs()
 
 
 @pytest.fixture(scope="session")
-def instantiate_data():
-    return NPHARD().load()
+def mock_records() -> List[Record]:
+    fake_record = Record(
+        model="abc",  # answers depend on this
+        seed=1,  # answers depend on this
+        exp_id="abc",
+        digit=1,
+        kind="abc",
+        question="abc",
+        answer="abc",
+        nl_question="abc",
+        nl_answer="abc",
+        nl_reasoning="abc",
+        nl_correct=True,
+        nl_parse_err=True,
+        nl_err_msg="abc",  # defaults to "" if not err
+        code_question="abc",
+        code_answer="abc",  # (or err message)
+        code_correct=True,
+        code_parse_err=True,
+        code_gen_err="abc",
+        code_err_msg="abc",
+        sim_question="abc",
+        sim_reasoning="abc",  # attempted reasoning
+        sim_answer="abc",
+        sim_correct=True,
+        sim_parse_err=True,
+        sim_err_msg="abc",
+        controlsim_question="abc",
+        controlsim_reasoning="abc",
+        controlsim_answer="abc",
+        controlsim_correct=True,
+        controlsim_parse_err=True,
+        controlsim_err_msg="abc",
+    )
+    return [fake_record for _ in range(EXAMPLES)]
 
 
 @pytest.fixture(scope="session")
-def subset_data():
-    return NPHARD().load_subset
+def mock_record_1() -> List[Record]:
+    fake_record = Record(
+        model="efg",  # answers depend on this
+        seed=2,  # answers depend on this
+        exp_id="efg",
+        digit=2,
+        kind="efg",
+        question="efg",
+        answer="efg",
+        nl_question="efg",
+        nl_answer="efg",
+        nl_correct=False,
+        nl_reasoning="abc",
+        nl_parse_err=False,
+        nl_err_msg="efg",  # defaults to "" if not err
+        code_question="efg",
+        code_answer="efg",  # (or err message)
+        code_correct=False,
+        code_parse_err=False,
+        code_gen_err="efg",
+        code_err_msg="efg",
+        sim_question="efg",
+        sim_reasoning="efg",  # attempted reasoning
+        sim_answer="efg",
+        sim_correct=False,
+        sim_parse_err=False,
+        sim_err_msg="efg",
+        controlsim_question="efg",
+        controlsim_reasoning="efg",
+        controlsim_answer="efg",
+        controlsim_correct=False,
+        controlsim_parse_err=False,
+        controlsim_err_msg="efg",
+    )
+    return [fake_record for _ in range(EXAMPLES)]
 
 
 @pytest.fixture(scope="session")
-def instantiate_llm(default_args):
+def mock_records_1(mock_record_1: List[Record]) -> List[Record]:
+    return mock_record_1
+
+
+@pytest.fixture(scope="session")
+def llm(default_args: CreateArgs) -> Any:
     args = default_args
     if args.backend == "vllm":
         client = VLLMClient(
@@ -66,23 +146,26 @@ def instantiate_llm(default_args):
         return OpenAIChatClient()
 
 
-# rather than booting one up, we can just send requests to a command line one? vllm serve Qwen/Qwen2.5-1.5B-Instruct
+EXAMPLES = 10
+RETRIES = 3
 
-# from openai import OpenAI
-# # Set OpenAI's API key and API base to use vLLM's API server.
-# openai_api_key = "EMPTY"
-# openai_api_base = "http://localhost:8000/v1"
 
-# client = OpenAI(
-#     api_key=openai_api_key,
-#     base_url=openai_api_base,
-# )
+def check(arm: Any, data: List[Any], types: str) -> None:
+    parsed_answer = arm.parsed_answer
+    assert arm.parse_fail <= EXAMPLES * RETRIES - 1, "parse failed too much"
+    pUtil = data[0].util_pointer(types)
+    classtype = pUtil.PROB_TYPES[types]
+    empties = 0
+    for parsed in parsed_answer:
+        assert type(parsed).__name__ == classtype.__name__, "no output, all wrong output types"
+        if parsed == classtype():
+            empties += 1
+    assert empties < RETRIES - 1, "too many no parse"
 
-# chat_response = client.chat.completions.create(
-#     model="Qwen/Qwen2.5-1.5B-Instruct",
-#     messages=[
-#         {"role": "system", "content": "You are a helpful assistant."},
-#         {"role": "user", "content": "Tell me a joke."},
-#     ]
-# )
-# print("Chat response:", chat_response)
+
+@pytest.fixture(scope="session")
+def load_results_to_analyze() -> pd.DataFrame:
+    files = walk_results_folder("/nlpgpu/data/terry/ToolProj/tests/integration/fixtures/results")  # check files are deepseek and gemma, seed 1 and 2
+    typed_files: Sequence[Union[str, Path]] = files
+    df = create_big_df(typed_files)
+    return df

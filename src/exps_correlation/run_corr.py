@@ -39,7 +39,7 @@ import pandas as pd
 PAT = r"(0\.[0-9]+)"
 
 
-def read_files():
+def read_files() -> None:
     parent_dir = Path(__file__).parent.parent
     results_dir = os.path.join(parent_dir, "exps_performance")
     result_subdir = [f for f in Path(results_dir).iterdir() if f.is_dir()]

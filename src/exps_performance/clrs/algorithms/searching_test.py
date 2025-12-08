@@ -24,20 +24,20 @@ EmptyArray = np.asarray([], dtype=np.int32)
 
 
 class SearchingTest(absltest.TestCase):
-    def test_minimum(self):
+    def test_minimum(self) -> None:
         for _ in range(17):
             A = np.random.randint(0, 100, size=(13,))
             idx, _ = searching.minimum(A)
             self.assertEqual(A.min(), A[idx])
 
-    def test_binary_search(self):
+    def test_binary_search(self) -> None:
         A = np.random.randint(0, 100, size=(13,))
         A.sort()
         x = np.random.choice(A)
         idx, _ = searching.binary_search(x, A)
         self.assertEqual(A[idx], x)
 
-    def test_quickselect(self):
+    def test_quickselect(self) -> None:
         A = np.random.randint(0, 100, size=(13,))
         idx, _ = searching.quickselect(A)
         self.assertEqual(sorted(A)[len(A) // 2], idx)

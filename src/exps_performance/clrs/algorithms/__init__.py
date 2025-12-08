@@ -17,10 +17,10 @@
 
 # pylint:disable=g-bad-import-order
 
-from clrs.algorithms.divide_and_conquer import find_maximum_subarray, find_maximum_subarray_kadane  # noqa: F401
-from clrs.algorithms.dynamic_programming import lcs_length, matrix_chain_order, optimal_bst  # noqa: F401
-from clrs.algorithms.geometry import graham_scan, jarvis_march, segments_intersect  # noqa: F401
-from clrs.algorithms.graphs import (  # noqa: F401
+from src.exps_performance.clrs.algorithms.divide_and_conquer import find_maximum_subarray, find_maximum_subarray_kadane  # noqa: F401
+from src.exps_performance.clrs.algorithms.dynamic_programming import lcs_length, matrix_chain_order, optimal_bst  # noqa: F401
+from src.exps_performance.clrs.algorithms.geometry import graham_scan, jarvis_march, segments_intersect  # noqa: F401
+from src.exps_performance.clrs.algorithms.graphs import (  # noqa: F401
     articulation_points,
     bellman_ford,
     bfs,
@@ -35,7 +35,7 @@ from clrs.algorithms.graphs import (  # noqa: F401
     strongly_connected_components,
     topological_sort,
 )
-from clrs.algorithms.greedy import activity_selector, task_scheduling  # noqa: F401
-from clrs.algorithms.searching import binary_search, minimum, quickselect  # noqa: F401
-from clrs.algorithms.sorting import bubble_sort, heapsort, insertion_sort, quicksort  # noqa: F401
-from clrs.algorithms.strings import kmp_matcher, naive_string_matcher  # noqa: F401
+from src.exps_performance.clrs.algorithms.greedy import activity_selector, task_scheduling  # noqa: F401
+from src.exps_performance.clrs.algorithms.searching import binary_search, minimum, quickselect  # noqa: F401
+from src.exps_performance.clrs.algorithms.sorting import bubble_sort, heapsort, insertion_sort, quicksort  # noqa: F401
+from src.exps_performance.clrs.algorithms.strings import kmp_matcher, naive_string_matcher  # noqa: F401

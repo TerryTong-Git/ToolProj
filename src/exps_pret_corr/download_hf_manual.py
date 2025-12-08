@@ -96,7 +96,7 @@ def _select_files(
     return selected
 
 
-def _fs_put(fs, src_path: str, dst_path: str):
+def _fs_put(fs: Any, src_path: str, dst_path: str) -> None:
     # Ensure parent dirs exist
     parent = posixpath.dirname(dst_path)
     if parent:
@@ -111,7 +111,7 @@ def _require_token() -> str:
     return tok
 
 
-def _maybe_enable_hf_transfer(enable: bool):
+def _maybe_enable_hf_transfer(enable: bool) -> None:
     if enable:
         os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
 
@@ -149,7 +149,7 @@ def download_and_upload_to_store(cfg: DownloadConfig) -> None:
     futures = []
     errors = 0
 
-    def worker(temp_dir: str, rel_path: str):
+    def worker(temp_dir: str, rel_path: str) -> str:
         # rel_path is the repo-relative filename expected by hf_hub_download
         local = hf_hub_download(
             repo_id=cfg.hf_dataset_id,
@@ -200,7 +200,7 @@ def download_and_upload_to_store(cfg: DownloadConfig) -> None:
 
 
 @draccus.wrap()
-def main(cfg: DownloadConfig):
+def main(cfg: DownloadConfig) -> None:
     download_and_upload_to_store(cfg)
 
 

@@ -2,132 +2,68 @@ import ast
 import json
 import os
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import Any, List, Tuple, Type, cast
 
 import networkx as nx
-from langchain_core.exceptions import OutputParserException
-from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
-from src.exps_performance.problems.nphardeval import NPHardEvalProblem, NPHardEvalProblemUtil
+from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
-sppPrompts = (
+spp_desc = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
-    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}."
 )
 
-sppPrompts_nl = (
-    "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
-    "Question: You need to find the shortest path between node {start_node} and node {end_node} in a graph. The graph's edges and their weights are given. {edges}. "
-    "YOU ARE NEVER ALLOWED TO USE CODE. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
-)
-
-sim_template = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED. FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
+func_typing = "Tuple[List[int], int]"  # (Path, TotalDistance)
 
 
-default_code_instr = """
-The code block that specifies a function 'solution()' that defines all variables, imports and IMPLEMENTS the actual code to solve the problem that can be executed. Begin and end code with ```python```. For example an INCORRECT way to solve the problem (Don't copy method, but only formatting) but is formatted correctly:       
-
-```python
-def solution():
-    import numpy as np
-    variable = [0,1,2,3]
-    out = np.sum(variable) 
-    return out
-```
-
-""".strip()
-
-
-# easier to format as a list, but string
-# a local variable called answer should hold the answer? Then when I run the code, I can extract the local variable?
-class SPPCodeReasoning(BaseModel):
-    code: str = Field(
-        description=default_code_instr + "Here are the required types: def solution() -> tuple[list[int], int]",
-        default="",
-    )
-    simulation: str = Field(description="The attempt at simulating the code in natural language reasoning to give the final answer.", default="")
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
+class SppAnswer(BaseModel):
+    Path: List[int] = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default_factory=list)
     TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-class SPPNLReasoning(BaseModel):
-    reasoning: str = Field(
-        description="The attempt at simulating the problem in natural language reasoning to give the final answer.",
-        default="",
-    )
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-class ControlledCodeSim(BaseModel):
-    simulation: str = Field(
-        description="The attempt at simulating the code in natural language reasoning to give the final answer.",
-        default="",
-    )
-    Path: str = Field(description="The path. Type: list[int]. For example: '[0,1,2,3]' ", default="")
-    TotalDistance: str = Field(description="The distance. Type: int. For example: 8. ", default="")
-
-
-# have a record class keep track of parse failure statistics
-
-# incorporate this decision logic into a base class to share.
 
 
 @dataclass
-class SPP(NPHardEvalProblem):
+class SppQuestion(NpQuestion):
     kind: str = "spp"
     type: str = "code"  # could be sim, nl etc
-    nodes: List[int] = field(default_factory=[])  # type: ignore
-    edges: List[tuple] = field(default_factory=[])  # type: ignore
+    nodes: List[int] = field(default_factory=list)
+    edges: List[dict[str, Any]] = field(default_factory=list)
     complexity_level: int = -1
-    formatted_prompt: str = ""
     code: str = ""
 
-    @property
-    def util_pointer(self):
-        return SPPUtil
+    def util_pointer(self) -> Type[NpCheckAndFormat]:
+        return cast(Type[NpCheckAndFormat], SppCheckAndFormat)
 
 
-# need to update this
-class SPPUtil(NPHardEvalProblemUtil):
-    def __init__(self, prob_type):
-        PROB_TYPES = {"sim": ControlledCodeSim, "code": SPPCodeReasoning, "nl": SPPNLReasoning}
-        PROMPTS = {"sim": sim_template, "code": sppPrompts, "nl": sppPrompts_nl}
-        self.PROB_TYPES = PROB_TYPES
-        self.PROMPTS = PROMPTS
-        assert prob_type in list(PROB_TYPES.keys())
-        self.prob_type = prob_type
-        self.p = sppPrompts
-        self.parser = PydanticOutputParser(pydantic_object=PROB_TYPES[prob_type])  # Retry Output parser?
-        self.instancetype = SPP
+class SppCheckAndFormat(NpCheckAndFormat):
+    def __init__(self, prob_type: str):
+        super().__init__(prob_type, func_typing, spp_desc, SppAnswer)
+        self.instancetype = SppQuestion
 
-    def loaded_data_to_class(self, data):
+    def loaded_data_to_class(self, data: Any) -> Any:
         return data
 
-    def get_field_kwargs(self, result):
+    def type_check_code(self, code: str) -> bool:
+        try:
+            evaluated = ast.literal_eval(code)
+        except (SyntaxError, ValueError):
+            return False  # f"Syntax or Value Error {e}"
+        if isinstance(evaluated, tuple) and len(evaluated) == 2:
+            return True
+        else:
+            return False
+
+    def get_field_kwargs(self, result: Tuple[List[int], int]) -> dict[str, str]:
         return dict(Path=str(result[0]), TotalDistance=str(result[1]))
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
-    def prompt(self):
-        if self.prob_type != "sim":
-            return PromptTemplate(
-                template=self.PROMPTS[self.prob_type],
-                input_variables=["start_node", "end_node", "edges"],
-                partial_variables={"format_instructions": self.parser.get_format_instructions()},
-            )
-        else:
-            return PromptTemplate(
-                template=self.PROMPTS[self.prob_type],
-                input_variables=["code"],
-                partial_variables={"format_instructions": self.parser.get_format_instructions()},
-            )
+    def prompt(self) -> PromptTemplate:
+        return self.prompt_template(["start_node", "end_node", "edges"]) if self.prob_type != "sim" else self.prompt_template("code")
 
-    def format_one(self, q: SPP) -> str:
+    def format_one(self, q: SppQuestion) -> str:
         if self.prob_type == "sim":
-            return self.prompt.format_prompt(code=q.code).to_string()
+            return str(self.prompt.format_prompt(code=q.code).to_string())
         start_node = q.nodes[0]
         end_node = q.nodes[-1]
         edges = q.edges
@@ -137,22 +73,18 @@ class SPPUtil(NPHardEvalProblemUtil):
             this_line = f"Edge from {edge['from']} to {edge['to']} has a weight of {edge['weight']}."  # type: ignore
             edge_string += this_line + "\n"
         prompt_text = self.prompt.format_prompt(start_node=start_node, end_node=end_node, edges=edge_string)
-        return prompt_text.to_string()
+        string_prompt = prompt_text.to_string()
+        return str(string_prompt)
 
-    # returns either instance of code, nl, or sim class, or err.
-    def parse_output(self, output) -> BaseModel:  # returns one of the pydantic objects
-        try:
-            return self.parser.parse(output)  # ok
-        except OutputParserException:
-            # another way to default to blanks
-            return self.PROB_TYPES[self.prob_type]()  # err
-
-    def load_data(self):
+    def load_data(self) -> list[SppQuestion]:
         with open(os.path.join(self.folder_name, "SPP", "spp_instances.json"), "r") as f:
-            all_data = json.load(f)
-        return all_data
+            data = json.load(f)
+        problem = self.instancetype  # type: ignore
+        data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
+        all_data = [problem(**data_func(d)) for d in data]
+        return list(all_data)
 
-    def ssp_optimal_solution(self, instance, source, target):
+    def ssp_optimal_solution(self, instance: SppQuestion, source: int, target: int) -> Tuple[int | None, list[int] | None]:
         """Provides the optimal solution for the SSP instance.
 
         :param instance: The SSP instance as a dictionary with 'nodes' and 'edges'.
@@ -171,7 +103,10 @@ class SPPUtil(NPHardEvalProblemUtil):
         return shortest_path_length, shortest_path
 
     # SPP
-    def decision_check(self, instance: SPP, solution: SPPCodeReasoning, start_node=None, end_node=None) -> Tuple[bool, str]:
+
+    def decision_check(
+        self, instance: SppQuestion, solution: BaseModel, start_node: int | None = None, end_node: int | None = None
+    ) -> Tuple[bool, str]:
         """Validate the solution of the SPP problem.
 
         :param instance: The instance dictionary with nodes and edges.
@@ -202,6 +137,7 @@ class SPPUtil(NPHardEvalProblemUtil):
 
         # Calculate the optimal solution
         ssp_optimal_length, ssp_optimal_path = self.ssp_optimal_solution(instance, start_node, end_node)
+
         if ssp_optimal_length is None:
             if isinstance(cost_string, int) or cost_string.isdigit():
                 return False, f"No path between from node {start_node} to node {end_node}."
@@ -245,5 +181,4 @@ class SPPUtil(NPHardEvalProblemUtil):
         if calculated_cost != ssp_optimal_length:
             # spp_optimal_path = "->".join(map(str, ssp_optimal_path))
             return False, f"The calculated cost ({calculated_cost}) does not match the optimal solution ({ssp_optimal_length}): {ssp_optimal_path}."
-
         return True, "The solution is valid."

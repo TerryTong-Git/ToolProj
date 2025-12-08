@@ -28,7 +28,8 @@ from typing import Any, Union
 
 import chex
 import numpy as np
-from clrs import probing, specs
+
+from src.exps_performance.clrs import probing, specs
 
 _Array = np.ndarray
 _Numeric = Union[int, float]
@@ -37,16 +38,25 @@ _Out = Any
 
 def find_maximum_subarray(
     A: _Array,
-    A_pos=None,
-    low=None,
-    high=None,
-    probes=None,
-) -> _Out:
+    A_pos: _Array | None = None,
+    low: int | None = None,
+    high: int | None = None,
+    probes: probing.ProbesDict | None = None,
+) -> Any:
     """Maximum subarray."""
 
     chex.assert_rank(A, 1)
 
-    def find_max_crossing_subarray(A, A_pos, low, mid, high, left_ctx, right_ctx, probes):
+    def find_max_crossing_subarray(
+        A: _Array,
+        A_pos: _Array,
+        low: int,
+        mid: int,
+        high: int,
+        left_ctx: tuple[int, int, _Numeric],
+        right_ctx: tuple[int, int, _Numeric],
+        probes: probing.ProbesDict,
+    ) -> tuple[int, int, _Numeric]:
         (left_low, left_high, l_ctx_sum) = left_ctx
         (right_low, right_high, r_ctx_sum) = right_ctx
         left_sum = A[mid] - 0.1
@@ -183,7 +193,7 @@ def find_maximum_subarray(
                 },
             )
 
-        return (max_left, max_right, left_sum + right_sum), (sum_, left_sum, right_sum)
+        return (max_left, max_right, left_sum + right_sum)
 
     if A_pos is None:
         A_pos = np.arange(A.shape[0])
@@ -334,9 +344,12 @@ def find_maximum_subarray(
             },
         )
 
-        (cross_low, cross_high, cross_sum), (x_sum, x_left, x_right) = find_max_crossing_subarray(
+        cross_low, cross_high, cross_sum = find_max_crossing_subarray(
             A, A_pos, low, mid, high, (left_low, left_high, left_sum), (right_low, right_high, right_sum), probes
         )
+        x_sum: _Numeric = cross_sum
+        x_left: _Numeric = left_sum
+        x_right: _Numeric = right_sum
         if left_sum >= right_sum and left_sum >= cross_sum:
             best = (left_low, left_high, left_sum)
         elif right_sum >= left_sum and right_sum >= cross_sum:
