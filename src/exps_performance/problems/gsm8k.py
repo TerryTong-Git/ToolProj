@@ -1,12 +1,13 @@
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Type
 
 from datasets import load_dataset
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
+from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 
 gsm8k_desc = "Description: You are going to be given a set of math problem." "Question: Solve the following math problems: \n {question}"
@@ -24,6 +25,7 @@ class Gsm8kQuestion(Question):
     digits: int = 0
     answer: str = ""
     question: str = ""
+    record: Record = field(default_factory=Record)
 
     @property
     def util_pointer(self) -> Type["Gsm8kCheckAndFormat"]:
@@ -40,7 +42,7 @@ class Gsm8kCheckAndFormat(CheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if isinstance(evaluated, int):

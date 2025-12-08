@@ -206,6 +206,7 @@ class Arm3(BaseArm):
             cleaned_code = clean_code_llm(p.code)
             assert "```" not in cleaned_code
             code, gen_err = self.extract_locals(cleaned_code)
+            code = cast_float_to_int(code)
             type_class = pUtil.PROB_TYPES[self.run_type]
             parsed = type_class()
             if pUtil.type_check_code(str(code)):
@@ -213,7 +214,6 @@ class Arm3(BaseArm):
                 parsed = type_class(**kwargs)
             else:
                 parse_err = "type_check_failed"
-            code = cast_float_to_int(code)
             code = str(code)
             correct, reason = pUtil.decision_check(p, parsed)
             err_msg = f"{parse_err},{gen_err}"

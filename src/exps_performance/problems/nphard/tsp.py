@@ -1,6 +1,7 @@
 import ast
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Type, cast
 
 import numpy as np
@@ -9,6 +10,7 @@ from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
+from src.exps_performance.utils import cast_float_to_int
 
 tsp_desc = (
     "Description: The traveling salesman problem (TSP) is a classic optimization problem that aims to find the shortest possible route that visits a set of cities, with each city being visited exactly once and the route returning to the original city."
@@ -20,9 +22,10 @@ tsp_desc = (
 class TspQuestion(NpQuestion):
     kind: str = "tsp"
     type: str = "code"  # could be sim, nl etc
-    distance_matrix: pd.DataFrame = field(default_factory=[])  # type: ignore
+    distance_matrix: pd.DataFrame = field(default_factory=pd.DataFrame)  # type: ignore
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return cast(Type[NpCheckAndFormat], TspCheckAndFormat)
 
@@ -46,7 +49,7 @@ class TspCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if isinstance(evaluated, tuple) and len(evaluated) == 2:
@@ -75,8 +78,16 @@ class TspCheckAndFormat(NpCheckAndFormat):
         start = n - 10
         for level in range(start, n):
             for file_num in range(10):
-                file_name = os.path.join(self.folder_name, "TSP", "synthesized_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
-                df = pd.read_csv(file_name, header=None, index_col=False)
+                csv_name = os.path.join(self.folder_name, "TSP", f"synthesized_data_TSP_level_{level}_instance_{file_num + 1}.csv")
+                jsonl_path = Path(csv_name).with_suffix(".jsonl")
+                if jsonl_path.exists():
+                    df = pd.read_json(jsonl_path, lines=True)
+                elif os.path.exists(csv_name):
+                    df = pd.read_csv(csv_name, header=None, index_col=False)
+                    # Persist converted JSONL for future runs.
+                    df.to_json(jsonl_path, orient="records", lines=True)
+                else:
+                    raise FileNotFoundError(f"Missing TSP data file: {jsonl_path} (or {csv_name})")
                 data.append(df)
         problem_cls = cast(type[TspQuestion], self.instancetype)
         data_func = self.loaded_data_to_class
@@ -120,8 +131,21 @@ class TspCheckAndFormat(NpCheckAndFormat):
         return tour, float(total_distance)
 
     # tied to the formatting
-    def get_field_kwargs(self, result: tuple[list[int], float]) -> dict[str, str]:
-        return dict(Path=str(result[0]), TotalDistance=str(result[1]))
+    def get_field_kwargs(self, result: tuple[list[int], float] | str) -> dict[str, object]:
+        """
+        Return native types for pydantic validation. Accepts a tuple or its string form.
+        """
+        if isinstance(result, str):
+            try:
+                result = ast.literal_eval(result)
+            except (SyntaxError, ValueError, TypeError):
+                return {"Path": [], "TotalDistance": ""}
+        if not isinstance(result, tuple) or len(result) != 2:
+            return {"Path": [], "TotalDistance": ""}
+        path, total_distance = result
+        path = cast_float_to_int(path)
+        total_distance = cast_float_to_int(total_distance)
+        return {"Path": path, "TotalDistance": str(total_distance)}
 
     def decision_check(self, instance: TspQuestion, solution: BaseModel) -> tuple[bool, str]:
         """

@@ -30,6 +30,7 @@ class GcpdQuestion(NpQuestion):
     dimacs_str: str = ""
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return GcpdCheckAndFormat
 
@@ -45,7 +46,7 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
 
@@ -112,7 +113,7 @@ class GcpdCheckAndFormat(NpCheckAndFormat):
         """
         num_vertices, adjacency_list = read_dimacs_format(dimacs_str)
         try:
-            is_feasible = ast.literal_eval(answer.Feasible)
+            is_feasible = ast.literal_eval(str(answer.Feasible))
         except (SyntaxError, ValueError):
             return False, "Feasible key not found"
         num_colors, coloring = self.gcp_greedy_solution(adjacency_list)

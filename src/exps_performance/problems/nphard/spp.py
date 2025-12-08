@@ -9,6 +9,7 @@ from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
+from src.exps_performance.utils import cast_float_to_int
 
 spp_desc = (
     "Description: The Shortest Path Problem (SPP) involves finding the shortest path between two nodes in a weighted graph."
@@ -32,6 +33,7 @@ class SppQuestion(NpQuestion):
     complexity_level: int = -1
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return cast(Type[NpCheckAndFormat], SppCheckAndFormat)
 
@@ -46,7 +48,7 @@ class SppCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if isinstance(evaluated, tuple) and len(evaluated) == 2:
@@ -54,8 +56,21 @@ class SppCheckAndFormat(NpCheckAndFormat):
         else:
             return False
 
-    def get_field_kwargs(self, result: Tuple[List[int], int]) -> dict[str, str]:
-        return dict(Path=str(result[0]), TotalDistance=str(result[1]))
+    def get_field_kwargs(self, result: Tuple[List[int], int] | str) -> dict[str, object]:
+        """
+        Return native types for pydantic validation. Accepts a tuple or its string form.
+        """
+        if isinstance(result, str):
+            try:
+                result = ast.literal_eval(result)
+            except (SyntaxError, ValueError, TypeError):
+                return {"Path": [], "TotalDistance": ""}
+        if not isinstance(result, tuple) or len(result) != 2:
+            return {"Path": [], "TotalDistance": ""}
+        path, total_distance = result
+        path = cast_float_to_int(path)
+        total_distance = cast_float_to_int(total_distance)
+        return {"Path": path, "TotalDistance": str(total_distance)}
 
     @property  # should be an abstract property implemented by all classes to decide which template to use
     def prompt(self) -> PromptTemplate:
@@ -145,7 +160,7 @@ class SppCheckAndFormat(NpCheckAndFormat):
                 return True, "No path found from node {start_node} to node {end_node}."
 
         try:
-            path = ast.literal_eval(path_string)  # expecting a string [0,1,2,3]
+            path = ast.literal_eval(str(path_string))  # expecting a string [0,1,2,3]
         except SyntaxError:  # something wrong witht he parse, e.g. '0 trying to cast to int.
             path = []
         try:

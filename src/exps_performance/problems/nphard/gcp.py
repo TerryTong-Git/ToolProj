@@ -25,6 +25,7 @@ class GcpQuestion(NpQuestion):
     dimacs_str: str = ""
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return GcpCheckAndFormat
 
@@ -43,7 +44,7 @@ class GcpCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
 
@@ -82,7 +83,7 @@ class GcpCheckAndFormat(NpCheckAndFormat):
     def gcpCheck(self, dimacs_str: str, answer: str) -> Tuple[bool, str]:
         num_vertices, adjacency_list = read_dimacs_format(dimacs_str)
         try:
-            answer_colors = ast.literal_eval(answer)
+            answer_colors = ast.literal_eval(str(answer))
         except (SyntaxError, ValueError):
             return False, "wrong format"
         if not isinstance(answer_colors, dict):

@@ -27,4 +27,30 @@ def summary() -> None:
     pass
 
 
+def accuracy_by_noise(records: List[Record], noise_type: str, sigma: float) -> pd.DataFrame:
+    """
+    Compute per-kind accuracy for each arm with noise metadata attached.
+    """
+    df = pd.DataFrame([r.model_dump() for r in records])
+    arm_map = {
+        "nl_correct": "nl",
+        "sim_correct": "sim",
+        "controlsim_correct": "controlsim",
+        "code_correct": "code",
+    }
+    rows = []
+    for col, arm in arm_map.items():
+        if col not in df:
+            continue
+        grouped = df.groupby("kind")[col].mean().reset_index()
+        grouped = grouped.rename(columns={col: "accuracy"})
+        grouped["arm"] = arm
+        grouped["noise_type"] = noise_type
+        grouped["sigma"] = sigma
+        rows.append(grouped)
+    if not rows:
+        return pd.DataFrame(columns=["kind", "arm", "accuracy", "noise_type", "sigma"])
+    return pd.concat(rows, ignore_index=True)
+
+
 # instruction following ability is a confounder...

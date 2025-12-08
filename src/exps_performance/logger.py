@@ -1,10 +1,11 @@
 # define how to serialize here.
 import hashlib
+import json
 import os
 import time
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union, cast
 
 import pandas as pd
 from pydantic import BaseModel
@@ -25,6 +26,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 class Record(BaseModel):
     request_id: str = ""
+    unique_tag: str = ""
     index_in_kind: int = -1
     model: str = ""  # answers depend on this
     seed: int = -1  # answers depend on this
@@ -64,7 +66,45 @@ class Record(BaseModel):
     controlsim_err_msg: str = ""
 
 
-# results/model_seed/exp_id/res.csv
+def _as_jsonl_path(path: Union[str, Path]) -> Path:
+    """Normalize any provided log path to a `.jsonl` destination."""
+    p = Path(path)
+    return p.with_suffix(".jsonl") if p.suffix.lower() == ".csv" else p
+
+
+def _write_jsonl(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        for row in rows:
+            normalized = {str(k): v for k, v in dict(row).items()}
+            f.write(json.dumps(normalized, ensure_ascii=False))
+            f.write("\n")
+
+
+def _load_rows(path: Path) -> List[Dict[str, Any]]:
+    """
+    Load records from JSONL, converting legacy CSV (and rewriting to JSONL) if present.
+    """
+    if path.exists():
+        rows: List[Dict[str, Any]] = []
+        with path.open("r", encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                rows.append(json.loads(stripped))
+        return rows
+
+    legacy_csv = path.with_suffix(".csv") if path.suffix.lower() != ".csv" else path
+    if legacy_csv.exists():
+        df = pd.read_csv(legacy_csv)
+        rows = cast(List[Dict[str, Any]], df.to_dict("records"))
+        _write_jsonl(path, rows)
+        return rows
+    return []
+
+
+# results/model_seed/exp_id/res.jsonl
 def _latest_run_dir(tb_root: str) -> Optional[str]:
     if not os.path.isdir(tb_root):
         return None
@@ -94,6 +134,11 @@ def create_dir(args: Any, base: Path) -> str:  # root would be like ./results
 
 def init_tensorboard(args: Any, exp_dir: str) -> SummaryWriter:  # use the logdir to specify tmp for testing, later switch to results dir
     return SummaryWriter(log_dir=exp_dir)
+
+
+def generate_unique_tag(kind: str, digit: int, idx: int, seed: int, model: str) -> str:
+    payload = f"{model}::{seed}::{kind}::{digit}::{idx}"
+    return hashlib.sha1(f"tag::{payload}".encode("utf-8")).hexdigest()
 
 
 def make_request_id(kind: str, digit: int, idx: int, seed: int, model: str) -> str:
@@ -160,27 +205,35 @@ def write_text_to_tensorboard(records: List[Record], tb: SummaryWriter, args: An
 
 
 def write_to_csv(logdir: str, records: List[Record]) -> None:
-    result: List[Dict[str, Any]] = []
-    for record in records:
-        result.append(record.model_dump())
-    df = pd.DataFrame(result)
-    df.to_csv(logdir, index=False)
+    """
+    Write checkpoints to JSONL (legacy name retained for compatibility).
+    If called with a `.csv` path, also emit a CSV mirror for legacy tools/tests.
+    """
+    target = Path(logdir)
+    path = _as_jsonl_path(target)
+    payload = [r.model_dump() for r in records]
+    _write_jsonl(path, payload)
+    if target.suffix.lower() == ".csv":
+        pd.DataFrame(payload).to_csv(target, index=False)
 
 
 def read_from_csv(logdir: str) -> List[Record]:
-    result: List[Record] = []
-    if not os.path.exists(logdir):
-        return result
+    """
+    Read checkpoints from JSONL (legacy name retained for compatibility).
+    """
+    jsonl_path = _as_jsonl_path(logdir)
+    raw_rows = _load_rows(jsonl_path)
+    total_rows = len(raw_rows)
 
-    df = pd.read_csv(logdir)
-    total_rows = len(df)
-    dicts = df.to_dict("records")
+    result: List[Record] = []
+    if not raw_rows:
+        return result
 
     # Drop duplicate request_ids while keeping the last occurrence on disk.
     records_by_id: Dict[str, Record] = {}
     insertion_order: List[str] = []
-    for idx, r in enumerate(reversed(dicts)):
-        clean: Dict = {}
+    for idx, r in enumerate(reversed(raw_rows)):
+        clean: Dict[str, Any] = {}
         for name, field in Record.model_fields.items():  # type: ignore[attr-defined]
             val = r.get(name, None)
             if pd.isna(val):
@@ -197,7 +250,7 @@ def read_from_csv(logdir: str) -> List[Record]:
             clean[name] = val
         rec = Record(**clean)  # type: ignore
         # Preserve existing request_id/index from disk; do not rewrite hashes here.
-        key = rec.request_id if rec.request_id else f"__row_{idx}"
+        key = rec.unique_tag or rec.request_id or f"__row_{idx}"
         if key not in records_by_id:
             records_by_id[key] = rec
             insertion_order.append(key)
@@ -216,8 +269,8 @@ def read_from_csv(logdir: str) -> List[Record]:
     if dropped > 0:
         try:
             df_clean = pd.DataFrame([r.model_dump() for r in result])
-            df_clean.to_csv(logdir, index=False)
-            with open(logdir, "rb") as f:
+            _write_jsonl(jsonl_path, cast(Sequence[Dict[str, Any]], df_clean.to_dict("records")))
+            with jsonl_path.open("rb") as f:
                 os.fsync(f.fileno())
             print(f"[checkpoint load] compacted checkpoint: kept {len(result)} unique rows " f"(dropped {dropped})")
         except Exception:
@@ -246,38 +299,59 @@ def read_from_csv(logdir: str) -> List[Record]:
 
 
 def walk_results_folder(csv_folder: str) -> List[str]:
-    csv_files: List[str] = []
+    jsonl_files: List[str] = []
     for dirpath, dirnames, filenames in os.walk(csv_folder):
         for filename in filenames:
-            if filename.endswith(".csv"):
-                csv_files.append(os.path.join(dirpath, filename))
-    return csv_files
+            if filename.endswith(".jsonl"):
+                jsonl_files.append(os.path.join(dirpath, filename))
+            elif filename.endswith(".csv"):
+                csv_path = Path(dirpath) / filename
+                jsonl_path = _as_jsonl_path(csv_path)
+                _load_rows(jsonl_path)
+                jsonl_files.append(str(jsonl_path))
+    return jsonl_files
 
 
 def create_big_df(csv_files: Sequence[Union[str, Path]]) -> pd.DataFrame:
     big_df: List[pd.DataFrame] = []
     for csv_file in csv_files:
         path_obj = Path(csv_file)
-        df = pd.read_csv(path_obj)
+        if path_obj.suffix == ".jsonl":
+            df = pd.read_json(path_obj, lines=True)
+        else:
+            # Legacy CSV path; convert on the fly to keep a JSONL copy.
+            jsonl_path = _as_jsonl_path(path_obj)
+            if not jsonl_path.exists() and path_obj.exists():
+                _load_rows(jsonl_path)
+            if jsonl_path.exists():
+                df = pd.read_json(jsonl_path, lines=True)
+            else:
+                # Fallback: read CSV directly if conversion failed for any reason.
+                df = pd.read_csv(path_obj)
         if "sim_err_msg" in df.columns:
             df["sim_parse_err"] = df["sim_err_msg"]
         big_df.append(df)
+    if not big_df:
+        return pd.DataFrame()
     return pd.concat(big_df, axis=0, ignore_index=True)
 
 
 class CheckpointManager:
     """
-    Handles incremental logging of records to CSV so runs can resume.
+    Handles incremental logging of records to JSONL so runs can resume.
     """
 
     def __init__(self, csv_path: str):
-        self.csv_path = csv_path
+        self.input_path = Path(csv_path)
+        self.jsonl_path = _as_jsonl_path(self.input_path)
+        self._mirror_csv = self.input_path.suffix.lower() == ".csv"
+        self.csv_path = str(self.jsonl_path)
         self._records: Dict[str, Record] = {}
         self._defaults = Record().model_dump()
         self._pending: List[Record] = []
-        if os.path.exists(csv_path):
-            for idx, rec in enumerate(read_from_csv(csv_path)):
-                key = rec.request_id if rec.request_id else f"__row_{idx}"
+        if self.jsonl_path.exists() or self.input_path.exists():
+            for idx, rec in enumerate(read_from_csv(str(self.input_path))):
+                key = rec.unique_tag or rec.request_id or f"__row_{idx}"
                 self._records[key] = rec
         self._flushed_ids = set(self._records.keys())
 
@@ -290,12 +364,29 @@ class CheckpointManager:
             return value != -1
         return value is not None
 
-    def get(self, request_id: str) -> Optional[Record]:
-        return self._records.get(request_id)
+    def get(self, key: str) -> Optional[Record]:
+        direct = self._records.get(key)
+        if direct is not None:
+            return direct
+        for rec in self._records.values():
+            if rec.unique_tag == key or rec.request_id == key:
+                return rec
+        return None
+
+    def save_batch(self, records: Sequence[Record], flush: bool = True) -> None:
+        for rec in records:
+            key = rec.unique_tag or rec.request_id or f"__row_{len(self._records)}"
+            if not rec.unique_tag:
+                rec.unique_tag = rec.request_id or key
+            self._records[key] = rec
+        if flush:
+            self.flush()
 
     def upsert(self, record: Record, flush: bool = True) -> None:
-        key = record.request_id if record.request_id else f"__row_{len(self._records)}"
-        existing = self._records.get(key)
+        key = record.unique_tag or record.request_id or f"__row_{len(self._records)}"
+        if not record.unique_tag:
+            record.unique_tag = record.request_id or key
+        existing = self.get(key)
         to_store = record
         if existing is None:
             self._records[key] = record
@@ -322,10 +413,13 @@ class CheckpointManager:
     def flush(self) -> None:
         if not self._records:
             return
-        df = pd.DataFrame([r.model_dump() for r in self._records.values()])
-        df.to_csv(self.csv_path, mode="w", index=False, header=True)
+        payload = [r.model_dump() for r in self._records.values()]
+        _write_jsonl(self.jsonl_path, payload)
+        if self._mirror_csv:
+            df = pd.DataFrame(payload)
+            df.to_csv(self.input_path, index=False)
         try:
-            with open(self.csv_path, "rb") as f:
+            with open(self.jsonl_path, "rb") as f:
                 os.fsync(f.fileno())
         except Exception:
             pass
@@ -334,6 +428,17 @@ class CheckpointManager:
 
     def all_records(self) -> List[Record]:
         return list(self._records.values())
+
+    def get_pending_count(self, target_by_kind: Mapping[str, int], digits: Sequence[int], model: str, seed: int) -> Dict[str, int]:
+        """
+        Compute how many items remain to be generated per kind for a given model/seed and digit set.
+        """
+        pending = {k: max(v, 0) for k, v in target_by_kind.items()}
+        for rec in self._records.values():
+            if rec.model != model or rec.seed != seed or rec.digit not in digits:
+                continue
+            pending[rec.kind] = max(pending.get(rec.kind, 0) - 1, 0)
+        return pending
 
     def get_by_question(self, kind: str, digit: int, question: str) -> Optional[Record]:
         """

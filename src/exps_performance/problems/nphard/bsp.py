@@ -28,6 +28,7 @@ class BspQuestion(NpQuestion):
     array: list[int] = field(default_factory=list)
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return cast(Type[NpCheckAndFormat], BspCheckAndFormat)
 
@@ -43,7 +44,7 @@ class BspCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if not isinstance(evaluated, int):
@@ -80,7 +81,7 @@ class BspCheckAndFormat(NpCheckAndFormat):
         if isinstance(output, str):
             return False, "The solution is invalid."
         try:
-            position = int(ast.literal_eval(output.Position))
+            position = int(ast.literal_eval(str(output.Position)))
         except (SyntaxError, ValueError):  # noqa E722
             return False, "The solution is invalid."
         if position == -1 or position >= len(array):

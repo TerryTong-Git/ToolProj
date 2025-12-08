@@ -1,6 +1,6 @@
 import itertools
 from pathlib import Path
-from typing import List, Sequence, Union
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +9,7 @@ import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 from scipy.stats import wilcoxon
 
-from src.exps_performance.logger import create_big_df, walk_results_folder
+from src.exps_performance.logger import create_big_df
 
 
 def plot_main_fig(df: pd.DataFrame) -> None:
@@ -195,9 +195,11 @@ def plot_p_vals(df: pd.DataFrame) -> None:
 
 
 def analysis() -> None:
-    files = walk_results_folder("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")  # check files are deepseek and gemma, seed 1 and 2
-    typed_files: Sequence[Union[str, Path]] = files  # Path imported below
-    df = create_big_df(typed_files)
+    results_root = Path("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")
+    jsonl_files = sorted(results_root.rglob("*.jsonl"))
+    if not jsonl_files:
+        raise FileNotFoundError(f"No JSONL files found under {results_root}")
+    df = create_big_df(jsonl_files)
 
     plot_p_vals(df)
     plot_main_fig(df)
