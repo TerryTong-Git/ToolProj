@@ -96,6 +96,17 @@ class BaseArm:
             total_correct.append(bool(correct))
         return count / len(self.problems), total_correct
 
+    @staticmethod
+    def _is_default_model(parsed_output: Any, default_model: Any) -> bool:
+        try:
+            if hasattr(parsed_output, "model_dump") and hasattr(default_model, "model_dump"):
+                return bool(parsed_output.model_dump() == default_model.model_dump())
+            if hasattr(parsed_output, "dict") and hasattr(default_model, "dict"):
+                return bool(parsed_output.dict() == default_model.dict())  # type: ignore[call-arg]
+        except Exception:  # noqa: BLE001
+            return False
+        return False
+
     def _parse(self, answers: List[str]) -> List[Tuple[Any, str]]:
         self.parse_fail = 0
         all_parsed = []
@@ -106,7 +117,7 @@ class BaseArm:
             a = remove_python_triple_quote(a)
             parsed_output, err = pUtil.parse_output(a)
             default = pUtil.PROB_TYPES[self.run_type]()
-            if parsed_output == default:
+            if self._is_default_model(parsed_output, default):
                 self.parse_fail += 1
                 parse_failed.append((i, q, parsed_output, pUtil, default))
             all_parsed.append((parsed_output, str(err)))
@@ -156,15 +167,15 @@ class BaseArm:
             prob_index = i // RERUN  # i w.r.t. to given list
             rerun_index = i % RERUN  # 443 -> 3
             llm_o = remove_python_triple_quote(llm_o)  # not accepted by langchain
-            parsed, err = pUtil.parse_output(llm_o)
-            og_ind, problem, parsed, pUtil, default = to_reparse[prob_index]
-            if parsed != default or rerun_index == (RERUN - 1):
-                outs.append((og_ind, parsed, err))
+            parsed_output, err = pUtil.parse_output(llm_o)
+            og_ind, problem, _prev_parsed, pUtil, default = to_reparse[prob_index]
+            if not self._is_default_model(parsed_output, default) or rerun_index == (RERUN - 1):
+                outs.append((og_ind, parsed_output, err))
                 i += RERUN - rerun_index
             else:
                 i += 1
         if len(to_reparse) != len(outs):
-            outs.append((og_ind, parsed, err))
+            outs.append((og_ind, parsed_output, err))
         return outs
 
 
@@ -247,7 +258,7 @@ class Arm3(BaseArm):
         itf = ProgramChatInterface(
             answer_expr="solution()",
             timeout_seconds=getattr(self.default_args, "exec_timeout_seconds", 5),
-            max_attempts=getattr(self.default_args, "exec_max_attempts", 5),
+            max_attempts=getattr(self.default_args, "exec_max_attempts", 2),
         )
         return itf.run(code)
 

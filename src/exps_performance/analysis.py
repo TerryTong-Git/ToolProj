@@ -18,7 +18,6 @@ def plot_main_fig(df: pd.DataFrame) -> None:
     #     train_lengths_dict[alg] = np.array(train_length)
     sns.reset_defaults()
     # import pdb; pdb.set_trace()
-    # df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
     df1 = df
     df2 = df1
     # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
@@ -195,12 +194,44 @@ def plot_p_vals(df: pd.DataFrame) -> None:
     plt.savefig("figures/pval.png", bbox_inches="tight")
 
 
+models = [
+    "anthropic/claude-haiku-4.5",
+    "anthropic/claude-sonnet-4",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "openai/gpt-5.1-codex",
+    "openai/gpt-5-mini",
+    "openai/gpt-5-nano",
+    "openai/o3-mini",
+    "deepseek/deepseek-r1",
+    "deepseek/deepseek-r1-distill-llama-70b",
+    "google/gemini-2.0-flash-lite-001",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-pro",
+    "xai/grok-code-fast-1",
+    "meta-llama/llama-3.1-405b-instruct",
+    "meta-llama/llama-3.3-70b-instruct",
+    "meta-llama/llama-3-70b-instruct",
+    "meta-llama/llama-4-scout",
+    "mistral/devstral-medium",
+    "mistral/ministral-14b-2512",
+    "qwen/qwen-2.5-72b-instruct",
+    "qwen/qwen-2.5-coder-32b-instruct",
+    "qwen/qwen3-coder-30b-a3b-instruct",
+    "zhipuai/glm-4.6",
+    "allenai/olmo-2-0325-32b-instruct",
+    "microsoft/phi-4",
+    "microsoft/phi-4-reasoning-plus",
+]
+
+
 def analysis() -> None:
     results_root = Path("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")
     jsonl_files = sorted(results_root.rglob("*.jsonl"))
     if not jsonl_files:
         raise FileNotFoundError(f"No JSONL files found under {results_root}")
     df = create_big_df(jsonl_files)
+    df = df[df["model"].isin(["openai/gpt-oss-20b", "openai/gpt-oss-120b", "openai/gpt-5-mini"])]
 
     plot_p_vals(df)
     plot_main_fig(df)
