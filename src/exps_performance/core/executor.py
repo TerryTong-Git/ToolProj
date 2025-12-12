@@ -37,12 +37,13 @@ class GenericRuntime:
 
 
 class ProgramChatInterface:
-    def __init__(self, answer_expr: str = "solution()", timeout_seconds: int = 2):
+    def __init__(self, answer_expr: str = "solution()", timeout_seconds: int = 2, max_attempts: int = 5):
         self.answer_expr = answer_expr
         self.timeout_seconds = timeout_seconds
+        self.max_attempts = max_attempts
 
     @staticmethod
-    def _child_runner(code: str, answer_expr: str, conn: Any) -> None:
+    def _child_runner(code: str, answer_expr: str, conn: Any, timeout_seconds: int, attempt_idx: int) -> None:
         def _timeout(_signum: int, _frame: Any) -> None:
             raise TimeoutError("code execution timed out")
 
@@ -56,9 +57,11 @@ class ProgramChatInterface:
         except Exception:
             pass
         signal.signal(signal.SIGALRM, _timeout)
-        signal.alarm(5)
+        safe_timeout = max(1, int(timeout_seconds)) if timeout_seconds else 1
+        signal.alarm(safe_timeout)
 
         runtime = GenericRuntime()
+        runtime.inject({"ATTEMPT": attempt_idx})
         err = "ok"
         out: Any = ""
         try:
@@ -76,18 +79,36 @@ class ProgramChatInterface:
 
     def run(self, code: str) -> Tuple[str, str]:
         """
-        Execute code in an isolated subprocess with a hard timeout.
-        Returns (result, error_message_or_ok).
+        Execute code in an isolated subprocess with a hard timeout, retrying on
+        timeout or errors up to max_attempts. Returns (result, error_message_or_ok).
         """
-        parent_conn, child_conn = mp.Pipe(duplex=False)
-        proc = mp.Process(target=self._child_runner, args=(code, self.answer_expr, child_conn))
-        proc.start()
-        proc.join(self.timeout_seconds)
-        if proc.is_alive():
-            proc.terminate()
-            proc.join()
-            return "", "timeout"
-        if parent_conn.poll():
-            out, err = parent_conn.recv()
-            return out, err
-        return "", "unknown error"
+        last_out: Any = ""
+        last_err: str = "unknown error"
+        join_timeout = self.timeout_seconds
+
+        for attempt_idx in range(self.max_attempts):
+            parent_conn, child_conn = mp.Pipe(duplex=False)
+            proc = mp.Process(
+                target=self._child_runner,
+                args=(code, self.answer_expr, child_conn, self.timeout_seconds, attempt_idx),
+            )
+            proc.start()
+            child_conn.close()
+            proc.join(join_timeout)
+
+            if proc.is_alive():
+                proc.terminate()
+                proc.join()
+                last_out, last_err = "", "timeout"
+                parent_conn.close()
+            elif parent_conn.poll():
+                out, err = parent_conn.recv()
+                last_out, last_err = out, err
+                parent_conn.close()
+                if err == "ok":
+                    return out, err
+            else:
+                last_out, last_err = "", "unknown error"
+                parent_conn.close()
+
+        return last_out, last_err

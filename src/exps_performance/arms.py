@@ -244,7 +244,11 @@ class Arm3(BaseArm):
         return total_correct / len(self.problems), edited_problems
 
     def extract_locals(self, code: str) -> Tuple[str, str]:
-        itf = ProgramChatInterface(answer_expr="solution()", timeout_seconds=5)
+        itf = ProgramChatInterface(
+            answer_expr="solution()",
+            timeout_seconds=getattr(self.default_args, "exec_timeout_seconds", 5),
+            max_attempts=getattr(self.default_args, "exec_max_attempts", 5),
+        )
         return itf.run(code)
 
     def each_record(self, q: Question, a: Any, p: Tuple[Any, str], e: str, s: bool) -> Question:
