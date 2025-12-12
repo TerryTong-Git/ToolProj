@@ -37,7 +37,7 @@ class GenericRuntime:
 
 
 class ProgramChatInterface:
-    def __init__(self, answer_expr: str = "solution()", timeout_seconds: int = 2, max_attempts: int = 5):
+    def __init__(self, answer_expr: str = "solution()", timeout_seconds: int = 5, max_attempts: int = 2):
         self.answer_expr = answer_expr
         self.timeout_seconds = timeout_seconds
         self.max_attempts = max_attempts
