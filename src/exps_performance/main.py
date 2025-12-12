@@ -60,6 +60,31 @@ def resolve_sample_count(arg_value: int, env_var: str) -> int:
     return arg_value
 
 
+def compute_effective_samples(
+    checkpoint: CheckpointManager,
+    model: str,
+    seed: int,
+    target_gsm_samples: int,
+    target_clrs_samples: int,
+) -> tuple[int, int, dict[str, int]]:
+    """
+    Ensure we do not drop previously generated samples when targets increase.
+    Returns (gsm_samples, clrs_samples, existing_counts_by_kind).
+    """
+    existing_counts: dict[str, int] = {}
+    for rec in checkpoint.all_records():
+        if rec.model != model or rec.seed != seed:
+            continue
+        existing_counts[rec.kind] = existing_counts.get(rec.kind, 0) + 1
+
+    existing_gsm = existing_counts.get("gsm8k", 0)
+    existing_clrs = sum(count for kind, count in existing_counts.items() if kind.startswith("clrs"))
+
+    gsm_samples = max(target_gsm_samples, existing_gsm)
+    clrs_samples = max(target_clrs_samples, existing_clrs)
+    return gsm_samples, clrs_samples, existing_counts
+
+
 def assign_sequential_indices(
     questions: List[Question],
     n: int,
@@ -180,8 +205,12 @@ def run(args: Any) -> None:
             logger.info("Could not read checkpoint JSONL for counts.")
     # main workflow
     logger.info("Making Dataset")
-    gsm_samples = resolve_sample_count(args.gsm_samples, "GSM8K_SAMPLES")
-    clrs_samples = resolve_sample_count(args.clrs_samples, "CLRS30_SAMPLES")
+    target_gsm_samples = resolve_sample_count(args.gsm_samples, "GSM8K_SAMPLES")
+    target_clrs_samples = resolve_sample_count(args.clrs_samples, "CLRS30_SAMPLES")
+    gsm_samples, clrs_samples, existing_counts = compute_effective_samples(checkpoint, args.model, args.seed, target_gsm_samples, target_clrs_samples)
+    logger.info(f"Existing samples by kind for model={args.model}, seed={args.seed}: {existing_counts}")
+    if gsm_samples != target_gsm_samples or clrs_samples != target_clrs_samples:
+        logger.info(f"Adjusted sample caps to preserve prior runs: gsm8k={gsm_samples}, clrs={clrs_samples}")
     data = make_dataset(args.kinds, args.n, args.digits_list, gsm_samples=gsm_samples, clrs_samples=clrs_samples)  # choose the data
     per_kind_limits: dict[str, int] = {}
     if "gsm8k" in args.kinds:
