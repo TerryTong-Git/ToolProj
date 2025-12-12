@@ -28,6 +28,7 @@ class EdpQuestion(NpQuestion):
     string_b: str = ""
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return EdpCheckAndFormat
 
@@ -43,7 +44,7 @@ class EdpCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if not isinstance(evaluated, int):
@@ -94,7 +95,7 @@ class EdpCheckAndFormat(NpCheckAndFormat):
         string_a = q.string_a
         string_b = q.string_b
         try:
-            reported_distance = ast.literal_eval(output.Operations)
+            reported_distance = ast.literal_eval(str(output.Operations))
         except (SyntaxError, ValueError):  # noqa
             reported_distance = -1
 

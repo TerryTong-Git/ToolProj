@@ -1,12 +1,13 @@
 import ast
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Type
 
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.clrs.huggingface_generators import clrs_generator
+from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 
 clrs_desc = "Description: You are going to be given a set of algorithmic problem." "Question: Solve the following algorithmic problem: \n {question}"
@@ -60,6 +61,7 @@ class ClrsQuestion(Question):
     digits: int = 0
     answer: str = ""
     text_data: str = ""
+    record: Record = field(default_factory=Record)
 
     @property
     def util_pointer(self) -> Type["ClrsCheckAndFormat"]:
@@ -76,7 +78,7 @@ class ClrsCheckAndFormat(CheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if isinstance(evaluated, int):
@@ -115,4 +117,4 @@ class ClrsCheckAndFormat(CheckAndFormat):
                 )
                 for d in data
             )
-        return combined[:100]
+        return combined

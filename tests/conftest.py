@@ -2,13 +2,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, List, Sequence, Union
 
-import pandas as pd
 import pytest
 
 from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
 from src.exps_performance.logger import Record, create_big_df, walk_results_folder
-
-pytestmark = pytest.mark.slow  # marks the whole file
 
 
 # TODO: Do not test vllm spin up on upstream github, make this a fixed object.
@@ -164,7 +161,12 @@ def check(arm: Any, data: List[Any], types: str) -> None:
 
 
 @pytest.fixture(scope="session")
-def load_results_to_analyze() -> pd.DataFrame:
+def load_results_to_analyze() -> Any:
+    try:
+        import pandas as pd
+    except ImportError:
+        pytest.skip("pandas not installed; integration results fixture skipped")
+    _ = pd.__version__
     files = walk_results_folder("/nlpgpu/data/terry/ToolProj/tests/integration/fixtures/results")  # check files are deepseek and gemma, seed 1 and 2
     typed_files: Sequence[Union[str, Path]] = files
     df = create_big_df(typed_files)

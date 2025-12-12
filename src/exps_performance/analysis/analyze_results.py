@@ -27,6 +27,12 @@ def literal_eval(row: str) -> Any:
     return row_dict
 
 
+def _read_result_file(path: Path) -> pd.DataFrame:
+    if path.suffix.lower() != ".jsonl":
+        raise ValueError(f"Results must be JSONL now: {path}")
+    return pd.read_json(path, lines=True)
+
+
 def create_big_df(csv_files: List[Path]) -> pd.DataFrame:
     pattern = r"seed_(\d)"
     big_df = []
@@ -34,7 +40,7 @@ def create_big_df(csv_files: List[Path]) -> pd.DataFrame:
         seed = re.search(pattern, csv_file.name)
         if seed is not None:
             parsed_seed = seed.group(1)
-            df = pd.read_csv(csv_file)
+            df = _read_result_file(csv_file)
             df["seed"] = int(parsed_seed)
             big_df.append(df)
     return pd.concat(big_df, axis=0, ignore_index=True)
@@ -153,7 +159,7 @@ def get_csv_stats(df: pd.DataFrame, name: str) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv-folder", help="Path to csv folder (the row-level file)")
+    ap.add_argument("--csv-folder", help="Path to results folder (expects res.jsonl files)")
     ap.add_argument(
         "--exec-code",
         action="store_true",

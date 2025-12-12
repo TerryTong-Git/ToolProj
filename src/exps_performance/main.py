@@ -37,6 +37,7 @@ from src.exps_performance.llm import llm
 from src.exps_performance.logger import (
     CheckpointManager,
     create_dir,
+    generate_unique_tag,
     init_tensorboard,
     make_request_id,
     write_text_to_tensorboard,
@@ -49,12 +50,123 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)  # Using __name__ is a common practice
 
 
+def resolve_sample_count(arg_value: int, env_var: str) -> int:
+    env_val = os.getenv(env_var)
+    if env_val:
+        try:
+            return int(env_val)
+        except ValueError:
+            logger.warning(f"Could not parse {env_var}={env_val} as int; falling back to CLI/default value.")
+    return arg_value
+
+
+def assign_sequential_indices(
+    questions: List[Question],
+    n: int,
+    seed: int,
+    model: str,
+    exp_id: str,
+    checkpoint: CheckpointManager,
+    per_kind_limits: Optional[dict[str, int]] = None,
+) -> tuple[list[Question], dict[str, int], dict[str, int], list[tuple[str, str, int, int, int]]]:
+    """
+    Assign stable per-kind indices ordered by digit then original position.
+    Returns (assigned_questions, dropped_by_kind, restored_by_kind, debug_samples).
+    """
+    kind_groups: dict[str, list[Question]] = {}
+    for q_item in questions:
+        kind_groups.setdefault(q_item.kind, []).append(q_item)
+
+    assigned: list[Question] = []
+    dropped_by_kind: dict[str, int] = {}
+    restored_by_kind: dict[str, int] = {}
+    debug_assigned: list[tuple[str, str, int, int, int]] = []
+
+    per_kind_limits = per_kind_limits or {}
+
+    for kind, qs in kind_groups.items():
+        qs_sorted = sorted(qs, key=lambda x: (x.digits, getattr(x, "original_pos", 0)))
+        limit = per_kind_limits.get(kind, n)
+        for idx, q_item in enumerate(qs_sorted, start=1):
+            if idx > limit:
+                dropped_by_kind[kind] = dropped_by_kind.get(kind, 0) + 1
+                continue
+            rec = q_item.record
+            rec.model = model
+            rec.seed = seed
+            rec.exp_id = exp_id
+            rec.kind = q_item.kind
+            rec.digit = q_item.digits
+            rec.index_in_kind = idx
+            rec.unique_tag = rec.unique_tag or generate_unique_tag(q_item.kind, q_item.digits, idx, seed, model)
+            rec.request_id = rec.request_id or make_request_id(q_item.kind, q_item.digits, idx, seed, model)
+            existing = checkpoint.get(rec.unique_tag) or checkpoint.get(rec.request_id)
+            if existing:
+                restored_by_kind[kind] = restored_by_kind.get(kind, 0) + 1
+                if not existing.unique_tag:
+                    existing.unique_tag = rec.unique_tag
+                rec = existing
+                if existing.sim_code:
+                    q_item.code = existing.sim_code
+            q_item.record = rec
+            assigned.append(q_item)
+            if len(debug_assigned) < 10:
+                debug_assigned.append((rec.unique_tag or rec.request_id, q_item.kind, q_item.digits, idx, getattr(q_item, "original_pos", -1)))
+    return assigned, dropped_by_kind, restored_by_kind, debug_assigned
+
+
+def _stage_complete(stage_name: str, rec: Any) -> bool:
+    """
+    Conservative completion checks per stage; missing required fields means the stage failed.
+    """
+    if stage_name == "Arm2":  # sim generation
+        return bool(rec.sim_question) and (bool(rec.sim_answer) or bool(rec.sim_err_msg) or bool(rec.sim_parse_err) or bool(rec.sim_correct))
+    if stage_name == "Arm3":  # code execution
+        return bool(rec.code_question) and (bool(rec.code_answer) or bool(rec.code_err_msg) or bool(rec.code_parse_err) or bool(rec.code_gen_err))
+    if stage_name == "Arm4":  # control sim
+        return bool(rec.controlsim_question) and (
+            bool(rec.controlsim_answer) or bool(rec.controlsim_err_msg) or bool(rec.controlsim_parse_err) or bool(rec.controlsim_correct)
+        )
+    if stage_name == "Arm1":  # natural language reasoning
+        return bool(rec.nl_question) and (bool(rec.nl_answer) or bool(rec.nl_err_msg) or bool(rec.nl_parse_err) or bool(rec.nl_correct))
+    return True
+
+
+def run_stage_batch(
+    pending: List[Question],
+    ArmCls: type[BaseArm],
+    stage_name: str,
+    args: Any,
+    client: Any,
+    checkpoint: CheckpointManager,
+) -> List[Question]:
+    """
+    Run a single stage with batch-level completeness checks. Batches that fail completeness are not checkpointed.
+    """
+    if not pending:
+        return pending
+    logger.info(f"Running {stage_name} for {len(pending)} questions")
+    chunk_size = max(1, args.checkpoint_every)
+    updated_all: List[Question] = []
+    for start in range(0, len(pending), chunk_size):
+        batch = pending[start : start + chunk_size]
+        arm = ArmCls(batch, args, client)
+        _, updated = arm.run()
+        batch_complete = all(_stage_complete(stage_name, q.record) for q in updated)
+        if batch_complete:
+            checkpoint.save_batch([q.record for q in updated], flush=True)
+            updated_all.extend(updated)
+        else:
+            logger.warning(f"[checkpoint guard] Skipping checkpoint for {stage_name} batch starting at {start}: " f"{len(batch)} items incomplete")
+    return updated_all
+
+
 def run(args: Any) -> None:
     seed_all_and_setup(args)
     client = llm(args)
     exp_dir = create_dir(args, Path(args.root))
     exp_id = Path(exp_dir).name
-    checkpoint_path = os.path.join(exp_dir, "res.csv")
+    checkpoint_path = os.path.join(exp_dir, "res.jsonl")
     checkpoint = CheckpointManager(checkpoint_path)
     logger.info(f"Using exp_dir={exp_dir} (exp_id={exp_id}) for model={args.model} seed={args.seed}")
     logger.info(f"Restored {len(checkpoint._records)} unique records from checkpoint " f"({checkpoint_path})")
@@ -62,13 +174,30 @@ def run(args: Any) -> None:
         try:
             import pandas as pd
 
-            df_counts = pd.read_csv(checkpoint_path)
+            df_counts = pd.read_json(checkpoint_path, lines=True)
             logger.info(f"Checkpoint rows in file: {len(df_counts)}; " f"unique request_ids: {len(checkpoint._records)}")
         except Exception:
-            logger.info("Could not read checkpoint CSV for counts.")
+            logger.info("Could not read checkpoint JSONL for counts.")
     # main workflow
     logger.info("Making Dataset")
-    data = make_dataset(args.kinds, args.n, args.digits_list)  # choose the data
+    gsm_samples = resolve_sample_count(args.gsm_samples, "GSM8K_SAMPLES")
+    clrs_samples = resolve_sample_count(args.clrs_samples, "CLRS30_SAMPLES")
+    data = make_dataset(args.kinds, args.n, args.digits_list, gsm_samples=gsm_samples, clrs_samples=clrs_samples)  # choose the data
+    per_kind_limits: dict[str, int] = {}
+    if "gsm8k" in args.kinds:
+        per_kind_limits["gsm8k"] = gsm_samples
+    ClrsQuestionType: Optional[type[Question]] = None
+    try:
+        from src.exps_performance.problems.clrs import ClrsQuestion as ImportedClrsQuestion
+
+        ClrsQuestionType = ImportedClrsQuestion
+    except Exception:
+        ClrsQuestionType = None
+
+    if ClrsQuestionType is not None:
+        for q in data:
+            if isinstance(q, ClrsQuestionType):
+                per_kind_limits[q.kind] = clrs_samples
 
     def _done_sim(rec: Any) -> bool:
         return bool(rec.sim_question) or bool(rec.sim_answer) or bool(rec.sim_parse_err) or bool(rec.sim_err_msg)
@@ -86,92 +215,36 @@ def run(args: Any) -> None:
         return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
 
     # Populate identifiers and restore from checkpoint using stable per-kind indexing (digit, original_pos)
-    per_kind_counter: dict[str, int] = {}
-    restored_idx = 0
-    restored_by_kind: dict[str, int] = {}
-    # Build stable index map per kind
-    kind_groups: dict[str, list[Question]] = {}
-    for q in data:
-        kind_groups.setdefault(q.kind, []).append(q)
-    for k, qs in kind_groups.items():
-        qs_sorted = sorted(qs, key=lambda x: (x.digits, getattr(x, "original_pos", 0)))
-        for idx, q in enumerate(qs_sorted, start=1):
-            setattr(q, "_stable_index_in_kind", idx)
-    # Enforce per-kind cap (args.n) to guarantee exactly n indices per kind at most.
-    capped_data: list[Question] = []
-    dropped_by_kind: dict[str, int] = {}
-    for q in data:
-        idx_in_kind = getattr(q, "_stable_index_in_kind", 0)
-        if idx_in_kind <= args.n:
-            capped_data.append(q)
-        else:
-            dropped_by_kind[q.kind] = dropped_by_kind.get(q.kind, 0) + 1
+    data, dropped_by_kind, restored_by_kind, debug_assigned = assign_sequential_indices(
+        list(data), args.n, args.seed, args.model, exp_id, checkpoint, per_kind_limits=per_kind_limits
+    )
     if dropped_by_kind:
         logger.warning(f"Dropped items exceeding n per kind: {dropped_by_kind}")
-    data = capped_data
-    # Debug: show first few assigned IDs and track consistency against checkpoint.
-    debug_assigned: list[tuple[str, str, int, int, int]] = []
-    for q in data:
-        idx_in_kind = getattr(q, "_stable_index_in_kind", 0)
-        per_kind_counter[q.kind] = idx_in_kind
-        q.record.model = args.model
-        q.record.seed = args.seed
-        q.record.exp_id = exp_id
-        q.record.kind = q.kind
-        q.record.digit = q.digits
-        q.record.index_in_kind = idx_in_kind
-        q.record.request_id = make_request_id(q.kind, q.digits, idx_in_kind, args.seed, args.model)
-        existing = checkpoint.get(q.record.request_id)
-        if existing:
-            restored_by_kind[q.kind] = restored_by_kind.get(q.kind, 0) + 1
-            restored_idx += 1  # request_id match implies index match
-            q.record = existing
-            if existing.sim_code:
-                q.code = existing.sim_code
-        if len(debug_assigned) < 10:
-            debug_assigned.append((q.record.request_id, q.kind, q.digits, idx_in_kind, getattr(q, "original_pos", -1)))
+
     rows_in_file = len(checkpoint._records)
-    unique_req_ids = len(set(checkpoint._records.keys()))
-    pending_expected = len(data) - rows_in_file
-    logger.info(f"Sample assigned IDs (first 10): {debug_assigned}")
-    logger.info(f"Restore summary: total={len(data)}, restored_by_index={restored_idx}, " f"pending={len(data) - restored_idx}")
-    logger.info(
-        f"Checkpoint consistency: rows={rows_in_file}, unique_request_ids={unique_req_ids}, "
-        f"restored_by_index={restored_idx}, pending_expected={pending_expected}"
-    )
-    if rows_in_file != unique_req_ids or unique_req_ids != restored_idx:
-        logger.warning("Mismatch detected: rows, unique request IDs, and restored_by_index differ; " "dedupe/checkpoint compaction recommended.")
-    logger.info(f"Restored per kind: {restored_by_kind}")
-    # Debug: detect duplicate request_ids assigned in this dataset build
+    total_by_kind: dict[str, int] = {}
+    for q in data:
+        total_by_kind[q.kind] = total_by_kind.get(q.kind, 0) + 1
+    # Pending should reflect only the current dataset, not any out-of-scope checkpoint rows.
+    pending_by_kind = {k: max(total_by_kind.get(k, 0) - restored_by_kind.get(k, 0), 0) for k in args.kinds}
+
+    logger.info(f"Restore summary: total={len(data)}, restored_by_kind={restored_by_kind}, pending_by_kind={pending_by_kind}")
+    logger.info(f"Checkpoint rows restored into memory: {rows_in_file}")
+    # Debug: detect duplicate unique tags assigned in this dataset build
     seen_ids = set()
     dup_ids = []
     for q in data:
-        if q.record.request_id in seen_ids:
-            dup_ids.append(q.record.request_id)
-        seen_ids.add(q.record.request_id)
+        tag = q.record.unique_tag or q.record.request_id
+        if tag in seen_ids:
+            dup_ids.append(tag)
+        seen_ids.add(tag)
     if dup_ids:
-        logger.warning(f"Duplicate request_ids assigned in dataset build: {set(dup_ids)}")
-
-    def run_stage(pending: List[Question], ArmCls: type[BaseArm], stage_name: str) -> List[Question]:
-        if not pending:
-            return pending
-        logger.info(f"Running {stage_name} for {len(pending)} questions")
-        chunk_size = max(1, args.checkpoint_every)
-        updated_all = []
-        for start in range(0, len(pending), chunk_size):
-            batch = pending[start : start + chunk_size]
-            arm = ArmCls(batch, args, client)
-            _, updated = arm.run()
-            for q in updated:
-                checkpoint.upsert(q.record, flush=False)
-            checkpoint.flush()  # flush every batch
-            updated_all.extend(updated)
-        return updated_all
+        logger.warning(f"Duplicate identifiers assigned in dataset build: {set(dup_ids)}")
 
     # Arm2 (sim/code generation)
     arm2_pending = [q for q in data if not _fully_done(q.record) and not _done_sim(q.record)]
     logger.info(f"Arm2 pending {len(arm2_pending)} / total {len(data)}")
-    updated_arm2 = run_stage(arm2_pending, Arm2, "Arm2")
+    updated_arm2 = run_stage_batch(arm2_pending, Arm2, "Arm2", args, client, checkpoint)
     # propagate code back to main list
     if updated_arm2:
         updated_map = {q.record.request_id: q for q in updated_arm2}
@@ -183,7 +256,7 @@ def run(args: Any) -> None:
     # Arm3 (code execution)
     arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
     logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
-    updated_arm3 = run_stage(arm3_pending, Arm3, "Arm3")
+    updated_arm3 = run_stage_batch(arm3_pending, Arm3, "Arm3", args, client, checkpoint)
     if updated_arm3:
         updated_map = {q.record.request_id: q for q in updated_arm3}
         for i, q in enumerate(data):
@@ -193,7 +266,7 @@ def run(args: Any) -> None:
     # Arm4 (control simulation)
     arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
     logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
-    updated_arm4 = run_stage(arm4_pending, Arm4, "Arm4")
+    updated_arm4 = run_stage_batch(arm4_pending, Arm4, "Arm4", args, client, checkpoint)
     if updated_arm4:
         updated_map = {q.record.request_id: q for q in updated_arm4}
         for i, q in enumerate(data):
@@ -203,7 +276,7 @@ def run(args: Any) -> None:
     # Arm1 (nl)
     arm1_pending = [q for q in data if not _fully_done(q.record) and not _done_nl(q.record)]
     logger.info(f"Arm1 pending {len(arm1_pending)} / total {len(data)}")
-    updated_arm1 = run_stage(arm1_pending, Arm1, "Arm1")
+    updated_arm1 = run_stage_batch(arm1_pending, Arm1, "Arm1", args, client, checkpoint)
     if updated_arm1:
         updated_map = {q.record.request_id: q for q in updated_arm1}
         for i, q in enumerate(data):
@@ -286,6 +359,8 @@ class Args:
             ]
         },
     )
+    gsm_samples: int = field(default=500, metadata={"help": "Samples to use for GSM8K (override env: GSM8K_SAMPLES)."})
+    clrs_samples: int = field(default=500, metadata={"help": "Samples to use for CLRS30 (override env: CLRS30_SAMPLES)."})
     seed: int = 1
     backend: str = field(
         default="dummy",

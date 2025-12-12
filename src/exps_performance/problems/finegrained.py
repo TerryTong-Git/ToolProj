@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import ast
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List, Type
 
 from langchain_core.prompts.prompt import PromptTemplate
 from pydantic import BaseModel, Field
 
 from src.exps_performance.algorithms import assignment_min_cost, knap_01_max_value, lcs_len, partition_min_diff, prodplan_max_profit, rod_cut_max
+from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 from src.exps_performance.utils import rand_string, sample_int
 
@@ -26,6 +27,7 @@ class FgQuestion(Question):
     digits: int = 0
     answer: str = ""
     question: str = ""
+    record: Record = field(default_factory=Record)
 
     @property
     def util_pointer(self) -> Type["FgCheckAndFormat"]:
@@ -47,7 +49,7 @@ class FgCheckAndFormat(CheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if isinstance(evaluated, int):

@@ -32,6 +32,7 @@ class MspQuestion(NpQuestion):
     complexity_level: int = -1
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return MspCheckAndFormat
 
@@ -46,7 +47,7 @@ class MspCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         if not isinstance(evaluated, dict):
@@ -103,7 +104,7 @@ class MspCheckAndFormat(NpCheckAndFormat):
         message contains information about the validity of the solution.
         """
         try:
-            output_dict = ast.literal_eval(output.Meet2Time)
+            output_dict = ast.literal_eval(str(output.Meet2Time))
         except (SyntaxError, TypeError):
             return False, "Parse error"
         if not self.type_check_code(output.Meet2Time) or output_dict is None:

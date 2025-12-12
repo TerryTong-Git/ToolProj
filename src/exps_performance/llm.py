@@ -197,6 +197,9 @@ class OpenRouterChatClient(LLMClient):
                     return idx, self._extract_text(resp)
                 except asyncio.TimeoutError:
                     return idx, ""
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(f"OpenRouter chat_many failed for idx={idx}: {exc}")
+                    return idx, ""
 
         async def _run() -> List[str]:
             tasks = [asyncio.create_task(_one(i, m)) for i, m in enumerate(messages_list)]

@@ -1,6 +1,7 @@
 import ast
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, List, Type, cast
 
 import networkx as nx
@@ -20,10 +21,11 @@ tsp_desc = (
 class TspdQuestion(NpQuestion):
     kind: str = "TSP_D"
     type: str = "code"  # could be sim, nl etc
-    distance_matrix: pd.DataFrame = field(default_factory=[])  # type: ignore
+    distance_matrix: pd.DataFrame = field(default_factory=pd.DataFrame)  # type: ignore
     threshold: int = -1
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return cast(Type[NpCheckAndFormat], TspdCheckAndFormat)
 
@@ -53,8 +55,15 @@ class TspdCheckAndFormat(NpCheckAndFormat):
         data = []
         for level in range(start, n):
             for file_num in range(10):
-                file_name = os.path.join(self.folder_name, "TSP_Decision", "decision_data_TSP_level_{}_instance_{}.csv".format(level, file_num + 1))
-                df = pd.read_csv(file_name, header=None, index_col=False)
+                csv_name = os.path.join(self.folder_name, "TSP_Decision", f"decision_data_TSP_level_{level}_instance_{file_num + 1}.csv")
+                jsonl_path = Path(csv_name).with_suffix(".jsonl")
+                if jsonl_path.exists():
+                    df = pd.read_json(jsonl_path, lines=True)
+                elif os.path.exists(csv_name):
+                    df = pd.read_csv(csv_name, header=None, index_col=False)
+                    df.to_json(jsonl_path, orient="records", lines=True)
+                else:
+                    raise FileNotFoundError(f"Missing TSP decision data: {jsonl_path} (or {csv_name})")
                 data.append(df)
         problem = self.instancetype  # type: ignore
         data_func = self.loaded_data_to_class  # type: ignore #for some reason can only see base class type...
@@ -78,7 +87,7 @@ class TspdCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
         return isinstance(evaluated, bool)

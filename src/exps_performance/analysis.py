@@ -1,6 +1,6 @@
 import itertools
 from pathlib import Path
-from typing import List, Sequence, Union
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +9,7 @@ import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 from scipy.stats import wilcoxon
 
-from src.exps_performance.logger import create_big_df, walk_results_folder
+from src.exps_performance.logger import create_big_df
 
 
 def plot_main_fig(df: pd.DataFrame) -> None:
@@ -20,7 +20,8 @@ def plot_main_fig(df: pd.DataFrame) -> None:
     # import pdb; pdb.set_trace()
     # df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
     df1 = df
-    df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    df2 = df1
+    # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
         "sim_correct": "Arm 2 \n (Code Sim)",
@@ -76,7 +77,7 @@ def plot_v_graph(df: pd.DataFrame) -> None:
         linestyle="",
         alpha=0.8,
         marker="^",
-        palette=sorted(sns.color_palette("tab20", n_colors=5), key=lambda x: x[0] - x[2]),
+        palette=sorted(sns.color_palette("tab20", n_colors=10), key=lambda x: x[0] - x[2]),
         errorbar=None,
     )
     sns.lineplot(
@@ -195,9 +196,11 @@ def plot_p_vals(df: pd.DataFrame) -> None:
 
 
 def analysis() -> None:
-    files = walk_results_folder("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")  # check files are deepseek and gemma, seed 1 and 2
-    typed_files: Sequence[Union[str, Path]] = files  # Path imported below
-    df = create_big_df(typed_files)
+    results_root = Path("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")
+    jsonl_files = sorted(results_root.rglob("*.jsonl"))
+    if not jsonl_files:
+        raise FileNotFoundError(f"No JSONL files found under {results_root}")
+    df = create_big_df(jsonl_files)
 
     plot_p_vals(df)
     plot_main_fig(df)

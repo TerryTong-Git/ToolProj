@@ -29,9 +29,10 @@ class KspQuestion(NpQuestion):
     kind: str = "ksp"
     type: str = "code"  # could be sim, nl etc
     knapsack_capacity: int = -1
-    items: List[Dict[str, int]] = field(default_factory=[])  # type: ignore
+    items: List[Dict[str, int]] = field(default_factory=list)  # type: ignore
     code: str = ""
 
+    @property
     def util_pointer(self) -> Type[NpCheckAndFormat]:
         return KspCheckAndFormat
 
@@ -46,7 +47,7 @@ class KspCheckAndFormat(NpCheckAndFormat):
 
     def type_check_code(self, code: str) -> bool:
         try:
-            evaluated = ast.literal_eval(code)
+            evaluated = ast.literal_eval(str(code))
         except (SyntaxError, ValueError):
             return False  # f"Syntax or Value Error {e}"
 
@@ -126,7 +127,7 @@ class KspCheckAndFormat(NpCheckAndFormat):
         ksp_optimal_value = self.ksp_optimal_solution(knapsacks, instance.knapsack_capacity)
 
         try:
-            is_feasible = ast.literal_eval(solution.Feasible)
+            is_feasible = ast.literal_eval(str(solution.Feasible))
         except (SyntaxError, ValueError):
             return False, "Output format is incorrect."
         if not isinstance(is_feasible, bool):
@@ -135,8 +136,8 @@ class KspCheckAndFormat(NpCheckAndFormat):
             return False, f"The solution is {is_feasible} but the optimal solution is {ksp_optimal_value > 0}."
 
         try:
-            total_value = int(ast.literal_eval(solution.TotalValue))
-            selectedItems = ast.literal_eval(solution.SelectedItemIds)
+            total_value = int(ast.literal_eval(str(solution.TotalValue)))
+            selectedItems = ast.literal_eval(str(solution.SelectedItemIds))
         except (ValueError, SyntaxError):
             return False, "Output format is incorrect."
         if len(set(selectedItems)) != len(selectedItems):

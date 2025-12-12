@@ -72,6 +72,7 @@ problem_types = {
 
 clrs_problem_types = {
     "clrs": ClrsCheckAndFormat,
+    "clrs30": ClrsCheckAndFormat,
 }
 
 gsm_problem_types = {
@@ -118,7 +119,7 @@ class NPHARD(Dataset):
 class CLRS(Dataset):
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
-        for ProblemType in clrs_problem_types.values():
+        for ProblemType in dict.fromkeys(clrs_problem_types.values()):
             classInstance = ProblemType("code")  # type: ignore
             all_data += classInstance.load_data()  # type: ignore[abstract]
         return all_data
@@ -158,7 +159,13 @@ class FG(Dataset):
         return all_data
 
 
-def make_dataset(kinds: Sequence[str], n: int = 3, digits_list: List[int] = [32]) -> Sequence[Question]:
+def make_dataset(
+    kinds: Sequence[str],
+    n: int = 3,
+    digits_list: List[int] = [32],
+    gsm_samples: int = 500,
+    clrs_samples: int = 500,
+) -> Sequence[Question]:
     """
     Build dataset deterministically and attach original positional order.
     """
@@ -178,9 +185,9 @@ def make_dataset(kinds: Sequence[str], n: int = 3, digits_list: List[int] = [32]
 
     all_data: List[Question] = []
     if clrs:
-        all_data += CLRS().load()[:n]
+        all_data += CLRS().load()[:clrs_samples]
     if gsm:
-        all_data += GSM8K().load()[:n]
+        all_data += GSM8K().load()[:gsm_samples]
     if fg:
         all_data += FG(
             n,
