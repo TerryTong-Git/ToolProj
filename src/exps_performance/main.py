@@ -50,6 +50,16 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)  # Using __name__ is a common practice
 
 
+def resolve_sample_count(arg_value: int, env_var: str) -> int:
+    env_val = os.getenv(env_var)
+    if env_val:
+        try:
+            return int(env_val)
+        except ValueError:
+            logger.warning(f"Could not parse {env_var}={env_val} as int; falling back to CLI/default value.")
+    return arg_value
+
+
 def assign_sequential_indices(
     questions: List[Question],
     n: int,
@@ -57,6 +67,7 @@ def assign_sequential_indices(
     model: str,
     exp_id: str,
     checkpoint: CheckpointManager,
+    per_kind_limits: Optional[dict[str, int]] = None,
 ) -> tuple[list[Question], dict[str, int], dict[str, int], list[tuple[str, str, int, int, int]]]:
     """
     Assign stable per-kind indices ordered by digit then original position.
@@ -71,10 +82,13 @@ def assign_sequential_indices(
     restored_by_kind: dict[str, int] = {}
     debug_assigned: list[tuple[str, str, int, int, int]] = []
 
+    per_kind_limits = per_kind_limits or {}
+
     for kind, qs in kind_groups.items():
         qs_sorted = sorted(qs, key=lambda x: (x.digits, getattr(x, "original_pos", 0)))
+        limit = per_kind_limits.get(kind, n)
         for idx, q_item in enumerate(qs_sorted, start=1):
-            if idx > n:
+            if idx > limit:
                 dropped_by_kind[kind] = dropped_by_kind.get(kind, 0) + 1
                 continue
             rec = q_item.record
@@ -166,7 +180,24 @@ def run(args: Any) -> None:
             logger.info("Could not read checkpoint JSONL for counts.")
     # main workflow
     logger.info("Making Dataset")
-    data = make_dataset(args.kinds, args.n, args.digits_list)  # choose the data
+    gsm_samples = resolve_sample_count(args.gsm_samples, "GSM8K_SAMPLES")
+    clrs_samples = resolve_sample_count(args.clrs_samples, "CLRS30_SAMPLES")
+    data = make_dataset(args.kinds, args.n, args.digits_list, gsm_samples=gsm_samples, clrs_samples=clrs_samples)  # choose the data
+    per_kind_limits: dict[str, int] = {}
+    if "gsm8k" in args.kinds:
+        per_kind_limits["gsm8k"] = gsm_samples
+    ClrsQuestionType: Optional[type[Question]] = None
+    try:
+        from src.exps_performance.problems.clrs import ClrsQuestion as ImportedClrsQuestion
+
+        ClrsQuestionType = ImportedClrsQuestion
+    except Exception:
+        ClrsQuestionType = None
+
+    if ClrsQuestionType is not None:
+        for q in data:
+            if isinstance(q, ClrsQuestionType):
+                per_kind_limits[q.kind] = clrs_samples
 
     def _done_sim(rec: Any) -> bool:
         return bool(rec.sim_question) or bool(rec.sim_answer) or bool(rec.sim_parse_err) or bool(rec.sim_err_msg)
@@ -184,7 +215,9 @@ def run(args: Any) -> None:
         return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
 
     # Populate identifiers and restore from checkpoint using stable per-kind indexing (digit, original_pos)
-    data, dropped_by_kind, restored_by_kind, debug_assigned = assign_sequential_indices(list(data), args.n, args.seed, args.model, exp_id, checkpoint)
+    data, dropped_by_kind, restored_by_kind, debug_assigned = assign_sequential_indices(
+        list(data), args.n, args.seed, args.model, exp_id, checkpoint, per_kind_limits=per_kind_limits
+    )
     if dropped_by_kind:
         logger.warning(f"Dropped items exceeding n per kind: {dropped_by_kind}")
 
@@ -326,6 +359,8 @@ class Args:
             ]
         },
     )
+    gsm_samples: int = field(default=500, metadata={"help": "Samples to use for GSM8K (override env: GSM8K_SAMPLES)."})
+    clrs_samples: int = field(default=500, metadata={"help": "Samples to use for CLRS30 (override env: CLRS30_SAMPLES)."})
     seed: int = 1
     backend: str = field(
         default="dummy",

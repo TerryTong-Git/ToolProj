@@ -117,4 +117,4 @@ class ClrsCheckAndFormat(CheckAndFormat):
                 )
                 for d in data
             )
-        return combined[:100]
+        return combined

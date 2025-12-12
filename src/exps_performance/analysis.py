@@ -20,7 +20,8 @@ def plot_main_fig(df: pd.DataFrame) -> None:
     # import pdb; pdb.set_trace()
     # df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
     df1 = df
-    df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    df2 = df1
+    # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
         "sim_correct": "Arm 2 \n (Code Sim)",
@@ -76,7 +77,7 @@ def plot_v_graph(df: pd.DataFrame) -> None:
         linestyle="",
         alpha=0.8,
         marker="^",
-        palette=sorted(sns.color_palette("tab20", n_colors=5), key=lambda x: x[0] - x[2]),
+        palette=sorted(sns.color_palette("tab20", n_colors=10), key=lambda x: x[0] - x[2]),
         errorbar=None,
     )
     sns.lineplot(

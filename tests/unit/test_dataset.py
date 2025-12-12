@@ -1,4 +1,6 @@
-from src.exps_performance.dataset import NPHARD, make_dataset
+import pytest
+
+from src.exps_performance.dataset import CLRS, GSM8K, NPHARD, make_dataset
 from src.exps_performance.problems.clrs import ClrsQuestion
 from src.exps_performance.problems.finegrained import FgQuestion
 from src.exps_performance.problems.gsm8k import Gsm8kQuestion
@@ -41,7 +43,17 @@ def test_np() -> None:
     assert data is not None, "no data"
 
 
-def test_make() -> None:
+def test_make(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        GSM8K,
+        "load",
+        lambda self: [Gsm8kQuestion(question="q", answer="1") for _ in range(3)],
+    )
+    monkeypatch.setattr(
+        CLRS,
+        "load",
+        lambda self: [ClrsQuestion(kind="clrs_alg", digits=0, answer="", text_data="") for _ in range(3)],
+    )
     for p, probclass in problem_types.items():
         data = make_dataset([p])
         for d in data:
@@ -49,3 +61,27 @@ def test_make() -> None:
     data = make_dataset(["clrs", "spp"])
     for d in data:
         assert isinstance(d, ClrsQuestion) or isinstance(d, SppQuestion), "didn't choose right class"
+
+
+def test_fixed_samples_default_and_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        GSM8K,
+        "load",
+        lambda self: [Gsm8kQuestion(question=str(i), answer=str(i)) for i in range(600)],
+    )
+    monkeypatch.setattr(
+        CLRS,
+        "load",
+        lambda self: [ClrsQuestion(kind=f"clrs_alg_{i%5}", digits=0, answer="", text_data="") for i in range(600)],
+    )
+    data = make_dataset(["gsm8k", "clrs30"], n=5)
+    gsm_count = len([q for q in data if isinstance(q, Gsm8kQuestion)])
+    clrs_count = len([q for q in data if isinstance(q, ClrsQuestion)])
+    assert gsm_count == 500
+    assert clrs_count == 500
+
+    data_override = make_dataset(["gsm8k", "clrs30"], n=5, gsm_samples=10, clrs_samples=12)
+    gsm_override = len([q for q in data_override if isinstance(q, Gsm8kQuestion)])
+    clrs_override = len([q for q in data_override if isinstance(q, ClrsQuestion)])
+    assert gsm_override == 10
+    assert clrs_override == 12
