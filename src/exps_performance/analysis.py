@@ -194,6 +194,37 @@ def plot_p_vals(df: pd.DataFrame) -> None:
     plt.savefig("figures/pval.png", bbox_inches="tight")
 
 
+models = [
+    "anthropic/claude-haiku-4.5",
+    "anthropic/claude-sonnet-4",
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "openai/gpt-5.1-codex",
+    "openai/gpt-5-mini",
+    "openai/gpt-5-nano",
+    "openai/o3-mini",
+    "deepseek/deepseek-r1",
+    "deepseek/deepseek-r1-distill-llama-70b",
+    "google/gemini-2.0-flash-lite-001",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-pro",
+    "xai/grok-code-fast-1",
+    "meta-llama/llama-3.1-405b-instruct",
+    "meta-llama/llama-3.3-70b-instruct",
+    "meta-llama/llama-3-70b-instruct",
+    "meta-llama/llama-4-scout",
+    "mistral/devstral-medium",
+    "mistral/ministral-14b-2512",
+    "qwen/qwen-2.5-72b-instruct",
+    "qwen/qwen-2.5-coder-32b-instruct",
+    "qwen/qwen3-coder-30b-a3b-instruct",
+    "zhipuai/glm-4.6",
+    "allenai/olmo-2-0325-32b-instruct",
+    "microsoft/phi-4",
+    "microsoft/phi-4-reasoning-plus",
+]
+
+
 def analysis() -> None:
     results_root = Path("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")
     jsonl_files = sorted(results_root.rglob("*.jsonl"))
