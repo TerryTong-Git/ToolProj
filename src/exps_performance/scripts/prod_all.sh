@@ -11,7 +11,7 @@ export HF_HOME="/nlpgpu/data/terry/ToolProj/src/models/"
 export HF_DATASETS_CACHE="/nlpgpu/data/terry/ToolProj/src/models/"
 export HF_HUB_CACHE="/nlpgpu/data/terry/ToolProj/src/models/"
 
-SEEDS=(0)
+SEEDS=(1)
 MODELS=( #7B Models
 # openai/gpt-oss-120b:free
 # allenai/olmo-3-32b-think:free
@@ -21,7 +21,7 @@ MODELS=( #7B Models
 # openai/gpt-oss-120b
 # google/gemini-2.5-flash
 # openai/gpt-4o-mini
-# anthropic/claude-haiku-4.5
+anthropic/claude-haiku-4.5
 # openai/gpt-oss-120b
 # openai/gpt-oss-120b
 # deepseek/deepseek-r1
@@ -43,13 +43,13 @@ MODELS=( #7B Models
 # openai/gpt-5-mini
 # mistralai/devstral-medium
 
-openai/gpt-5-mini
-meta-llama/llama-3.3-70b-instruct
-microsoft/phi-4
-openai/o3-mini
-google/gemini-2.5-pro
-anthropic/claude-sonnet-4
-qwen/qwen3-coder-30b-a3b-instruct
+# openai/gpt-5-mini
+# meta-llama/llama-3.3-70b-instruct
+# microsoft/phi-4
+# openai/o3-mini
+# google/gemini-2.5-pro
+# anthropic/claude-sonnet-4
+# qwen/qwen3-coder-30b-a3b-instruct
 
 # allenai/olmo-3-32b-think:free
 # z-ai/glm-4.5-air:free

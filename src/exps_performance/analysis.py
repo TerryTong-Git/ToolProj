@@ -231,8 +231,7 @@ def analysis() -> None:
     if not jsonl_files:
         raise FileNotFoundError(f"No JSONL files found under {results_root}")
     df = create_big_df(jsonl_files)
-    df = df[df["model"].isin(["openai/gpt-oss-20b", "openai/gpt-oss-120b", "openai/gpt-5-mini"])]
-
+    df = df[df["model"].isin(["openai/gpt-5-mini", "openai/gpt-nano", "gemini/gemini-2.5-flash"])]
     plot_p_vals(df)
     plot_main_fig(df)
     plot_v_graph(df)
