@@ -18,7 +18,6 @@ def plot_main_fig(df: pd.DataFrame) -> None:
     #     train_lengths_dict[alg] = np.array(train_length)
     sns.reset_defaults()
     # import pdb; pdb.set_trace()
-    # df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
     df1 = df
     df2 = df1
     # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
@@ -201,7 +200,7 @@ def analysis() -> None:
     if not jsonl_files:
         raise FileNotFoundError(f"No JSONL files found under {results_root}")
     df = create_big_df(jsonl_files)
-
+    df = df[df["model"].isin(["openai/gpt-5-mini", "openai/gpt-nano", "gemini/gemini-2.5-flash"])]
     plot_p_vals(df)
     plot_main_fig(df)
     plot_v_graph(df)

@@ -22,10 +22,11 @@ Usage examples:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, List, Optional, cast
 
@@ -429,9 +430,22 @@ def parse_args() -> Args:
     return cast(Args, parse(Args))
 
 
+def dump_args(args: Args, output_path: Path) -> None:
+    """
+    Serialize parsed arguments to JSON for reproducibility and debugging.
+    """
+    try:
+        with output_path.open("w", encoding="utf-8") as f:
+            json.dump(asdict(args), f, indent=2, sort_keys=True)
+    except Exception as exc:
+        logger.warning(f"Failed to write args to {output_path}: {exc}")
+
+
 if __name__ == "__main__":
     start_time = time.perf_counter()
     args = parse_args()
+    args_dump_path = Path(__file__).resolve().parent / "args.json"
+    dump_args(args, args_dump_path)
     run(args)
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
