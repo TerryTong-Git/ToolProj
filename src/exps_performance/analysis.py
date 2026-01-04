@@ -19,8 +19,7 @@ def plot_main_fig(df: pd.DataFrame) -> None:
     sns.reset_defaults()
     # import pdb; pdb.set_trace()
     df1 = df
-    df2 = df1
-    # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
         "sim_correct": "Arm 2 \n (Code Sim)",
@@ -40,9 +39,9 @@ def plot_main_fig(df: pd.DataFrame) -> None:
         alg = ax.title.get_text()
         ax.set_title(alg.replace("_", " "))
         # train_lengths = train_lengths_dict[alg]
-        train_lengths = [2, 4, 8, 16]
+        train_lengths = [2, 4, 8, 10, 12, 14, 16, 18, 20]
         ax.scatter(train_lengths, np.ones(len(train_lengths)) + 0.05, color="red", s=1.0)
-        ax.set_xlim(None, 16)
+        ax.set_xlim(None, 20)
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     g.axes[7].legend(loc="upper right", bbox_to_anchor=(1.0, 0.95), fontsize=9, title="")
     g.set_xlabels("test length")
@@ -63,32 +62,145 @@ def plot_v_graph(df: pd.DataFrame) -> None:
     rcParams["markers.fillstyle"] = "none"
     fig, ax = plt.subplots(figsize=(6, 6))
     cols = ["nl_correct", "sim_correct", "controlsim_correct", "code_correct"]
-    df1 = df[df["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    df1 = df[
+        df["kind"].isin(
+            [
+                "clrs30",
+                "add",
+                "mul",
+                "lcs",
+                "rod",
+                "knap",
+                "ilp_assign",
+                "ilp_prod",
+                "ilp_partition",
+                "spp",
+                "tsp",
+                "tsp_d",
+                "msp",
+                "ksp",
+                "gcp",
+                "gcp_d",
+                "bsp",
+                "edp",
+            ]
+        )
+    ]
+    melted_df = pd.melt(df1, value_vars=cols, id_vars=["model", "kind"])
+    # Classify models by provider prefix to split markers between open/closed
+    closed_providers = {"anthropic", "openai", "google", "xai"}
+    open_providers = {"meta-llama", "mistral", "mistralai", "qwen", "deepseek", "microsoft", "allenai", "zhipuai"}
 
-    melted_df = pd.melt(df1, value_vars=cols, id_vars=["model"])
-    # import pdb; pdb.set_trace()
-    sns.pointplot(
-        data=melted_df,
-        ax=ax,
-        x="variable",
-        y="value",
-        hue="model",
-        linestyle="",
-        alpha=0.8,
-        marker="^",
-        palette=sorted(sns.color_palette("tab20", n_colors=10), key=lambda x: x[0] - x[2]),
-        errorbar=None,
-    )
+    def _is_open_model(model_name: str) -> bool:
+        prefix = str(model_name).split("/")[0].lower()
+        if prefix in closed_providers:
+            return False
+        if prefix in open_providers:
+            return True
+        return False
+
+    melted_df = melted_df.copy()
+    melted_df["model_type"] = melted_df["model"].apply(lambda m: "open" if _is_open_model(m) else "closed")
+    open_models_df = melted_df[melted_df["model_type"] == "open"]
+    closed_models_df = melted_df[melted_df["model_type"] == "closed"]
+
+    hue_order = sorted(melted_df["model"].unique())
+    palette_base = sorted(sns.color_palette("tab20", n_colors=20), key=lambda x: x[0] - x[2])
+
+    closed_candidates = [m for m in hue_order if not _is_open_model(m)]
+    open_candidates = [m for m in hue_order if _is_open_model(m)]
+
+    closed_palette_map = {model: palette_base[i % len(palette_base)] for i, model in enumerate(closed_candidates)}
+    # Offset open model colors slightly to reduce closeness with closed-model colors.
+    open_palette_rotated = palette_base[2:] + palette_base[:2]
+    open_palette_map = {model: open_palette_rotated[i % len(open_palette_rotated)] for i, model in enumerate(open_candidates)}
+
+    palette_map = {**closed_palette_map, **open_palette_map}
+
+    # Keep original coloring; draw separately with different markers but shared palette.
+    if not closed_models_df.empty:
+        sns.pointplot(
+            data=closed_models_df,
+            ax=ax,
+            x="variable",
+            y="value",
+            hue="model",
+            hue_order=hue_order,
+            linestyle="",
+            alpha=0.8,
+            marker="x",  # closed models -> x
+            markersize=12,
+            linewidth=1.6,
+            palette=palette_map,
+            errorbar=None,
+            legend=False,
+        )
+    if not open_models_df.empty:
+        sns.pointplot(
+            data=open_models_df,
+            ax=ax,
+            x="variable",
+            y="value",
+            hue="model",
+            hue_order=hue_order,
+            linestyle="",
+            alpha=0.8,
+            marker="o",  # open models -> o
+            markersize=12,
+            linewidth=1.6,
+            palette=palette_map,
+            errorbar=None,
+            legend=False,
+        )
     sns.lineplot(
         data=melted_df, ax=ax, x="variable", y="value", color="black", marker="o", markersize=10, fillstyle="full", label="All models", errorbar=None
     )
-    # can classify by size
-    plt.ylabel("Accuracy")
-    handles, labels = plt.gca().get_legend_handles_labels()
+    # Build legend: first three closed models (x), then three open models (o), then All models.
+    closed_priority = ["openai/gpt-4o-mini", "anthropic/claude-haiku-4.5", "google/gemini-2.5-flash"]
+    open_priority = ["mistralai/ministral-14b-2512", "meta-llama/llama-3.1-405b-instruct", "qwen/qwen-2.5-coder-32b-instruct"]
+
+    def _pick_models(priority: list[str], candidates: list[str], k: int) -> list[str]:
+        picked: list[str] = []
+        for m in priority:
+            if m in candidates and m not in picked:
+                picked.append(m)
+            if len(picked) >= k:
+                return picked
+        for m in candidates:
+            if m not in picked:
+                picked.append(m)
+            if len(picked) >= k:
+                break
+        return picked
+
+    closed_candidates = [m for m in hue_order if not _is_open_model(m)]
+    open_candidates = [m for m in hue_order if _is_open_model(m)]
+    closed_order = _pick_models(closed_priority, closed_candidates, 3)
+    open_order = _pick_models(open_priority, open_candidates, 3)
+
+    from matplotlib.lines import Line2D
+
+    handles_custom: list[Line2D] = []
+    labels_custom: list[str] = []
+    for m in closed_order:
+        handles_custom.append(Line2D([0], [0], marker="x", color=palette_map[m], linestyle="", markersize=12, markeredgewidth=1.6))
+        labels_custom.append(m)
+    for m in open_order:
+        handles_custom.append(Line2D([0], [0], marker="o", color=palette_map[m], linestyle="", markersize=12, markeredgewidth=1.6))
+        labels_custom.append(m)
+
+    # Append the "All models" entry from the lineplot
+    line_handles, line_labels = plt.gca().get_legend_handles_labels()
+    for h, label in zip(line_handles, line_labels):
+        if label == "All models":
+            handles_custom.append(h)
+            labels_custom.append(label)
+            break
+
     ax.legend(
-        handles,
-        labels,
-        title="Model",
+        handles_custom,
+        labels_custom,
+        title="Model (o=open, x=closed)",
         markerscale=1.3,
         fontsize="large",
         title_fontsize="x-large",
@@ -129,8 +241,30 @@ def plot_p_vals(df: pd.DataFrame) -> None:
     # df1 = df[df["model"] == "Qwen/Qwen2.5-14B-Instruct"]
     df1 = df
     # df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
-    df2 = df1
-    # df2 = df1[df1["kind"].isin(["add", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"])]
+    df2 = df1[
+        df1["kind"].isin(
+            [
+                "clrs30",
+                "add",
+                "mul",
+                "lcs",
+                "rod",
+                "knap",
+                "ilp_assign",
+                "ilp_prod",
+                "ilp_partition",
+                "spp",
+                "tsp",
+                "tsp_d",
+                "msp",
+                "ksp",
+                "gcp",
+                "gcp_d",
+                "bsp",
+                "edp",
+            ]
+        )
+    ]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
         "sim_correct": "Arm 2 \n (Code Sim)",
@@ -231,7 +365,18 @@ def analysis() -> None:
     if not jsonl_files:
         raise FileNotFoundError(f"No JSONL files found under {results_root}")
     df = create_big_df(jsonl_files)
-    df = df[df["model"].isin(["openai/gpt-5-mini", "openai/gpt-nano", "gemini/gemini-2.5-flash"])]
+    df = df[
+        df["model"].isin(
+            [
+                "openai/gpt-4o-mini",
+                "google/gemini-2.5-flash",
+                "anthropic/claude-haiku-4.5",
+                "mistralai/ministral-14b-2512",
+                "meta-llama/llama-3.1-405b-instruct",
+                "qwen/qwen-2.5-coder-32b-instruct",
+            ]
+        )
+    ]
     plot_p_vals(df)
     plot_main_fig(df)
     plot_v_graph(df)

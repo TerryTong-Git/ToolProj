@@ -14,6 +14,8 @@ def remove_python_triple_quote(input: str) -> str:
 
 def cast_float_to_int(obj: Any) -> Any:
     if isinstance(obj, float):
+        if obj == float("inf") or obj == float("-inf"):
+            return -9999999999
         return int(obj)
     if isinstance(obj, list):
         return [cast_float_to_int(o) for o in obj]

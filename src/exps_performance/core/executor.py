@@ -102,11 +102,18 @@ class ProgramChatInterface:
                 last_out, last_err = "", "timeout"
                 parent_conn.close()
             elif parent_conn.poll():
-                out, err = parent_conn.recv()
-                last_out, last_err = out, err
-                parent_conn.close()
-                if err == "ok":
-                    return out, err
+                try:
+                    out, err = parent_conn.recv()
+                    last_out, last_err = out, err
+                    parent_conn.close()
+                    if err == "ok":
+                        return out, err
+                except EOFError as eof_err:
+                    last_out, last_err = "", f"EOFError: {eof_err}"
+                    parent_conn.close()
+                except Exception as recv_err:
+                    last_out, last_err = "", f"recv error: {recv_err}"
+                    parent_conn.close()
             else:
                 last_out, last_err = "", "unknown error"
                 parent_conn.close()

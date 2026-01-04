@@ -39,9 +39,7 @@ from src.exps_performance.logger import (
     CheckpointManager,
     create_dir,
     generate_unique_tag,
-    init_tensorboard,
     make_request_id,
-    write_text_to_tensorboard,
 )
 from src.exps_performance.metrics import accuracy
 from src.exps_performance.problems import Question
@@ -49,6 +47,17 @@ from src.exps_performance.utils import seed_all_and_setup
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)  # Using __name__ is a common practice
+
+
+def dump_args(args: Args, output_path: Path) -> None:
+    """
+    Serialize parsed arguments to JSON for reproducibility and debugging.
+    """
+    try:
+        with output_path.open("w", encoding="utf-8") as f:
+            json.dump(asdict(args), f, indent=2, sort_keys=True)
+    except Exception as exc:
+        logger.warning(f"Failed to write args to {output_path}: {exc}")
 
 
 def resolve_sample_count(arg_value: int, env_var: str) -> int:
@@ -194,6 +203,7 @@ def run(args: Any) -> None:
     exp_id = Path(exp_dir).name
     checkpoint_path = os.path.join(exp_dir, "res.jsonl")
     checkpoint = CheckpointManager(checkpoint_path)
+    dump_args(args, Path(exp_dir) / "args.json")
     logger.info(f"Using exp_dir={exp_dir} (exp_id={exp_id}) for model={args.model} seed={args.seed}")
     logger.info(f"Restored {len(checkpoint._records)} unique records from checkpoint " f"({checkpoint_path})")
     if os.path.exists(checkpoint_path):
@@ -323,8 +333,8 @@ def run(args: Any) -> None:
             continue
 
     # serialize results
-    writer = init_tensorboard(args, exp_dir)
-    write_text_to_tensorboard(records, writer, args)
+    # writer = init_tensorboard(args, exp_dir)
+    # write_text_to_tensorboard(records, writer, args)
     checkpoint.flush()
 
 
@@ -430,22 +440,10 @@ def parse_args() -> Args:
     return cast(Args, parse(Args))
 
 
-def dump_args(args: Args, output_path: Path) -> None:
-    """
-    Serialize parsed arguments to JSON for reproducibility and debugging.
-    """
-    try:
-        with output_path.open("w", encoding="utf-8") as f:
-            json.dump(asdict(args), f, indent=2, sort_keys=True)
-    except Exception as exc:
-        logger.warning(f"Failed to write args to {output_path}: {exc}")
-
-
 if __name__ == "__main__":
     start_time = time.perf_counter()
     args = parse_args()
-    args_dump_path = Path(__file__).resolve().parent / "args.json"
-    dump_args(args, args_dump_path)
+
     run(args)
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time

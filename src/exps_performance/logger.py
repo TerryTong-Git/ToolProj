@@ -378,7 +378,16 @@ class CheckpointManager:
             key = rec.unique_tag or rec.request_id or f"__row_{len(self._records)}"
             if not rec.unique_tag:
                 rec.unique_tag = rec.request_id or key
-            self._records[key] = rec
+            existing = self.get(key)
+            if existing is None:
+                self._records[key] = rec
+                continue
+            merged = existing.model_dump()
+            incoming = rec.model_dump()
+            for k, v in incoming.items():
+                if self._should_override(k, v):
+                    merged[k] = v
+            self._records[key] = Record(**merged)
         if flush:
             self.flush()
 
