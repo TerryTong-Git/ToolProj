@@ -4,12 +4,16 @@
 #SBATCH --error=log/deepseekErr.txt
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:8
-#SBATCH --constraint=GA102GL     
+#SBATCH --constraint=GA102GL
 #SBATCH --time=1-6:00:00
-export UV_CACHE_DIR="/nlpgpu/data/terry/ToolProj/src/models/"
-export HF_HOME="/nlpgpu/data/terry/ToolProj/src/models/"
-export HF_DATASETS_CACHE="/nlpgpu/data/terry/ToolProj/src/models/"
-export HF_HUB_CACHE="/nlpgpu/data/terry/ToolProj/src/models/"
+
+SCRIPT_DIR="$(cd -- "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
+
+export UV_CACHE_DIR="${UV_CACHE_DIR:-${REPO_ROOT}/src/models/}"
+export HF_HOME="${HF_HOME:-${REPO_ROOT}/src/models/}"
+export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${REPO_ROOT}/src/models/}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-${REPO_ROOT}/src/models/}"
 
 SEEDS=(0 1 2)
 MODELS=( #7B Models

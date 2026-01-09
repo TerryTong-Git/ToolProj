@@ -3,7 +3,80 @@
 
 import argparse
 from dataclasses import dataclass
-from typing import Optional
+from typing import FrozenSet, List, Optional
+
+# Fine-grained problem kinds (custom examples only)
+FG_KINDS: FrozenSet[str] = frozenset(
+    {
+        "add",
+        "sub",
+        "mul",  # Arithmetic
+        "lcs",
+        "knap",
+        "rod",  # Dynamic programming
+        "ilp_assign",
+        "ilp_prod",
+        "ilp_partition",  # Integer linear programming
+    }
+)
+
+# CLRS algorithmic reasoning benchmark (30 algorithms)
+CLRS_KINDS: FrozenSet[str] = frozenset(
+    {
+        "activity_selector",
+        "articulation_points",
+        "bellman_ford",
+        "bfs",
+        "binary_search",
+        "bridges",
+        "bubble_sort",
+        "dag_shortest_paths",
+        "dfs",
+        "dijkstra",
+        "find_maximum_subarray_kadane",
+        "floyd_warshall",
+        "graham_scan",
+        "heapsort",
+        "insertion_sort",
+        "jarvis_march",
+        "kmp_matcher",
+        "lcs_length",
+        "matrix_chain_order",
+        "minimum",
+        "mst_kruskal",
+        "mst_prim",
+        "naive_string_matcher",
+        "optimal_bst",
+        "quickselect",
+        "quicksort",
+        "segments_intersect",
+        "strongly_connected_components",
+        "task_scheduling",
+        "topological_sort",
+    }
+)
+
+# NP-hard problem evaluation
+NPHARD_KINDS: FrozenSet[str] = frozenset(
+    {
+        "edp",
+        "gcp",
+        "ksp",
+        "spp",
+        "tsp",
+    }
+)
+
+# Extended kinds: fine-grained + CLRS + NP-hard (excluding gsm8k)
+EXTENDED_KINDS: FrozenSet[str] = FG_KINDS | CLRS_KINDS | NPHARD_KINDS
+
+# Preset mappings for --kinds-preset argument
+KINDS_PRESETS: dict[str, FrozenSet[str]] = {
+    "fg": FG_KINDS,
+    "clrs": CLRS_KINDS,
+    "nphard": NPHARD_KINDS,
+    "extended": EXTENDED_KINDS,
+}
 
 
 @dataclass
@@ -11,7 +84,10 @@ class ExperimentConfig:
     """Configuration for the logistic regression concept classification experiment."""
 
     # Data sources
-    csv: Optional[str] = None
+    results_dir: Optional[str] = None  # Directory containing JSONL result files
+    models: Optional[List[str]] = None  # Optional model name filter
+    seeds: Optional[List[int]] = None  # Optional seed filter
+    kinds: FrozenSet[str] = FG_KINDS  # Problem kinds to include (default: fine-grained only)
     rep: str = "all"  # nl, code, or all
 
     # Label configuration
@@ -20,6 +96,7 @@ class ExperimentConfig:
     test_size: float = 0.2
     seed: int = 0
     cv: int = 0
+    enable_cv: bool = True
 
     # Feature extraction
     feats: str = "tfidf"  # tfidf, hf-cls, st, openai
@@ -41,7 +118,7 @@ class ExperimentConfig:
 
     # Reporting
     bits: bool = False
-    save_preds: Optional[str] = None
+    save_preds: Optional[str] = None  # Path to save predictions JSON, None for auto-generated path
 
 
 def parse_args() -> ExperimentConfig:
@@ -50,11 +127,38 @@ def parse_args() -> ExperimentConfig:
 
     # Data sources
     p.add_argument(
-        "--csv",
+        "--results-dir",
         type=str,
         required=True,
-        help="CSV input. Accepts canonical format (rationale, kind, digits, [prompt], [rep]) "
-        "or exps_performance results CSVs (digit, kind, question, nl_reasoning, code_answer).",
+        help="Directory containing JSONL result files (Record schema) to load via create_big_df.",
+    )
+    p.add_argument(
+        "--models",
+        type=str,
+        nargs="+",
+        default=None,
+        help="Optional list of model names to include (matches the `model` column).",
+    )
+    p.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Optional list of seed values to include (matches the `seed` column).",
+    )
+    p.add_argument(
+        "--kinds",
+        type=str,
+        nargs="+",
+        default=None,
+        help="Optional list of problem kinds to include. Defaults to fine-grained only (add, sub, mul, lcs, knap, rod, ilp_*).",
+    )
+    p.add_argument(
+        "--kinds-preset",
+        type=str,
+        choices=list(KINDS_PRESETS.keys()),
+        default=None,
+        help="Use a preset kinds configuration: 'fg' (fine-grained only) or 'extended' (fg + clrs30 + nphardeval). Overridden by --kinds.",
     )
     p.add_argument("--rep", choices=["nl", "code", "all"], default="all")
 
@@ -69,6 +173,19 @@ def parse_args() -> ExperimentConfig:
     p.add_argument("--test-size", type=float, default=0.2)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--cv", type=int, default=0, help="K-fold cross-validation (0 to disable)")
+    p.add_argument(
+        "--enable-cv",
+        dest="enable_cv",
+        action="store_true",
+        default=True,
+        help="Enable hyperparameter CV grid search (default: enabled).",
+    )
+    p.add_argument(
+        "--no-cv",
+        dest="enable_cv",
+        action="store_false",
+        help="Disable hyperparameter CV grid search and use provided C/max_iter.",
+    )
 
     # Feature extraction
     p.add_argument("--feats", choices=["tfidf", "hf-cls", "st", "openai"], default="tfidf")
@@ -113,18 +230,30 @@ def parse_args() -> ExperimentConfig:
 
     # Reporting
     p.add_argument("--bits", action="store_true", help="Report CE in bits and print MI lower bound.")
-    p.add_argument("--save-preds", type=str, default=None, help="Optional path to save test predictions CSV.")
+    p.add_argument("--save-preds", type=str, default=None, help="Optional path to save test predictions JSON.")
 
     args = p.parse_args()
 
+    # Determine kinds: explicit --kinds overrides --kinds-preset, which overrides default
+    if args.kinds:
+        kinds = frozenset(args.kinds)
+    elif args.kinds_preset:
+        kinds = KINDS_PRESETS[args.kinds_preset]
+    else:
+        kinds = FG_KINDS
+
     return ExperimentConfig(
-        csv=args.csv,
+        results_dir=args.results_dir,
+        models=args.models,
+        seeds=args.seeds,
+        kinds=kinds,
         rep=args.rep,
         label=args.label,
         value_bins=getattr(args, "value_bins", 8),
         test_size=getattr(args, "test_size", 0.2),
         seed=args.seed,
         cv=args.cv,
+        enable_cv=args.enable_cv,
         feats=args.feats,
         embed_model=getattr(args, "embed_model", None),
         pool=args.pool,

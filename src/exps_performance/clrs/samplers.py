@@ -277,9 +277,9 @@ class Sampler(abc.ABC):
             for j in range(i):
                 toggle[los[i] : his[i], los[j] : his[j]] *= 0
 
-        mat = np.where(toggle > 0.0, (1.0 - (mat > 0.0)) * toggle, mat)
+        mat = np.where(toggle > 0.0, (1.0 - (mat > 0.0)) * toggle, mat)  # type: ignore[assignment]
         perm = self._rng.permutation(nb_nodes)  # To allow nontrivial solutions
-        mat = mat[perm, :][:, perm]
+        mat = mat[perm, :][:, perm]  # type: ignore[assignment]
         return mat
 
     def _random_bipartite_graph(self, n: int, m: int, p: float = 0.25) -> Any:
@@ -899,7 +899,7 @@ def _batch_hints(traj_hints: Trajectories, min_steps: int) -> tuple[Trajectory, 
 
 def _subsample_data(
     trajectory: Trajectory,
-    idx: np.ndarray[tuple[Any, ...]],
+    idx: "np.ndarray[Any, Any]",
     axis: int = 0,
 ) -> Trajectory:
     """New `Trajectory` where each `DataPoint`'s data is subsampled along axis."""

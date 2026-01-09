@@ -11,6 +11,27 @@ from scipy.stats import wilcoxon
 
 from src.exps_performance.logger import create_big_df
 
+goodset = [
+    "clrs30",
+    "add",
+    "mul",
+    "lcs",
+    "rod",
+    "knap",
+    "ilp_assign",
+    "ilp_prod",
+    "ilp_partition",
+    "spp",
+    "tsp",
+    "tsp_d",
+    "msp",
+    "ksp",
+    "gcp",
+    "gcp_d",
+    "bsp",
+    "edp",
+]
+
 
 def plot_main_fig(df: pd.DataFrame) -> None:
     # train_lengths_dict = {}
@@ -62,30 +83,7 @@ def plot_v_graph(df: pd.DataFrame) -> None:
     rcParams["markers.fillstyle"] = "none"
     fig, ax = plt.subplots(figsize=(6, 6))
     cols = ["nl_correct", "sim_correct", "controlsim_correct", "code_correct"]
-    df1 = df[
-        df["kind"].isin(
-            [
-                "clrs30",
-                "add",
-                "mul",
-                "lcs",
-                "rod",
-                "knap",
-                "ilp_assign",
-                "ilp_prod",
-                "ilp_partition",
-                "spp",
-                "tsp",
-                "tsp_d",
-                "msp",
-                "ksp",
-                "gcp",
-                "gcp_d",
-                "bsp",
-                "edp",
-            ]
-        )
-    ]
+    df1 = df[df["kind"].isin(["gsm8k"])]
     melted_df = pd.melt(df1, value_vars=cols, id_vars=["model", "kind"])
     # Classify models by provider prefix to split markers between open/closed
     closed_providers = {"anthropic", "openai", "google", "xai"}
@@ -241,30 +239,7 @@ def plot_p_vals(df: pd.DataFrame) -> None:
     # df1 = df[df["model"] == "Qwen/Qwen2.5-14B-Instruct"]
     df1 = df
     # df1 = df[df["model"].isin(["Qwen/Qwen2.5-14B-Instruct", "mistralai/Mistral-Small-24B-Instruct-2501"])]
-    df2 = df1[
-        df1["kind"].isin(
-            [
-                "clrs30",
-                "add",
-                "mul",
-                "lcs",
-                "rod",
-                "knap",
-                "ilp_assign",
-                "ilp_prod",
-                "ilp_partition",
-                "spp",
-                "tsp",
-                "tsp_d",
-                "msp",
-                "ksp",
-                "gcp",
-                "gcp_d",
-                "bsp",
-                "edp",
-            ]
-        )
-    ]
+    df2 = df1[df1["kind"].isin(["gsm8k"])]
     name_map = {
         "nl_correct": "Arm 1 \n (NL)",
         "sim_correct": "Arm 2 \n (Code Sim)",

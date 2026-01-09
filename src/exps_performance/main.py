@@ -433,7 +433,7 @@ class Args:
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.90
     vllm_max_model_len: int = 8192
-    vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
+    vllm_download_dir: str = os.getenv("VLLM_DOWNLOAD_DIR", str(Path(__file__).resolve().parent / "models"))
 
 
 def parse_args() -> Args:

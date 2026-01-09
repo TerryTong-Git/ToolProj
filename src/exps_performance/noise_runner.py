@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import copy
+import json
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 
 import pandas as pd
 from simple_parsing import parse
@@ -46,9 +48,12 @@ class NoiseArgs:
     )
     digits_list: List[int] = field(default_factory=lambda: [2, 4])
     n: int = 4
-    sigma: List[float] = field(default_factory=lambda: [round(x * 0.1, 2) for x in range(0, 11)])
+    sigma: List[float] = field(default_factory=lambda: [0.0, 0.25, 0.5, 0.75, 1.0])
     noise_types: List[str] = field(default_factory=lambda: list(NOISE_FUNCS.keys()))
     root: str = "results_noise"
+    save_path: str | None = None
+    openrouter_api_key: Optional[str] = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
 
 def _run_all_arms(data: List[Any], args: NoiseArgs, client: Any) -> List[Any]:
@@ -65,6 +70,35 @@ def _ensure_outdir(root: str) -> Path:
     outdir = Path(root)
     outdir.mkdir(parents=True, exist_ok=True)
     return outdir
+
+
+def _default_save_path(args: NoiseArgs) -> Path:
+    """Construct a save path similar to logistic runs, enriched with noise metadata."""
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    model = str(args.model).replace("/", "-")
+    seed = str(args.seed)
+    outdir = _ensure_outdir(args.root)
+    fname = f"{model}_seed{seed}_noise_{ts}.json"
+    return outdir / fname
+
+
+def _serialize_results(final_df: pd.DataFrame, args: NoiseArgs, save_path: Path) -> None:
+    """Write records plus a summary block containing run metadata and noise settings."""
+    records = final_df.to_dict(orient="records")
+    summary = {
+        "model": args.model,
+        "backend": args.backend,
+        "seed": args.seed,
+        "noise_types": args.noise_types,
+        "noise_levels": [float(clamp_sigma(s)) for s in args.sigma],
+        "kinds": args.kinds,
+        "digits_list": args.digits_list,
+        "n": args.n,
+        "timestamp": datetime.now().isoformat(),
+        "path": str(save_path),
+    }
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    save_path.write_text(json.dumps(records + [summary], ensure_ascii=False))
 
 
 def _evaluate_noise(base_data: List[Any], args: NoiseArgs, client: Any, noise_type: str, sigma: float) -> pd.DataFrame:
@@ -84,8 +118,6 @@ def run(args: NoiseArgs) -> None:
     logger.info(f"Using backend={args.backend} model={args.model}")
 
     base_data = list(make_dataset(args.kinds, args.n, args.digits_list))
-    outdir = _ensure_outdir(args.root)
-    outfile = outdir / "noise_results.jsonl"
 
     results: List[pd.DataFrame] = []
     for noise_type in args.noise_types:
@@ -97,8 +129,9 @@ def run(args: NoiseArgs) -> None:
             results.append(acc_df)
 
     final_df = pd.concat(results, ignore_index=True) if results else pd.DataFrame()
-    final_df.to_json(outfile, orient="records", lines=True)
-    logger.info(f"Wrote noise results to {outfile} (JSONL)")
+    save_path = Path(args.save_path) if args.save_path else _default_save_path(args)
+    _serialize_results(final_df, args, save_path)
+    logger.info(f"Wrote noise results to {save_path} (JSON)")
 
 
 def main() -> None:

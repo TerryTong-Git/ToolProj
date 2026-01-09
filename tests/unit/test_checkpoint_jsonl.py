@@ -114,3 +114,43 @@ def test_checkpoint_loads_legacy_csv_and_writes_jsonl(tmp_path) -> None:  # type
     stored = reloaded.get(appended.unique_tag)
     assert stored is not None
     assert stored.sim_answer == "latest"
+
+
+def test_save_batch_merges_updates_and_persists(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """
+    Restored records updated in-place should keep prior fields and persist new ones.
+    """
+    path = tmp_path / "res.jsonl"
+    manager = CheckpointManager(str(path))
+
+    base = _make_record("add", 2, 1)
+    base = base.model_copy(
+        update={
+            "sim_question": "sq",
+            "sim_answer": "sim-old",
+            "code_question": "cq-old",
+            "code_answer": "code-old",
+        }
+    )
+    manager.save_batch([base], flush=True)
+
+    restored = CheckpointManager(str(path))
+    updated = Record(
+        kind=base.kind,
+        digit=base.digit,
+        index_in_kind=base.index_in_kind,
+        model=base.model,
+        seed=base.seed,
+        unique_tag=base.unique_tag,
+        request_id=base.request_id,
+        code_question="cq-new",
+        code_answer="code-new",
+        # sim fields intentionally left empty to ensure they are preserved.
+    )
+    restored.save_batch([updated], flush=True)
+
+    reloaded = CheckpointManager(str(path))
+    stored = reloaded.get(base.unique_tag)
+    assert stored is not None
+    assert stored.sim_answer == "sim-old", "sim fields should be preserved"
+    assert stored.code_answer == "code-new", "code updates should be persisted"

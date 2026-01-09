@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """Unit tests for data_utils module."""
 
+import json
+from pathlib import Path
+
 import pandas as pd
+import pytest
 
 from src.exps_logistic.data_utils import (
+    _convert_results_df,
     create_theta_new_label,
     equal_width_bin,
+    load_data,
     make_gamma_label,
     stratified_split_robust,
 )
@@ -151,3 +157,125 @@ class TestStratifiedSplit:
 
         # Different seeds should produce different splits
         assert train1["value"].tolist() != train2["value"].tolist()
+
+
+class TestConvertResultsDf:
+    """Tests for converting Record-schema results into balanced rationale rows."""
+
+    def test_balanced_counts_and_reps(self) -> None:
+        df = pd.DataFrame(
+            [
+                {
+                    "digit": 1,
+                    "kind": "knap",
+                    "question": "Q0",
+                    "nl_reasoning": "nl 0",
+                    "sim_code": "code 0",
+                },
+                {
+                    "digit": 2,
+                    "kind": "add",
+                    "question": "Q1",
+                    "nl_reasoning": "nl 1",
+                    "sim_code": "code 1",
+                },
+            ]
+        )
+
+        out = _convert_results_df(df)
+
+        assert len(out) == 4  # two records -> two reps each
+        counts = out["rep"].value_counts()
+        assert counts["nl"] == counts["code"] == 2
+        assert set(out["rep"]) == {"nl", "code"}
+
+    def test_filters_missing_modalities(self) -> None:
+        df = pd.DataFrame(
+            [
+                {  # missing nl -> drop
+                    "digit": 1,
+                    "kind": "knap",
+                    "question": "Q0",
+                    "nl_reasoning": "",
+                    "sim_code": "code 0",
+                },
+                {  # missing code -> drop
+                    "digit": 2,
+                    "kind": "add",
+                    "question": "Q1",
+                    "nl_reasoning": "nl 1",
+                    "sim_code": "   ",
+                },
+                {  # both present -> keep
+                    "digit": 3,
+                    "kind": "mul",
+                    "question": "Q2",
+                    "nl_reasoning": "nl 2",
+                    "sim_code": "code 2",
+                },
+            ]
+        )
+
+        out = _convert_results_df(df)
+
+        assert len(out) == 2  # only the record with both modalities remains
+        counts = out["rep"].value_counts()
+        assert counts["nl"] == counts["code"] == 1
+        assert set(out["rep"]) == {"nl", "code"}
+
+    def test_all_filtered_raises(self) -> None:
+        df = pd.DataFrame(
+            [
+                {
+                    "digit": 1,
+                    "kind": "knap",
+                    "question": "Q0",
+                    "nl_reasoning": "",
+                    "sim_code": "code 0",
+                },
+                {
+                    "digit": 2,
+                    "kind": "add",
+                    "question": "Q1",
+                    "nl_reasoning": "nl 1",
+                    "sim_code": "",
+                },
+            ]
+        )
+
+        with pytest.raises(ValueError):
+            _convert_results_df(df)
+
+
+class TestLoadDataFiltering:
+    """Tests for model/seed filtering in load_data."""
+
+    def _write_jsonl(self, dir_path: Path, records: list[dict]) -> None:
+        path = dir_path / "data.jsonl"
+        with path.open("w", encoding="utf-8") as f:
+            for rec in records:
+                f.write(json.dumps(rec))
+                f.write("\n")
+
+    def test_filters_by_seed(self, tmp_path: Path) -> None:
+        records = [
+            {"rationale": "r0", "kind": "add", "digits": 2, "prompt": "p0", "seed": 1, "model": "m0"},
+            {"rationale": "r1", "kind": "add", "digits": 2, "prompt": "p1", "seed": 2, "model": "m0"},
+            {"rationale": "r2", "kind": "mul", "digits": 3, "prompt": "p2", "seed": 2, "model": "m1"},
+        ]
+        self._write_jsonl(tmp_path, records)
+
+        df = load_data(str(tmp_path), models=None, seeds=[2])
+
+        assert set(df["seed"].unique()) == {2}
+        assert len(df) == 2
+        assert set(df["model"].unique()) == {"m0", "m1"}
+
+    def test_seed_filter_empty_raises(self, tmp_path: Path) -> None:
+        records = [
+            {"rationale": "r0", "kind": "add", "digits": 2, "prompt": "p0", "seed": 0, "model": "m0"},
+        ]
+        self._write_jsonl(tmp_path, records)
+
+        with pytest.raises(ValueError):
+            load_data(str(tmp_path), models=None, seeds=[123])

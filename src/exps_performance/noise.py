@@ -40,6 +40,50 @@ def perturb_numerical(question: str, sigma: float, seed: int) -> str:
     return "".join(chars)
 
 
+def _perturb_numeric_with_sampler(question: str, sigma: float, seed: int, sampler: Callable[[random.Random, float], int]) -> str:
+    """Shared helper for numeric noise driven by a sampler (e.g., Gaussian or Uniform)."""
+    sigma = clamp_sigma(sigma)
+    if sigma <= 0.0:
+        return question
+    rng = random.Random(seed)
+    chars = list(question)
+    digit_positions = [i for i, ch in enumerate(chars) if ch.isdigit()]
+    if not digit_positions:
+        return question
+    n_changes = max(1, int(len(digit_positions) * sigma))
+    indices = rng.sample(digit_positions, min(n_changes, len(digit_positions)))
+    for idx in indices:
+        original = chars[idx]
+        delta = sampler(rng, sigma)
+        new_val = (int(original) + delta) % 10
+        # ensure a change occurred
+        if str(new_val) == original:
+            replacement_pool = [d for d in string.digits if d != original]
+            new_val = int(rng.choice(replacement_pool))
+        chars[idx] = str(new_val)
+    return "".join(chars)
+
+
+def perturb_gaussian(question: str, sigma: float, seed: int) -> str:
+    """Numeric perturbation where digit deltas follow a Gaussian step."""
+
+    def sampler(rng: random.Random, s: float) -> int:
+        step = rng.gauss(0.0, max(1e-3, s) * 5.0)
+        return int(round(step))
+
+    return _perturb_numeric_with_sampler(question, sigma, seed, sampler)
+
+
+def perturb_uniform(question: str, sigma: float, seed: int) -> str:
+    """Numeric perturbation where digit deltas follow a uniform step."""
+
+    def sampler(rng: random.Random, s: float) -> int:
+        width = max(1, int(round(9 * s)))
+        return rng.randint(-width, width)
+
+    return _perturb_numeric_with_sampler(question, sigma, seed, sampler)
+
+
 def perturb_textual(question: str, sigma: float, seed: int) -> str:
     """Character-level noise: insertions, deletions, swaps."""
     sigma = clamp_sigma(sigma)
@@ -130,6 +174,8 @@ def perturb_irrelevant(question: str, sigma: float, seed: int) -> str:
 
 NOISE_FUNCS: Dict[str, NoiseFunc] = {
     "numerical": perturb_numerical,
+    "gaussian": perturb_gaussian,
+    "uniform": perturb_uniform,
     "textual": perturb_textual,
     "structural": perturb_structural,
     "irrelevant": perturb_irrelevant,
