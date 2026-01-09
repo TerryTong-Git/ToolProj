@@ -11,6 +11,7 @@ repos:
     hooks:
       - id: mypy
         files: ^(src|tests)/
+        exclude: ^(src/exps_performance/clrs/|src/exps_logistic/notebooks/|src/exps_performance/notebooks/|src/exps_performance/analysis_noise)
         additional_dependencies: [pandas-stubs]
 
   - repo: local
@@ -20,6 +21,3 @@ repos:
         entry: uv run --frozen --no-sync pytest -m "not slow" -n 2
         language: system
         pass_filenames: false
-        env:
-          UV_CACHE_DIR: /nlpgpu/data/terry/UV_CACHE
-          XDG_CACHE_HOME: /nlpgpu/data/terry/UV_CACHE

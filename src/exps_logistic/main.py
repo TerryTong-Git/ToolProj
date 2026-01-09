@@ -14,6 +14,7 @@ Embedding backends (choose with --feats):
   - openai       : OpenAI embeddings API
 """
 
+import json
 import logging
 import time
 from datetime import datetime
@@ -26,6 +27,7 @@ import pandas as pd
 from .classifier import ConceptClassifier
 from .config import ExperimentConfig, parse_args
 from .data_utils import (
+    filter_by_kinds,
     filter_by_rep,
     load_data,
     prepare_labels,
@@ -60,7 +62,7 @@ def _default_save_path(model: str, seed: str, config: ExperimentConfig) -> Path:
     feats = config.feats
     rep = config.rep
     embed = (config.embed_model or "na").replace("/", "-")
-    fname = f"{model}_seed{seed}_{rep}_{feats}-{embed}_{ts}.csv"
+    fname = f"{model}_seed{seed}_{rep}_{feats}-{embed}_{ts}.json"
     out_dir = Path(__file__).resolve().parent / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
     return out_dir / fname
@@ -71,10 +73,15 @@ def run(config: ExperimentConfig) -> None:
 
     # Load data
     logger.info("Loading data...")
-    assert config.csv is not None, "CSV path must be provided"
-    df = load_data(config.csv)
+    assert config.results_dir is not None, "Results directory must be provided"
+    df = load_data(config.results_dir, config.models, config.seeds)
     logger.info(f"Loaded {len(df)} samples")
     model_name, seed_str = _infer_metadata(df, config)
+    if config.models is not None and len(config.models) > 0:
+        model_name = config.models[0].split("/")[-1]
+
+    # Filter by problem kinds (default: fine-grained only)
+    df = filter_by_kinds(df, set(config.kinds) if config.kinds else None)
 
     # Filter by representation type
     df = filter_by_rep(df, config.rep)
@@ -104,6 +111,7 @@ def run(config: ExperimentConfig) -> None:
     texts_tr = train_df["rationale"].astype(str).tolist()
     texts_te = test_df["rationale"].astype(str).tolist()
 
+    # import pdb; pdb.set_trace()
     featurizer = build_featurizer(
         config.feats,
         config.embed_model,
@@ -125,15 +133,19 @@ def run(config: ExperimentConfig) -> None:
 
     # Train classifier
     logger.info("Training classifier...")
-    # Hyperparameter search (up to 5-fold stratified CV) to reduce overfitting.
-    best_C, best_max_iter, cv_score = ConceptClassifier.tune_hyperparams(
-        X_train,
-        train_df["label"].astype(str).tolist(),
-        config.logreg_c_grid,
-        config.logreg_max_iter_grid,
-        cv_folds=config.logreg_cv_folds,
-    )
-    logger.info(f"CV best accuracy={cv_score:.4f} with C={best_C}, max_iter={best_max_iter}")
+    if config.enable_cv:
+        # Hyperparameter search (up to 5-fold stratified CV) to reduce overfitting.
+        best_C, best_max_iter, cv_score = ConceptClassifier.tune_hyperparams(
+            X_train,
+            train_df["label"].astype(str).tolist(),
+            config.logreg_c_grid,
+            config.logreg_max_iter_grid,
+            cv_folds=config.logreg_cv_folds,
+        )
+        logger.info(f"CV best accuracy={cv_score:.4f} with C={best_C}, max_iter={best_max_iter}")
+    else:
+        best_C, best_max_iter = config.C, config.max_iter
+        logger.info(f"CV disabled; using C={best_C}, max_iter={best_max_iter}")
 
     classifier = ConceptClassifier(C=best_C, max_iter=best_max_iter)
     classifier.fit(X_train, train_df["label"].astype(str).tolist())
@@ -171,7 +183,25 @@ def run(config: ExperimentConfig) -> None:
         out["feats"] = config.feats
         out["embed_model"] = config.embed_model or ""
         out["run_ts"] = datetime.now().isoformat()
-        out.to_csv(config.save_preds, index=False)
+        records = out.to_dict(orient="records")
+        results_summary = {
+            "target_label": config.label,
+            "n_classes": metrics.n_classes,
+            "feats": config.feats,
+            "embed_model": config.embed_model or "n/a",
+            "pool": config.pool if config.feats == "hf-cls" else "-",
+            "rep_filter": config.rep,
+            "n_train": metrics.n_train,
+            "n_test": metrics.n_test,
+            "cross_entropy_bits": metrics.cross_entropy_bits,
+            "cross_entropy_nats": metrics.cross_entropy,
+            "accuracy": metrics.accuracy,
+            "macro_f1": metrics.macro_f1,
+            "empirical_entropy_bits": metrics.empirical_entropy,
+            "mutual_info_lower_bound_bits": metrics.mutual_info_lower_bound,
+        }
+        with open(config.save_preds, "w", encoding="utf-8") as f:
+            json.dump(records + [results_summary], f, ensure_ascii=False)
         logger.info(f"Saved predictions: {config.save_preds}")
 
 

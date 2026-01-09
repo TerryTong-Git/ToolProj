@@ -42,3 +42,18 @@ dmypy.json
 *.json
 /dotfiles/
 /NPHardEval/
+
+# Root-level generated images
+/*.png
+
+# External project directories
+/Bayesian_Tool_Use/
+
+# Temporary Python files
+*_temp.py
+
+# Claude Code config
+/.claude/
+
+# OAuth/secrets files
+gcp-oauth.keys.json

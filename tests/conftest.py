@@ -25,7 +25,7 @@ class CreateArgs:
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.95
     vllm_max_model_len: int = 8192
-    vllm_download_dir: str = "/nlpgpu/data/terry/ToolProj/src/models"
+    vllm_download_dir: str = str(Path(__file__).resolve().parents[1] / "src" / "models")
     hf_trust_remote_code: bool = True
     batch_size: int = 16
     max_tokens: int = 2048
@@ -167,7 +167,9 @@ def load_results_to_analyze() -> Any:
     except ImportError:
         pytest.skip("pandas not installed; integration results fixture skipped")
     _ = pd.__version__
-    files = walk_results_folder("/nlpgpu/data/terry/ToolProj/tests/integration/fixtures/results")  # check files are deepseek and gemma, seed 1 and 2
+    files = walk_results_folder(
+        str(Path(__file__).resolve().parent / "integration" / "fixtures" / "results")
+    )  # check files are deepseek and gemma, seed 1 and 2
     typed_files: Sequence[Union[str, Path]] = files
     df = create_big_df(typed_files)
     return df

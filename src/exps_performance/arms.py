@@ -166,9 +166,9 @@ class BaseArm:
             llm_o = llm_out[i]
             prob_index = i // RERUN  # i w.r.t. to given list
             rerun_index = i % RERUN  # 443 -> 3
+            og_ind, problem, _prev_parsed, pUtil, default = to_reparse[prob_index]
             llm_o = remove_python_triple_quote(llm_o)  # not accepted by langchain
             parsed_output, err = pUtil.parse_output(llm_o)
-            og_ind, problem, _prev_parsed, pUtil, default = to_reparse[prob_index]
             if not self._is_default_model(parsed_output, default) or rerun_index == (RERUN - 1):
                 outs.append((og_ind, parsed_output, err))
                 i += RERUN - rerun_index

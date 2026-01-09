@@ -396,7 +396,9 @@ def llm(args: Any) -> Any:
     elif args.backend == "openai":
         return OpenAIChatClient(seed=args.seed)
     elif args.backend == "openrouter":
-        return OpenRouterChatClient(api_key=args.openrouter_api_key, base_url=args.openrouter_base_url, seed=args.seed)
+        api_key = getattr(args, "openrouter_api_key", None) or os.getenv("OPENROUTER_API_KEY")
+        base_url = getattr(args, "openrouter_base_url", None) or openrouter_api_base
+        return OpenRouterChatClient(api_key=api_key, base_url=base_url, seed=args.seed)
 
 
 def run_batch(messages_list: List[List[Dict[str, str]]], args: Any, client: Any) -> List[str]:

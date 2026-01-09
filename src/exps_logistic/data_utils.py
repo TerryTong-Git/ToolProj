@@ -3,10 +3,13 @@
 
 import logging
 from collections import Counter
-from typing import Tuple, cast
+from pathlib import Path
+from typing import List, Optional, Tuple, cast
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+from src.exps_performance.logger import create_big_df
 
 from .parsers import (
     parse_arithmetic_operands,
@@ -119,18 +122,25 @@ def create_theta_new_label(kind: str, digits: int) -> str:
 # ------------------------------------------------------------------------------
 
 
-def _convert_results_csv(df: pd.DataFrame) -> pd.DataFrame:
+def _convert_results_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Convert results CSVs produced by exps_performance (Record schema) into the
+    Convert results produced by exps_performance (Record schema) into the
     canonical format expected by the logistic pipeline.
     """
     required = {"digit", "kind", "question"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"Results CSV missing required columns {missing}. Got: {df.columns.tolist()}")
+        raise ValueError(f"Results data missing required columns {missing}. Got: {df.columns.tolist()}")
 
     rows = []
     for _, row in df.iterrows():
+        nl = str(row.get("nl_reasoning", "") or "").strip()
+        code = str(row.get("sim_code", "") or "").strip()
+
+        # Require both modalities to be present for fairness/balanced classes
+        if not nl or not code:
+            continue
+
         digits = int(row["digit"])
         base = {
             "kind": row["kind"],
@@ -139,15 +149,8 @@ def _convert_results_csv(df: pd.DataFrame) -> pd.DataFrame:
             "prompt": row.get("question", ""),
         }
 
-        # NL rationale
-        nl = str(row.get("nl_reasoning", "") or "").strip()
-        if nl:
-            rows.append({**base, "rationale": nl, "rep": "nl"})
-
-        # Code rationale (we use the generated code answer as the representation)
-        code = str(row.get("code_answer", "") or "").strip()
-        if code:
-            rows.append({**base, "rationale": code, "rep": "code"})
+        rows.append({**base, "rationale": nl, "rep": "nl"})
+        rows.append({**base, "rationale": code, "rep": "code"})
 
     if not rows:
         raise ValueError("No rationale text found in results CSV (nl_reasoning/code_answer were empty).")
@@ -155,9 +158,31 @@ def _convert_results_csv(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def load_data(csv_path: str) -> pd.DataFrame:
-    """Load data from CSV file."""
-    df = pd.read_csv(csv_path)
+def load_data(results_dir: str, models: Optional[List[str]] = None, seeds: Optional[List[int]] = None) -> pd.DataFrame:
+    """Load data from a results directory containing JSONL files (Record schema)."""
+    root = Path(results_dir)
+    if not root.is_dir():
+        raise FileNotFoundError(f"Results directory does not exist: {results_dir}")
+
+    jsonl_files = sorted(root.rglob("*.jsonl"))
+    if not jsonl_files:
+        raise FileNotFoundError(f"No JSONL result files found under {results_dir}")
+
+    df = create_big_df(jsonl_files)
+    if df.empty:
+        raise ValueError(f"No rows loaded from JSONL files under {results_dir}")
+    # import pdb; pdb.set_trace()
+    if models:
+        df = df[df["model"].isin(models)]
+        if df.empty:
+            raise ValueError(f"No rows left after filtering by models={models}")
+
+    if seeds is not None:
+        if "seed" not in df.columns:
+            raise ValueError("Seed filtering requested but 'seed' column is missing in the data.")
+        df = df[df["seed"].isin(seeds)]
+        if df.empty:
+            raise ValueError(f"No rows left after filtering by seeds={seeds}")
 
     # Already in canonical format (tests/synthetic data)
     if "rationale" in df.columns and ("digits" in df.columns or "digit" in df.columns):
@@ -165,18 +190,18 @@ def load_data(csv_path: str) -> pd.DataFrame:
             df = df.rename(columns={"digit": "digits"})
         return df
 
-    # exps_performance results CSV (Record schema)
+    # exps_performance results (Record schema)
     if {"digit", "kind", "question"} <= set(df.columns):
-        converted = _convert_results_csv(df)
+        converted = _convert_results_df(df)
         logger.info(
-            "Loaded results CSV in Record schema; converted %d rows to %d rationale entries (nl/code).",
+            "Loaded Record-schema results; converted %d rows to %d rationale entries (nl/code).",
             len(df),
             len(converted),
         )
         return converted
 
     raise ValueError(
-        "Unsupported CSV format. Expected columns {rationale, kind, digits} or an exps_performance results CSV "
+        "Unsupported results format. Expected columns {rationale, kind, digits} or Record schema "
         f"(digit, kind, question, nl_reasoning/code_answer). Got: {df.columns.tolist()}"
     )
 
@@ -188,6 +213,17 @@ def filter_by_rep(df: pd.DataFrame, rep: str) -> pd.DataFrame:
     filtered = df[df["rep"].astype(str).str.lower() == rep]
     if len(filtered) == 0:
         raise ValueError(f"No rows after filtering rep={rep}")
+    return filtered
+
+
+def filter_by_kinds(df: pd.DataFrame, kinds: Optional[set]) -> pd.DataFrame:
+    """Filter dataframe by problem kinds."""
+    if kinds is None or "kind" not in df.columns:
+        return df
+    filtered = df[df["kind"].isin(kinds)]
+    if len(filtered) == 0:
+        raise ValueError(f"No rows after filtering by kinds={kinds}")
+    logger.info("Filtered to %d rows with kinds=%s", len(filtered), sorted(kinds))
     return filtered
 
 

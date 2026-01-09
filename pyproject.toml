@@ -105,7 +105,7 @@ disallow_untyped_defs = true
 check_untyped_defs = true
 namespace_packages = true
 ignore_missing_imports = true
-exclude = "(^tests/|^src/exps_benchmarks/|^src/exps_code_analysis/|^src/exps_mixed_model/|^src/exps_pret_corr/|^src/exps_logistic/|^src/exps_performance/clrs/algorithms/|^src/models/archive-v0/|^src/models/wheels-v5/)"
+exclude = "(^tests/|^src/exps_benchmarks/|^src/exps_code_analysis/|^src/exps_mixed_model/|^src/exps_pret_corr/|^src/exps_logistic/|^src/exps_performance/clrs/|^src/models/archive-v0/|^src/models/wheels-v5/)"
 
 [[tool.mypy.overrides]]
 module = ["mypy.plugins.numpy.*"]
