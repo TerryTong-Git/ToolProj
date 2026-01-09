@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.exps_performance.dataset import CLRS, GSM8K, NPHARD, make_dataset
+from src.exps_performance.dataset import CLRS, FG, GSM8K, NPHARD, make_dataset
 from src.exps_performance.logger import CheckpointManager
 from src.exps_performance.main import compute_effective_samples
 from src.exps_performance.problems.clrs import ClrsQuestion
@@ -50,19 +50,25 @@ def test_np() -> None:
     assert data is not None, "no data"
 
 
-def _mock_nphard_load(self):  # type: ignore[no-untyped-def]
-    """Return mock NPHARD data with one question per problem type."""
-    return [
-        SppQuestion(kind="spp", answer="1", problem="mock"),
-        TspQuestion(kind="tsp", answer="1", problem="mock"),
-        TspdQuestion(kind="tsp_d", answer="1", problem="mock"),
-        MspQuestion(kind="msp", answer="1", problem="mock"),
-        KspQuestion(kind="ksp", answer="1", problem="mock"),
-        GcpQuestion(kind="gcp", answer="1", problem="mock"),
-        GcpdQuestion(kind="gcp_d", answer="1", problem="mock"),
-        BspQuestion(kind="bsp", answer="1", problem="mock"),
-        EdpQuestion(kind="edp", answer="1", problem="mock"),
-    ]
+def _mock_nphard_load_subset(self, subset):  # type: ignore[no-untyped-def]
+    """Return mock NPHARD data for requested subset."""
+    mock_data = {
+        "spp": SppQuestion(kind="spp", answer="1"),
+        "tsp": TspQuestion(kind="tsp", answer="1"),
+        "tsp_d": TspdQuestion(kind="tsp_d", answer="1"),
+        "msp": MspQuestion(kind="msp", answer="1"),
+        "ksp": KspQuestion(kind="ksp", answer="1"),
+        "gcp": GcpQuestion(kind="gcp", answer="1"),
+        "gcp_d": GcpdQuestion(kind="gcp_d", answer="1"),
+        "bsp": BspQuestion(kind="bsp", answer="1"),
+        "edp": EdpQuestion(kind="edp", answer="1"),
+    }
+    return [mock_data[k] for k in subset if k in mock_data]
+
+
+def _mock_fg_load_subset(self, subset):  # type: ignore[no-untyped-def]
+    """Return mock FG data for requested subset."""
+    return [FgQuestion(kind=k, digits=2, answer="1") for k in subset]
 
 
 def test_make(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -77,7 +83,8 @@ def test_make(monkeypatch: pytest.MonkeyPatch) -> None:
         "load",
         lambda self: [ClrsQuestion(kind="clrs_alg", digits=0, answer="", text_data="") for _ in range(3)],
     )
-    monkeypatch.setattr(NPHARD, "load", _mock_nphard_load)
+    monkeypatch.setattr(NPHARD, "load_subset", _mock_nphard_load_subset)
+    monkeypatch.setattr(FG, "load_subset", _mock_fg_load_subset)
     for p, probclass in problem_types.items():
         data = make_dataset([p])
         for d in data:
