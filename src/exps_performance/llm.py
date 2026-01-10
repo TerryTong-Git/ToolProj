@@ -19,13 +19,6 @@ logger.setLevel(logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
 
-try:
-    from vllm import LLM as VLLMEngine
-    from vllm import SamplingParams
-except Exception as _vllm_import_err:
-    VLLMEngine = None
-    SamplingParams = None
-
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.deterministic = True
 
@@ -238,9 +231,17 @@ class VLLMClient(LLMClient):
         trust_remote_code: bool = False,
         seed: int = 0,
     ):
-        # assert dtype == "float16", "Wrong dtype"
-        if VLLMEngine is None:
-            raise RuntimeError("vLLM is not installed. Install a CUDA-matching vLLM wheel (e.g. vllm-cu121) or build from source.")
+        # Lazy import vLLM only when this client is actually instantiated
+        try:
+            from vllm import LLM as VLLMEngine
+            from vllm import SamplingParams
+        except ImportError as e:
+            raise RuntimeError(
+                "vLLM is not installed. Install a CUDA-matching vLLM wheel "
+                "(e.g. vllm-cu121) or build from source."
+            ) from e
+
+        self._SamplingParams = SamplingParams  # Store for use in chat methods
         # vLLM engine (persistent)
         self.seed = seed
         self.llm = VLLMEngine(
@@ -276,7 +277,7 @@ class VLLMClient(LLMClient):
         stop: Optional[List[str]] = None,
     ) -> str:
         prompt = self._to_prompt(messages)
-        sp = SamplingParams(
+        sp = self._SamplingParams(
             max_tokens=int(max_tokens),  # new tokens
             temperature=float(temperature) if temperature is not None else 0.0,
             top_p=float(top_p) if top_p is not None else 1.0,
@@ -298,7 +299,7 @@ class VLLMClient(LLMClient):
         stop: Optional[List[str]] = None,
     ) -> List[str]:
         prompts = [self._to_prompt(msgs) for msgs in messages_list]
-        sp = SamplingParams(
+        sp = self._SamplingParams(
             max_tokens=int(max_tokens),
             temperature=float(temperature) if temperature is not None else 0.0,
             top_p=float(top_p) if top_p is not None else 1.0,

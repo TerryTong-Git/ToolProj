@@ -30,13 +30,6 @@ from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
 from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
 
-try:
-    from vllm import LLM as VLLMEngine
-    from vllm import SamplingParams
-except Exception as _vllm_import_err:
-    VLLMEngine = None
-    SamplingParams = None
-
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.deterministic = True
 
