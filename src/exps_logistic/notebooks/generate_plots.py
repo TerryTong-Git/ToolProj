@@ -18,15 +18,9 @@ from scipy.stats import gaussian_kde, pearsonr, wilcoxon
 
 # Base paths - use relative paths from project root or environment variables
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-LOGISTIC_RESULTS_DIR = Path(
-    os.getenv("LOGISTIC_RESULTS_DIR", _PROJECT_ROOT / "src/exps_logistic/results")
-)
-PERF_RESULTS_DIR = Path(
-    os.getenv("PERF_RESULTS_DIR", _PROJECT_ROOT / "src/exps_performance/results")
-)
-PLOTS_DIR = Path(
-    os.getenv("PLOTS_DIR", _PROJECT_ROOT / "src/exps_logistic/notebooks")
-)
+LOGISTIC_RESULTS_DIR = Path(os.getenv("LOGISTIC_RESULTS_DIR", _PROJECT_ROOT / "src/exps_logistic/results"))
+PERF_RESULTS_DIR = Path(os.getenv("PERF_RESULTS_DIR", _PROJECT_ROOT / "src/exps_performance/results"))
+PLOTS_DIR = Path(os.getenv("PLOTS_DIR", _PROJECT_ROOT / "src/exps_logistic/notebooks"))
 
 FILENAME_RE = re.compile(r"^(?P<model>.+)_seed(?P<seed>\d+)_(?P<rep>nl|code)_(?P<feats>[^_]+)-(?P<embed>[^_]+)_(?P<ts>\d{8}_\d{6})\.json$")
 
