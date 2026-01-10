@@ -7,6 +7,7 @@ on:
       - 'src/**/*.py'
       - 'docs/**/*.md'
       - 'docs/code_mapping.json'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -115,8 +116,9 @@ jobs:
             5. **Output Format**: Any output files or return structures match
                documented specifications.
 
-            ### Step 4: Generate Report
-            Create `review-report.md` with the following structure:
+            ### Step 4: Write Report File
+            IMPORTANT: You MUST use the Write tool to create a file named `review-report.md`
+            in the current directory. Use the following structure:
 
             ```markdown
             # Research Code Review Report
@@ -156,6 +158,10 @@ jobs:
             - Suggested improvements
 
             Use PASS status when all validations succeed.
+
+            CRITICAL: After completing your review, you MUST write the report to
+            the file `review-report.md` using the Write tool. Do not just output
+            the report - actually create the file.
 
       - name: Upload Review Report
         if: always() && steps.changed-files.outputs.no_changes != 'true'
@@ -332,7 +338,8 @@ jobs:
                - Description of the problem
                - Suggested fix
 
-            3. Generate `quality-review-report.md` with this structure:
+            3. IMPORTANT: You MUST use the Write tool to create a file named
+               `quality-review-report.md` in the current directory with this structure:
 
             ```markdown
             # Quality Code Review Report
@@ -371,6 +378,10 @@ jobs:
             Use FAIL for Critical or multiple High severity issues.
             Use WARN for High or multiple Medium severity issues.
             Use PASS when no significant issues found.
+
+            CRITICAL: After completing your review, you MUST write the report to
+            the file `quality-review-report.md` using the Write tool. Do not just
+            output the report - actually create the file.
 
       - name: Upload Quality Review Report
         if: always() && steps.changed-files.outputs.no_changes != 'true'
