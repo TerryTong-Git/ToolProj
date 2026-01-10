@@ -129,28 +129,88 @@ jobs:
 
             // Read the execution output from the action
             const executionFile = '${{ steps.review.outputs.execution_file }}';
-            let reviewContent = 'Review completed. See job summary for details.';
+            let reviewContent = '';
+            let debugInfo = '';
+
+            // Helper function to extract text content from various formats
+            function extractText(content) {
+              if (typeof content === 'string') {
+                return content;
+              }
+              if (Array.isArray(content)) {
+                return content
+                  .filter(c => c.type === 'text')
+                  .map(c => c.text)
+                  .join('\n');
+              }
+              return '';
+            }
 
             if (executionFile && fs.existsSync(executionFile)) {
               try {
-                const output = JSON.parse(fs.readFileSync(executionFile, 'utf8'));
-                // Extract the last assistant message as the review
-                const messages = output.messages || [];
-                const lastAssistant = messages.filter(m => m.role === 'assistant').pop();
-                if (lastAssistant && lastAssistant.content) {
-                  // Handle both string and array content formats
-                  if (typeof lastAssistant.content === 'string') {
-                    reviewContent = lastAssistant.content;
-                  } else if (Array.isArray(lastAssistant.content)) {
-                    reviewContent = lastAssistant.content
-                      .filter(c => c.type === 'text')
-                      .map(c => c.text)
-                      .join('\n');
+                const rawContent = fs.readFileSync(executionFile, 'utf8');
+                const output = JSON.parse(rawContent);
+
+                // Debug: Log top-level keys
+                debugInfo = `Keys found: ${Object.keys(output).join(', ')}`;
+                console.log('Execution file keys:', Object.keys(output));
+
+                // Try multiple parsing strategies
+
+                // Strategy 1: Look for messages array (standard format)
+                if (output.messages && Array.isArray(output.messages)) {
+                  const assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  if (assistantMessages.length > 0) {
+                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
+                    reviewContent = extractText(lastAssistant.content);
                   }
+                }
+
+                // Strategy 2: Look for result/response key
+                if (!reviewContent && output.result) {
+                  reviewContent = extractText(output.result);
+                }
+                if (!reviewContent && output.response) {
+                  reviewContent = extractText(output.response);
+                }
+
+                // Strategy 3: Look for content directly
+                if (!reviewContent && output.content) {
+                  reviewContent = extractText(output.content);
+                }
+
+                // Strategy 4: Look for text directly
+                if (!reviewContent && output.text) {
+                  reviewContent = output.text;
+                }
+
+                // Strategy 5: If output has a nested structure, try to find text
+                if (!reviewContent) {
+                  const jsonStr = JSON.stringify(output, null, 2);
+                  // Look for Status pattern in the JSON which indicates our report
+                  const statusMatch = jsonStr.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/);
+                  if (statusMatch) {
+                    // The report is somewhere in there, extract from the raw file
+                    // Find text blocks that look like our report format
+                    const reportPattern = /(?:\*\*Status\*\*[\s\S]*?(?:\*\*Recommendations\*\*[\s\S]*?))/;
+                    const reportMatch = rawContent.match(reportPattern);
+                    if (reportMatch) {
+                      reviewContent = reportMatch[0];
+                    }
+                  }
+                }
+
+                if (!reviewContent) {
+                  console.log('Could not extract review content. File structure:', JSON.stringify(output, null, 2).substring(0, 2000));
+                  reviewContent = `Review completed but content extraction failed.\n\nDebug: ${debugInfo}\n\nPlease check the job summary for the full review.`;
                 }
               } catch (e) {
                 console.log('Error parsing execution output:', e.message);
+                reviewContent = `Review completed but encountered parsing error: ${e.message}\n\nPlease check the job summary for details.`;
               }
+            } else {
+              console.log('Execution file not found:', executionFile);
+              reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
             }
 
             // Truncate if too long (GitHub comment limit is 65536)
@@ -160,11 +220,11 @@ jobs:
 
             const commentBody = `## 📋 Research Code Review Report
 
-            ${reviewContent}
+${reviewContent}
 
-            ---
-            *Automated review by Claude Research Code Reviewer*
-            *Commit: ${{ github.sha }}*`;
+---
+*Automated review by Claude Research Code Reviewer*
+*Commit: ${{ github.sha }}*`;
 
             // Find and update existing comment or create new one
             const { data: comments } = await github.rest.issues.listComments({
@@ -308,28 +368,88 @@ jobs:
 
             // Read the execution output from the action
             const executionFile = '${{ steps.quality-review.outputs.execution_file }}';
-            let reviewContent = 'Review completed. See job summary for details.';
+            let reviewContent = '';
+            let debugInfo = '';
+
+            // Helper function to extract text content from various formats
+            function extractText(content) {
+              if (typeof content === 'string') {
+                return content;
+              }
+              if (Array.isArray(content)) {
+                return content
+                  .filter(c => c.type === 'text')
+                  .map(c => c.text)
+                  .join('\n');
+              }
+              return '';
+            }
 
             if (executionFile && fs.existsSync(executionFile)) {
               try {
-                const output = JSON.parse(fs.readFileSync(executionFile, 'utf8'));
-                // Extract the last assistant message as the review
-                const messages = output.messages || [];
-                const lastAssistant = messages.filter(m => m.role === 'assistant').pop();
-                if (lastAssistant && lastAssistant.content) {
-                  // Handle both string and array content formats
-                  if (typeof lastAssistant.content === 'string') {
-                    reviewContent = lastAssistant.content;
-                  } else if (Array.isArray(lastAssistant.content)) {
-                    reviewContent = lastAssistant.content
-                      .filter(c => c.type === 'text')
-                      .map(c => c.text)
-                      .join('\n');
+                const rawContent = fs.readFileSync(executionFile, 'utf8');
+                const output = JSON.parse(rawContent);
+
+                // Debug: Log top-level keys
+                debugInfo = `Keys found: ${Object.keys(output).join(', ')}`;
+                console.log('Execution file keys:', Object.keys(output));
+
+                // Try multiple parsing strategies
+
+                // Strategy 1: Look for messages array (standard format)
+                if (output.messages && Array.isArray(output.messages)) {
+                  const assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  if (assistantMessages.length > 0) {
+                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
+                    reviewContent = extractText(lastAssistant.content);
                   }
+                }
+
+                // Strategy 2: Look for result/response key
+                if (!reviewContent && output.result) {
+                  reviewContent = extractText(output.result);
+                }
+                if (!reviewContent && output.response) {
+                  reviewContent = extractText(output.response);
+                }
+
+                // Strategy 3: Look for content directly
+                if (!reviewContent && output.content) {
+                  reviewContent = extractText(output.content);
+                }
+
+                // Strategy 4: Look for text directly
+                if (!reviewContent && output.text) {
+                  reviewContent = output.text;
+                }
+
+                // Strategy 5: If output has a nested structure, try to find text
+                if (!reviewContent) {
+                  const jsonStr = JSON.stringify(output, null, 2);
+                  // Look for Status pattern in the JSON which indicates our report
+                  const statusMatch = jsonStr.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/);
+                  if (statusMatch) {
+                    // The report is somewhere in there, extract from the raw file
+                    // Find text blocks that look like our report format
+                    const reportPattern = /(?:\*\*Status\*\*[\s\S]*?(?:\*\*Recommendations\*\*[\s\S]*?))/;
+                    const reportMatch = rawContent.match(reportPattern);
+                    if (reportMatch) {
+                      reviewContent = reportMatch[0];
+                    }
+                  }
+                }
+
+                if (!reviewContent) {
+                  console.log('Could not extract review content. File structure:', JSON.stringify(output, null, 2).substring(0, 2000));
+                  reviewContent = `Review completed but content extraction failed.\n\nDebug: ${debugInfo}\n\nPlease check the job summary for the full review.`;
                 }
               } catch (e) {
                 console.log('Error parsing execution output:', e.message);
+                reviewContent = `Review completed but encountered parsing error: ${e.message}\n\nPlease check the job summary for details.`;
               }
+            } else {
+              console.log('Execution file not found:', executionFile);
+              reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
             }
 
             // Truncate if too long (GitHub comment limit is 65536)
@@ -339,11 +459,11 @@ jobs:
 
             const commentBody = `## 🔍 Quality Code Review Report
 
-            ${reviewContent}
+${reviewContent}
 
-            ---
-            *Automated review by Claude Quality Code Reviewer*
-            *Commit: ${{ github.sha }}*`;
+---
+*Automated review by Claude Quality Code Reviewer*
+*Commit: ${{ github.sha }}*`;
 
             // Find and update existing comment or create new one
             const { data: comments } = await github.rest.issues.listComments({
