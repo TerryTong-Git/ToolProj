@@ -159,21 +159,33 @@ jobs:
 
                 // Try multiple parsing strategies
 
-                // Strategy 0: Output is a top-level array of messages
+                // Strategy 0: Output is a top-level array (event log format)
+                // Events use 'type' field, not 'role' field
                 if (Array.isArray(output)) {
-                  const assistantMessages = output.filter(m => m.role === 'assistant');
+                  // Try 'type' field first (claude-code-action format)
+                  let assistantMessages = output.filter(m => m.type === 'assistant');
+                  // Fallback to 'role' field (standard format)
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.filter(m => m.role === 'assistant');
+                  }
                   if (assistantMessages.length > 0) {
                     const lastAssistant = assistantMessages[assistantMessages.length - 1];
-                    reviewContent = extractText(lastAssistant.content);
+                    // Try 'message.content' first (event log format), then 'content' directly
+                    const content = lastAssistant.message?.content || lastAssistant.content;
+                    reviewContent = extractText(content);
                   }
                 }
 
                 // Strategy 1: Look for messages array (standard format)
                 if (!reviewContent && output.messages && Array.isArray(output.messages)) {
-                  const assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  let assistantMessages = output.messages.filter(m => m.type === 'assistant');
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  }
                   if (assistantMessages.length > 0) {
                     const lastAssistant = assistantMessages[assistantMessages.length - 1];
-                    reviewContent = extractText(lastAssistant.content);
+                    const content = lastAssistant.message?.content || lastAssistant.content;
+                    reviewContent = extractText(content);
                   }
                 }
 
@@ -432,21 +444,33 @@ jobs:
 
                 // Try multiple parsing strategies
 
-                // Strategy 0: Output is a top-level array of messages
+                // Strategy 0: Output is a top-level array (event log format)
+                // Events use 'type' field, not 'role' field
                 if (Array.isArray(output)) {
-                  const assistantMessages = output.filter(m => m.role === 'assistant');
+                  // Try 'type' field first (claude-code-action format)
+                  let assistantMessages = output.filter(m => m.type === 'assistant');
+                  // Fallback to 'role' field (standard format)
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.filter(m => m.role === 'assistant');
+                  }
                   if (assistantMessages.length > 0) {
                     const lastAssistant = assistantMessages[assistantMessages.length - 1];
-                    reviewContent = extractText(lastAssistant.content);
+                    // Try 'message.content' first (event log format), then 'content' directly
+                    const content = lastAssistant.message?.content || lastAssistant.content;
+                    reviewContent = extractText(content);
                   }
                 }
 
                 // Strategy 1: Look for messages array (standard format)
                 if (!reviewContent && output.messages && Array.isArray(output.messages)) {
-                  const assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  let assistantMessages = output.messages.filter(m => m.type === 'assistant');
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  }
                   if (assistantMessages.length > 0) {
                     const lastAssistant = assistantMessages[assistantMessages.length - 1];
-                    reviewContent = extractText(lastAssistant.content);
+                    const content = lastAssistant.message?.content || lastAssistant.content;
+                    reviewContent = extractText(content);
                   }
                 }
 
