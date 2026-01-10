@@ -272,7 +272,7 @@ def read_from_csv(logdir: str) -> List[Record]:
             _write_jsonl(jsonl_path, cast(Sequence[Dict[str, Any]], df_clean.to_dict("records")))
             with jsonl_path.open("rb") as f:
                 os.fsync(f.fileno())
-            print(f"[checkpoint load] compacted checkpoint: kept {len(result)} unique rows " f"(dropped {dropped})")
+            print(f"[checkpoint load] compacted checkpoint: kept {len(result)} unique rows (dropped {dropped})")
         except Exception:
             print(f"[checkpoint load] detected {dropped} duplicate rows but failed to rewrite checkpoint")
 

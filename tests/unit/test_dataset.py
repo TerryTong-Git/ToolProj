@@ -103,7 +103,7 @@ def test_fixed_samples_default_and_override(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(
         CLRS,
         "load",
-        lambda self: [ClrsQuestion(kind=f"clrs_alg_{i%5}", digits=0, answer="", text_data="") for i in range(600)],
+        lambda self: [ClrsQuestion(kind=f"clrs_alg_{i % 5}", digits=0, answer="", text_data="") for i in range(600)],
     )
     data = make_dataset(["gsm8k", "clrs30"], n=5)
     gsm_count = len([q for q in data if isinstance(q, Gsm8kQuestion)])
@@ -127,7 +127,7 @@ def test_resume_expands_to_new_target(monkeypatch: pytest.MonkeyPatch, tmp_path:
     monkeypatch.setattr(
         CLRS,
         "load",
-        lambda self: [ClrsQuestion(kind=f"clrs_alg_{i%3}", digits=0, answer="", text_data="") for i in range(60)],
+        lambda self: [ClrsQuestion(kind=f"clrs_alg_{i % 3}", digits=0, answer="", text_data="") for i in range(60)],
     )
 
     rows = []
@@ -140,7 +140,7 @@ def test_resume_expands_to_new_target(monkeypatch: pytest.MonkeyPatch, tmp_path:
                 "request_id": f"clrs_{i}",
                 "model": "m",
                 "seed": 1,
-                "kind": f"clrs_alg_{i%3}",
+                "kind": f"clrs_alg_{i % 3}",
                 "digit": 0,
             }
         )

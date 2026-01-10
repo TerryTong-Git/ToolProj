@@ -113,7 +113,7 @@ def label_documents(
 
         if (i + 1) % 100 == 0:
             dt = time.time() - t0
-            logger.info(f"Processed {i+1}/{len(documents)}, kept {len(labeled)}, rate={i/max(dt,1e-6):.1f}/s")
+            logger.info(f"Processed {i + 1}/{len(documents)}, kept {len(labeled)}, rate={i / max(dt, 1e-6):.1f}/s")
 
     logger.info(f"Labeled {len(labeled)}/{len(documents)} documents")
 
@@ -218,7 +218,7 @@ def run_pipeline(args: object) -> None:  # type: ignore[no-untyped-def]
     logger.info("=" * 60)
 
     sample = proportional_subsample(all_data, rate=args.subsample_rate, seed=args.seed)  # type: ignore[attr-defined]
-    logger.info(f"Subsampled {len(sample)} documents (~{args.subsample_rate*100:.1f}%)")  # type: ignore[attr-defined]
+    logger.info(f"Subsampled {len(sample)} documents (~{args.subsample_rate * 100:.1f}%)")  # type: ignore[attr-defined]
 
     rep_counts = Counter(doc.rep for doc in sample)
     for rep, cnt in rep_counts.items():

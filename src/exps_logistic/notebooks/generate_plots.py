@@ -169,7 +169,7 @@ def main():
 
     plt.tight_layout()
     plt.savefig(PLOTS_DIR / "boxplot_extended.png", dpi=150)
-    print(f'Saved boxplot to {PLOTS_DIR / "boxplot_extended.png"}')
+    print(f"Saved boxplot to {PLOTS_DIR / 'boxplot_extended.png'}")
     plt.close()
 
     # Plot 2: KDE density plot
@@ -210,7 +210,7 @@ def main():
 
     plt.tight_layout()
     plt.savefig(PLOTS_DIR / "kde_extended.png", dpi=150)
-    print(f'Saved KDE plot to {PLOTS_DIR / "kde_extended.png"}')
+    print(f"Saved KDE plot to {PLOTS_DIR / 'kde_extended.png'}")
     plt.close()
 
     # Plot 3: MI vs Accuracy scatter
@@ -248,7 +248,7 @@ def main():
         plt.tick_params(labelsize=12)
         plt.tight_layout()
         plt.savefig(PLOTS_DIR / "mi_vs_accuracy_extended.png", dpi=150)
-        print(f'Saved MI vs accuracy plot to {PLOTS_DIR / "mi_vs_accuracy_extended.png"}')
+        print(f"Saved MI vs accuracy plot to {PLOTS_DIR / 'mi_vs_accuracy_extended.png'}")
         print(f"Pearson r = {r:.3f}, p = {p:.3g}, N = {len(clean_df)}")
         plt.close()
 
@@ -327,7 +327,7 @@ def main():
 
         plt.subplots_adjust(right=0.97, left=0.15, top=0.94, bottom=0.25)
         plt.savefig(PLOTS_DIR / "contrast_extended.png", dpi=150)
-        print(f'Saved contrast plot to {PLOTS_DIR / "contrast_extended.png"}')
+        print(f"Saved contrast plot to {PLOTS_DIR / 'contrast_extended.png'}")
         plt.close()
 
     # =========================================================================
@@ -349,8 +349,8 @@ def main():
 
         print("\n=== Label Distribution Analysis ===")
         print(f"Total unique samples: {len(combined_df)}")
-        print(f'Unique labels: {combined_df["true_label"].nunique()}')
-        print(f'Unique kinds: {combined_df["kind"].nunique()}')
+        print(f"Unique labels: {combined_df['true_label'].nunique()}")
+        print(f"Unique kinds: {combined_df['kind'].nunique()}")
 
         # Parse true_label to extract kind, digits, bin
         def parse_label(label):
@@ -408,7 +408,7 @@ def main():
 
         plt.tight_layout()
         plt.savefig(PLOTS_DIR / "label_dist_by_kind.png", dpi=150)
-        print(f'Saved kind distribution to {PLOTS_DIR / "label_dist_by_kind.png"}')
+        print(f"Saved kind distribution to {PLOTS_DIR / 'label_dist_by_kind.png'}")
         plt.close()
 
         # Plot 6: Distribution by Digits (for fine-grained problems)
@@ -431,7 +431,7 @@ def main():
 
             plt.tight_layout()
             plt.savefig(PLOTS_DIR / "label_dist_by_digits.png", dpi=150)
-            print(f'Saved digits distribution to {PLOTS_DIR / "label_dist_by_digits.png"}')
+            print(f"Saved digits distribution to {PLOTS_DIR / 'label_dist_by_digits.png'}")
             plt.close()
 
         # Plot 7: Heatmap of Kind x Digits (for fine-grained)
@@ -446,7 +446,7 @@ def main():
 
             plt.tight_layout()
             plt.savefig(PLOTS_DIR / "label_dist_heatmap.png", dpi=150)
-            print(f'Saved heatmap to {PLOTS_DIR / "label_dist_heatmap.png"}')
+            print(f"Saved heatmap to {PLOTS_DIR / 'label_dist_heatmap.png'}")
             plt.close()
 
         # Plot 8: Top 30 most frequent labels
@@ -474,7 +474,7 @@ def main():
 
         plt.tight_layout()
         plt.savefig(PLOTS_DIR / "label_dist_top30.png", dpi=150)
-        print(f'Saved top 30 labels to {PLOTS_DIR / "label_dist_top30.png"}')
+        print(f"Saved top 30 labels to {PLOTS_DIR / 'label_dist_top30.png'}")
         plt.close()
 
         # Plot 9: Label frequency distribution (log-log)
@@ -506,7 +506,7 @@ def main():
 
         plt.tight_layout()
         plt.savefig(PLOTS_DIR / "label_dist_zipf.png", dpi=150)
-        print(f'Saved Zipf plot to {PLOTS_DIR / "label_dist_zipf.png"}')
+        print(f"Saved Zipf plot to {PLOTS_DIR / 'label_dist_zipf.png'}")
         plt.close()
 
         # Plot 10: Distribution by category (pie chart)
@@ -535,15 +535,15 @@ def main():
 
         plt.tight_layout()
         plt.savefig(PLOTS_DIR / "label_dist_pie.png", dpi=150)
-        print(f'Saved pie chart to {PLOTS_DIR / "label_dist_pie.png"}')
+        print(f"Saved pie chart to {PLOTS_DIR / 'label_dist_pie.png'}")
         plt.close()
 
         # Print summary statistics
         print("\n=== Label Distribution Summary ===")
-        print(f'Fine-grained samples: {category_counts["Fine-grained"]:,}')
-        print(f'NP-hard samples: {category_counts["NP-hard"]:,}')
-        print(f'CLRS samples: {category_counts["CLRS"]:,}')
-        print(f'Total unique labels: {combined_df["true_label"].nunique()}')
+        print(f"Fine-grained samples: {category_counts['Fine-grained']:,}")
+        print(f"NP-hard samples: {category_counts['NP-hard']:,}")
+        print(f"CLRS samples: {category_counts['CLRS']:,}")
+        print(f"Total unique labels: {combined_df['true_label'].nunique()}")
 
     print("\nAll plots generated successfully!")
 

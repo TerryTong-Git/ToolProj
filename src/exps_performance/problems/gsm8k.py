@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 
-gsm8k_desc = "Description: You are going to be given a set of math problem." "Question: Solve the following math problems: \n {question}"
+gsm8k_desc = "Description: You are going to be given a set of math problem.Question: Solve the following math problems: \n {question}"
 
 func_typing = "int"
 

@@ -192,7 +192,7 @@ def run_stage_batch(
             checkpoint.save_batch([q.record for q in updated], flush=True)
             updated_all.extend(updated)
         else:
-            logger.warning(f"[checkpoint guard] Skipping checkpoint for {stage_name} batch starting at {start}: " f"{len(batch)} items incomplete")
+            logger.warning(f"[checkpoint guard] Skipping checkpoint for {stage_name} batch starting at {start}: {len(batch)} items incomplete")
     return updated_all
 
 
@@ -205,13 +205,13 @@ def run(args: Any) -> None:
     checkpoint = CheckpointManager(checkpoint_path)
     dump_args(args, Path(exp_dir) / "args.json")
     logger.info(f"Using exp_dir={exp_dir} (exp_id={exp_id}) for model={args.model} seed={args.seed}")
-    logger.info(f"Restored {len(checkpoint._records)} unique records from checkpoint " f"({checkpoint_path})")
+    logger.info(f"Restored {len(checkpoint._records)} unique records from checkpoint ({checkpoint_path})")
     if os.path.exists(checkpoint_path):
         try:
             import pandas as pd
 
             df_counts = pd.read_json(checkpoint_path, lines=True)
-            logger.info(f"Checkpoint rows in file: {len(df_counts)}; " f"unique request_ids: {len(checkpoint._records)}")
+            logger.info(f"Checkpoint rows in file: {len(df_counts)}; unique request_ids: {len(checkpoint._records)}")
         except Exception:
             logger.info("Could not read checkpoint JSONL for counts.")
     # main workflow
