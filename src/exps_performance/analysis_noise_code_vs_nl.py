@@ -205,6 +205,132 @@ def plot_accuracy_by_noise_type(data: pd.DataFrame, output_path: Path) -> None:
     print(f"Saved: {output_path}")
 
 
+def plot_accuracy_vs_digits(data: pd.DataFrame, output_path: Path) -> None:
+    """
+    Generate Plot 2: Accuracy vs Digits (problem hardness) under noise.
+    Aggregates over all noise types and sigma > 0.
+    """
+    # Filter to sigma > 0 to show effect under noise
+    noisy_data = data[data["sigma"] > 0].copy()
+    if noisy_data.empty:
+        print("No noisy data (sigma > 0) available for digits plot")
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Aggregate: mean accuracy by arm, digit (across all noise types, sigmas, kinds, models, seeds)
+    agg = noisy_data.groupby(["arm", "digit"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
+    agg.columns = ["arm", "digit", "mean", "std", "count"]
+    agg["se"] = agg["std"] / np.sqrt(agg["count"])
+
+    colors = {"nl": "#1f77b4", "code": "#ff7f0e"}
+    labels = {"nl": "NL (Arm 1)", "code": "Code Exec (Arm 3)"}
+    markers = {"nl": "o", "code": "s"}
+
+    for arm in ["nl", "code"]:
+        arm_data = agg[agg["arm"] == arm].sort_values("digit")
+        if arm_data.empty:
+            continue
+        ax.errorbar(
+            arm_data["digit"],
+            arm_data["mean"],
+            yerr=1.96 * arm_data["se"],  # 95% CI
+            label=labels[arm],
+            color=colors[arm],
+            marker=markers[arm],
+            markersize=10,
+            linewidth=2,
+            capsize=5,
+        )
+
+    ax.set_xlabel("Digits (Problem Hardness)")
+    ax.set_ylabel("Accuracy (under noise)")
+    ax.set_ylim(0, 1.05)
+    ax.set_xticks(sorted(noisy_data["digit"].unique()))
+    ax.legend(loc="lower left")
+    ax.set_title("Code vs NL: Accuracy by Problem Difficulty\n(Aggregated over σ > 0)")
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(output_path, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {output_path}")
+
+
+def plot_degradation_slope_comparison(data: pd.DataFrame, output_path: Path) -> None:
+    """
+    Plot degradation curves and compute slope comparison for H1.
+    Shows how accuracy degrades as noise increases for code vs NL.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Aggregate by arm and sigma
+    agg = data.groupby(["arm", "sigma"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
+    agg.columns = ["arm", "sigma", "mean", "std", "count"]
+    agg["se"] = agg["std"] / np.sqrt(agg["count"])
+
+    colors = {"nl": "#1f77b4", "code": "#ff7f0e"}
+    labels = {"nl": "NL", "code": "Code Exec"}
+
+    # Left plot: Degradation curves
+    ax = axes[0]
+    slopes = {}
+    for arm in ["nl", "code"]:
+        arm_data = agg[agg["arm"] == arm].sort_values("sigma")
+        if arm_data.empty:
+            continue
+        ax.errorbar(
+            arm_data["sigma"],
+            arm_data["mean"],
+            yerr=1.96 * arm_data["se"],
+            label=labels[arm],
+            color=colors[arm],
+            marker="o",
+            markersize=8,
+            linewidth=2,
+            capsize=4,
+        )
+        # Compute linear regression slope
+        if len(arm_data) >= 2:
+            slope, intercept = np.polyfit(arm_data["sigma"], arm_data["mean"], 1)
+            slopes[arm] = slope
+            # Plot regression line
+            x_line = np.linspace(arm_data["sigma"].min(), arm_data["sigma"].max(), 50)
+            ax.plot(x_line, intercept + slope * x_line, "--", color=colors[arm], alpha=0.5)
+
+    ax.set_xlabel("Noise Level (σ)")
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(0, 1.05)
+    ax.legend(loc="lower left")
+    ax.set_title("Degradation Curves")
+    ax.grid(True, alpha=0.3)
+
+    # Right plot: Slope comparison bar chart
+    ax = axes[1]
+    if slopes:
+        arms = list(slopes.keys())
+        slope_vals = [slopes[arm] for arm in arms]
+        colors_list = [colors[arm] for arm in arms]
+        bars = ax.bar(arms, slope_vals, color=colors_list, edgecolor="black")
+        ax.axhline(y=0, color="gray", linestyle="--", alpha=0.5)
+        ax.set_ylabel("Degradation Slope (Δacc/Δσ)")
+        ax.set_title("Slope Comparison\n(less negative = more robust)")
+
+        # Add value labels
+        for bar, val in zip(bars, slope_vals):
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() - 0.02, f"{val:.3f}", ha="center", va="top", fontsize=12, fontweight="bold")
+
+        # Add slope ratio annotation
+        if "nl" in slopes and "code" in slopes and slopes["nl"] != 0:
+            ratio = slopes["code"] / slopes["nl"]
+            ax.text(0.5, 0.95, f"Slope ratio (code/nl): {ratio:.2f}", transform=ax.transAxes, ha="center", fontsize=12, bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5))
+
+    plt.tight_layout()
+    plt.savefig(output_path, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {output_path}")
+
+
 def plot_accuracy_by_category(data: pd.DataFrame, output_path: Path) -> None:
     """
     Generate faceted plot: Accuracy vs noise level by problem category.
@@ -481,6 +607,11 @@ def main(results_dir: str = "src/exps_performance/results_noise_code_vs_nl") -> 
     plot_accuracy_vs_noise_aggregated(data, figures_dir / "accuracy_vs_noise_aggregated.png")
     plot_accuracy_by_noise_type(data, figures_dir / "accuracy_by_noise_type.png")
     plot_accuracy_by_category(data, figures_dir / "accuracy_by_category.png")
+
+    # New plots for experiment 10
+    if "digit" in data.columns:
+        plot_accuracy_vs_digits(data, figures_dir / "accuracy_vs_digits_under_noise.png")
+    plot_degradation_slope_comparison(data, figures_dir / "degradation_curves.png")
 
     # Run statistical tests
     print("\nRunning statistical tests...")
