@@ -239,3 +239,217 @@ jobs:
             exit 0
           fi
 
+  quality-code-review:
+    name: Quality Code Review
+    runs-on: ubuntu-latest
+    needs: code-methodology-alignment
+    if: always() && needs.code-methodology-alignment.result != 'cancelled'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          # Get changed Python files
+          CHANGED_PY=$(git diff --name-only $BASE_SHA $HEAD_SHA -- '*.py' 2>/dev/null | tr '\n' ' ' || echo "")
+
+          echo "py_files=$CHANGED_PY" >> $GITHUB_OUTPUT
+
+          if [ -z "$CHANGED_PY" ]; then
+            echo "no_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "no_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "::notice::Changed Python files: $CHANGED_PY"
+
+      - name: Skip if no Python changes
+        if: steps.changed-files.outputs.no_changes == 'true'
+        run: |
+          echo "::notice::No Python file changes detected. Skipping quality review."
+          exit 0
+
+      - name: Run Quality Code Review
+        id: quality-review
+        if: steps.changed-files.outputs.no_changes != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are a senior code reviewer focusing on code quality, security, and best practices.
+            Your task is to review the changed Python code for quality issues.
+
+            ## Changed Files
+            Python files: ${{ steps.changed-files.outputs.py_files }}
+
+            ## Review Focus Areas
+
+            ### 1. Security
+            - Check for OWASP Top 10 vulnerabilities
+            - Look for command injection, SQL injection, XSS risks
+            - Validate proper input sanitization
+            - Check for hardcoded secrets or credentials
+            - Review file path handling for path traversal
+
+            ### 2. Correctness
+            - Identify potential bugs and logic errors
+            - Check edge cases and error handling
+            - Validate type consistency
+            - Look for off-by-one errors, null pointer issues
+
+            ### 3. Performance
+            - Identify inefficient algorithms (O(n²) when O(n) possible)
+            - Check for unnecessary memory allocations
+            - Look for N+1 query patterns
+            - Identify blocking operations in async code
+
+            ### 4. Maintainability
+            - Check code complexity (deeply nested logic)
+            - Validate naming conventions and clarity
+            - Look for code duplication
+            - Check for proper error messages
+
+            ### 5. Python Best Practices
+            - Type hints usage and consistency
+            - Proper exception handling (not bare except)
+            - Resource management (context managers)
+            - Import organization
+
+            ## Review Instructions
+
+            1. Read each changed file carefully
+            2. For each issue found, note:
+               - File and line number
+               - Issue category (Security/Correctness/Performance/Maintainability)
+               - Severity (Critical/High/Medium/Low)
+               - Description of the problem
+               - Suggested fix
+
+            3. Generate `quality-review-report.md` with this structure:
+
+            ```markdown
+            # Quality Code Review Report
+
+            **Status**: PASS | FAIL | WARN
+            **Commit**: ${{ github.sha }}
+            **Reviewer**: Claude Quality Code Reviewer
+
+            ## Summary
+            [Brief summary of findings]
+
+            ## Files Reviewed
+            - [List of files]
+
+            ## Issues Found
+
+            ### Critical
+            - [ ] **[File:Line]** - [Description] - [Category]
+
+            ### High
+            - [ ] **[File:Line]** - [Description] - [Category]
+
+            ### Medium
+            - [ ] **[File:Line]** - [Description] - [Category]
+
+            ### Low
+            - [ ] **[File:Line]** - [Description] - [Category]
+
+            ## Positive Observations
+            - [Good patterns noticed]
+
+            ## Recommendations
+            - [Actionable suggestions]
+            ```
+
+            Use FAIL for Critical or multiple High severity issues.
+            Use WARN for High or multiple Medium severity issues.
+            Use PASS when no significant issues found.
+
+      - name: Upload Quality Review Report
+        if: always() && steps.changed-files.outputs.no_changes != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-review-report-${{ github.sha }}
+          path: quality-review-report.md
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Comment on PR
+        if: steps.changed-files.outputs.no_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let reportContent = '';
+
+            try {
+              reportContent = fs.readFileSync('quality-review-report.md', 'utf8');
+            } catch (e) {
+              reportContent = 'Quality review report not generated. Check workflow logs.';
+            }
+
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Quality Code Review Report')
+            );
+
+            const commentBody = `## Quality Code Review Report
+
+            ${reportContent}
+
+            ---
+            *Automated review by Claude Quality Code Reviewer*
+            *Commit: ${{ github.sha }}*`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Check Quality Review Status
+        if: steps.changed-files.outputs.no_changes != 'true'
+        run: |
+          if [ -f quality-review-report.md ]; then
+            echo "=== Quality Review Report ==="
+            cat quality-review-report.md
+            echo "=============================="
+
+            if grep -q "^**Status**: FAIL" quality-review-report.md; then
+              echo "::error::Quality issues detected. See review report for details."
+              exit 1
+            elif grep -q "^**Status**: WARN" quality-review-report.md; then
+              echo "::warning::Quality review completed with warnings. See review report for details."
+              exit 0
+            else
+              echo "::notice::Quality review passed."
+              exit 0
+            fi
+          else
+            echo "::warning::Quality review report was not generated"
+            exit 0
+          fi
