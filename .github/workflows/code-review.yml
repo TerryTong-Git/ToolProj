@@ -68,12 +68,11 @@ jobs:
       - name: Run Research Code Review
         id: review
         if: steps.changed-files.outputs.no_changes != 'true'
-        # continue-on-error allows the workflow to pass when first adding it
-        # (OIDC validation requires workflow to exist on default branch)
-        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Use explicit GitHub token to bypass OIDC validation requirement
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are a research code reviewer specializing in empirical ML/alignment research.
             Your task is to validate alignment between implementation code and methodology documentation.
@@ -244,11 +243,7 @@ jobs:
               exit 0
             fi
           else
-            if [ "${{ steps.review.outcome }}" = "failure" ]; then
-              echo "::notice::Claude review step failed (expected on first PR adding this workflow due to OIDC validation). Will work after merge."
-            else
-              echo "::warning::Review report was not generated"
-            fi
+            echo "::warning::Review report was not generated. Check workflow logs."
             exit 0
           fi
 
@@ -292,12 +287,11 @@ jobs:
       - name: Run Quality Code Review
         id: quality-review
         if: steps.changed-files.outputs.no_changes != 'true'
-        # continue-on-error allows the workflow to pass when first adding it
-        # (OIDC validation requires workflow to exist on default branch)
-        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Use explicit GitHub token to bypass OIDC validation requirement
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are a senior code reviewer focusing on code quality, security, and best practices.
             Your task is to review the changed Python code for quality issues.
@@ -471,10 +465,6 @@ jobs:
               exit 0
             fi
           else
-            if [ "${{ steps.quality-review.outcome }}" = "failure" ]; then
-              echo "::notice::Claude review step failed (expected on first PR adding this workflow due to OIDC validation). Will work after merge."
-            else
-              echo "::warning::Quality review report was not generated"
-            fi
+            echo "::warning::Quality review report was not generated. Check workflow logs."
             exit 0
           fi
