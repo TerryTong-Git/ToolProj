@@ -121,16 +121,19 @@ jobs:
             Use PASS when all validations succeed.
 
       - name: Post Research Review Comment
+        id: post-research-comment
         if: steps.changed-files.outputs.no_changes != 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const core = require('@actions/core');
 
             // Read the execution output from the action
             const executionFile = '${{ steps.review.outputs.execution_file }}';
             let reviewContent = '';
             let debugInfo = '';
+            let reviewStatus = 'UNKNOWN';
 
             // Helper function to extract text content from various formats
             function extractText(content) {
@@ -213,18 +216,28 @@ jobs:
               reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
             }
 
+            // Extract review status from content
+            const statusMatch = reviewContent.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i);
+            if (statusMatch) {
+              reviewStatus = statusMatch[1].toUpperCase();
+            }
+            console.log('Review status:', reviewStatus);
+            core.setOutput('status', reviewStatus);
+
             // Truncate if too long (GitHub comment limit is 65536)
             if (reviewContent.length > 60000) {
               reviewContent = reviewContent.substring(0, 60000) + '\n\n... (truncated)';
             }
 
-            const commentBody = `## 📋 Research Code Review Report
-
-${reviewContent}
-
----
-*Automated review by Claude Research Code Reviewer*
-*Commit: ${{ github.sha }}*`;
+            const commentBody = [
+              '## 📋 Research Code Review Report',
+              '',
+              reviewContent,
+              '',
+              '---',
+              '*Automated review by Claude Research Code Reviewer*',
+              `*Commit: ${{ github.sha }}*`
+            ].join('\n');
 
             // Find and update existing comment or create new one
             const { data: comments } = await github.rest.issues.listComments({
@@ -253,6 +266,19 @@ ${reviewContent}
                 body: commentBody
               });
             }
+
+      - name: Check Research Review Status
+        if: steps.changed-files.outputs.no_changes != 'true'
+        run: |
+          STATUS="${{ steps.post-research-comment.outputs.status }}"
+          echo "Research Code Review Status: $STATUS"
+          if [ "$STATUS" = "FAIL" ]; then
+            echo "::error::Research Code Review FAILED - blocking merge"
+            exit 1
+          fi
+          if [ "$STATUS" = "UNKNOWN" ]; then
+            echo "::warning::Could not determine review status"
+          fi
 
   quality-code-review:
     name: Quality Code Review
@@ -360,16 +386,19 @@ ${reviewContent}
             Use PASS when no significant issues found.
 
       - name: Post Quality Review Comment
+        id: post-quality-comment
         if: steps.changed-files.outputs.no_changes != 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const core = require('@actions/core');
 
             // Read the execution output from the action
             const executionFile = '${{ steps.quality-review.outputs.execution_file }}';
             let reviewContent = '';
             let debugInfo = '';
+            let reviewStatus = 'UNKNOWN';
 
             // Helper function to extract text content from various formats
             function extractText(content) {
@@ -452,18 +481,28 @@ ${reviewContent}
               reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
             }
 
+            // Extract review status from content
+            const statusMatch = reviewContent.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i);
+            if (statusMatch) {
+              reviewStatus = statusMatch[1].toUpperCase();
+            }
+            console.log('Review status:', reviewStatus);
+            core.setOutput('status', reviewStatus);
+
             // Truncate if too long (GitHub comment limit is 65536)
             if (reviewContent.length > 60000) {
               reviewContent = reviewContent.substring(0, 60000) + '\n\n... (truncated)';
             }
 
-            const commentBody = `## 🔍 Quality Code Review Report
-
-${reviewContent}
-
----
-*Automated review by Claude Quality Code Reviewer*
-*Commit: ${{ github.sha }}*`;
+            const commentBody = [
+              '## 🔍 Quality Code Review Report',
+              '',
+              reviewContent,
+              '',
+              '---',
+              '*Automated review by Claude Quality Code Reviewer*',
+              `*Commit: ${{ github.sha }}*`
+            ].join('\n');
 
             // Find and update existing comment or create new one
             const { data: comments } = await github.rest.issues.listComments({
@@ -492,3 +531,16 @@ ${reviewContent}
                 body: commentBody
               });
             }
+
+      - name: Check Quality Review Status
+        if: steps.changed-files.outputs.no_changes != 'true'
+        run: |
+          STATUS="${{ steps.post-quality-comment.outputs.status }}"
+          echo "Quality Code Review Status: $STATUS"
+          if [ "$STATUS" = "FAIL" ]; then
+            echo "::error::Quality Code Review FAILED - blocking merge"
+            exit 1
+          fi
+          if [ "$STATUS" = "UNKNOWN" ]; then
+            echo "::warning::Could not determine review status"
+          fi
