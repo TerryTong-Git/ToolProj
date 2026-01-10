@@ -164,15 +164,23 @@ jobs:
                 if (Array.isArray(output)) {
                   // Try 'type' field first (claude-code-action format)
                   let assistantMessages = output.filter(m => m.type === 'assistant');
+                  console.log('Found', assistantMessages.length, 'assistant messages (by type)');
                   // Fallback to 'role' field (standard format)
                   if (assistantMessages.length === 0) {
                     assistantMessages = output.filter(m => m.role === 'assistant');
+                    console.log('Found', assistantMessages.length, 'assistant messages (by role)');
                   }
                   if (assistantMessages.length > 0) {
-                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
-                    // Try 'message.content' first (event log format), then 'content' directly
-                    const content = lastAssistant.message?.content || lastAssistant.content;
-                    reviewContent = extractText(content);
+                    // Collect all text content from all assistant messages
+                    const allTexts = assistantMessages
+                      .map(m => extractText(m.message?.content || m.content))
+                      .filter(t => t.length > 0);
+                    console.log('Found', allTexts.length, 'non-empty text blocks');
+                    // Find the longest text which is likely the final review
+                    if (allTexts.length > 0) {
+                      reviewContent = allTexts.reduce((a, b) => a.length > b.length ? a : b, '');
+                      console.log('Using longest text block, length:', reviewContent.length);
+                    }
                   }
                 }
 
@@ -461,15 +469,23 @@ jobs:
                 if (Array.isArray(output)) {
                   // Try 'type' field first (claude-code-action format)
                   let assistantMessages = output.filter(m => m.type === 'assistant');
+                  console.log('Found', assistantMessages.length, 'assistant messages (by type)');
                   // Fallback to 'role' field (standard format)
                   if (assistantMessages.length === 0) {
                     assistantMessages = output.filter(m => m.role === 'assistant');
+                    console.log('Found', assistantMessages.length, 'assistant messages (by role)');
                   }
                   if (assistantMessages.length > 0) {
-                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
-                    // Try 'message.content' first (event log format), then 'content' directly
-                    const content = lastAssistant.message?.content || lastAssistant.content;
-                    reviewContent = extractText(content);
+                    // Collect all text content from all assistant messages
+                    const allTexts = assistantMessages
+                      .map(m => extractText(m.message?.content || m.content))
+                      .filter(t => t.length > 0);
+                    console.log('Found', allTexts.length, 'non-empty text blocks');
+                    // Find the longest text which is likely the final review
+                    if (allTexts.length > 0) {
+                      reviewContent = allTexts.reduce((a, b) => a.length > b.length ? a : b, '');
+                      console.log('Using longest text block, length:', reviewContent.length);
+                    }
                   }
                 }
 
