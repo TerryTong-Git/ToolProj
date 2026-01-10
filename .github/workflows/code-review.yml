@@ -68,6 +68,9 @@ jobs:
       - name: Run Research Code Review
         id: review
         if: steps.changed-files.outputs.no_changes != 'true'
+        # continue-on-error allows the workflow to pass when first adding it
+        # (OIDC validation requires workflow to exist on default branch)
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -241,7 +244,11 @@ jobs:
               exit 0
             fi
           else
-            echo "::warning::Review report was not generated"
+            if [ "${{ steps.review.outcome }}" = "failure" ]; then
+              echo "::notice::Claude review step failed (expected on first PR adding this workflow due to OIDC validation). Will work after merge."
+            else
+              echo "::warning::Review report was not generated"
+            fi
             exit 0
           fi
 
@@ -285,6 +292,9 @@ jobs:
       - name: Run Quality Code Review
         id: quality-review
         if: steps.changed-files.outputs.no_changes != 'true'
+        # continue-on-error allows the workflow to pass when first adding it
+        # (OIDC validation requires workflow to exist on default branch)
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -461,6 +471,10 @@ jobs:
               exit 0
             fi
           else
-            echo "::warning::Quality review report was not generated"
+            if [ "${{ steps.quality-review.outcome }}" = "failure" ]; then
+              echo "::notice::Claude review step failed (expected on first PR adding this workflow due to OIDC validation). Will work after merge."
+            else
+              echo "::warning::Quality review report was not generated"
+            fi
             exit 0
           fi
