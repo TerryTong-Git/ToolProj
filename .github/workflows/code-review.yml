@@ -12,6 +12,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  id-token: write
 
 concurrency:
   group: code-review-${{ github.ref }}
@@ -155,8 +156,6 @@ jobs:
             - Suggested improvements
 
             Use PASS status when all validations succeed.
-
-          allowed_tools: Read,Glob,Grep,Write
 
       - name: Upload Review Report
         if: always() && steps.changed-files.outputs.no_changes != 'true'
