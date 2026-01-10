@@ -47,9 +47,10 @@ class ProgramChatInterface:
         def _timeout(_signum: int, _frame: Any) -> None:
             raise TimeoutError("code execution timed out")
 
-        # Set CPU and wall limits
+        # Set CPU and wall limits (match timeout_seconds)
+        cpu_limit = max(30, int(timeout_seconds) * 2) if timeout_seconds else 30
         try:
-            resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
+            resource.setrlimit(resource.RLIMIT_CPU, (cpu_limit, cpu_limit))
         except Exception:
             pass
         try:
