@@ -159,8 +159,17 @@ jobs:
 
                 // Try multiple parsing strategies
 
+                // Strategy 0: Output is a top-level array of messages
+                if (Array.isArray(output)) {
+                  const assistantMessages = output.filter(m => m.role === 'assistant');
+                  if (assistantMessages.length > 0) {
+                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
+                    reviewContent = extractText(lastAssistant.content);
+                  }
+                }
+
                 // Strategy 1: Look for messages array (standard format)
-                if (output.messages && Array.isArray(output.messages)) {
+                if (!reviewContent && output.messages && Array.isArray(output.messages)) {
                   const assistantMessages = output.messages.filter(m => m.role === 'assistant');
                   if (assistantMessages.length > 0) {
                     const lastAssistant = assistantMessages[assistantMessages.length - 1];
@@ -423,8 +432,17 @@ jobs:
 
                 // Try multiple parsing strategies
 
+                // Strategy 0: Output is a top-level array of messages
+                if (Array.isArray(output)) {
+                  const assistantMessages = output.filter(m => m.role === 'assistant');
+                  if (assistantMessages.length > 0) {
+                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
+                    reviewContent = extractText(lastAssistant.content);
+                  }
+                }
+
                 // Strategy 1: Look for messages array (standard format)
-                if (output.messages && Array.isArray(output.messages)) {
+                if (!reviewContent && output.messages && Array.isArray(output.messages)) {
                   const assistantMessages = output.messages.filter(m => m.role === 'assistant');
                   if (assistantMessages.length > 0) {
                     const lastAssistant = assistantMessages[assistantMessages.length - 1];
