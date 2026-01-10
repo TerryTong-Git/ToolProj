@@ -236,10 +236,22 @@ jobs:
               reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
             }
 
-            // Extract review status from content
-            const statusMatch = reviewContent.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i);
-            if (statusMatch) {
-              reviewStatus = statusMatch[1].toUpperCase();
+            // Extract review status from content - handle various formats:
+            // - **Status**: PASS/WARN/FAIL
+            // - Status: **PASS/WARN/FAIL**
+            // - ## Status: **PASS/WARN/FAIL**
+            const statusPatterns = [
+              /\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i,
+              /Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /##\s*Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /Status:?\s*(PASS|WARN|FAIL)/i
+            ];
+            for (const pattern of statusPatterns) {
+              const match = reviewContent.match(pattern);
+              if (match) {
+                reviewStatus = match[1].toUpperCase();
+                break;
+              }
             }
             console.log('Review status:', reviewStatus);
             core.setOutput('status', reviewStatus);
@@ -521,10 +533,22 @@ jobs:
               reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
             }
 
-            // Extract review status from content
-            const statusMatch = reviewContent.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i);
-            if (statusMatch) {
-              reviewStatus = statusMatch[1].toUpperCase();
+            // Extract review status from content - handle various formats:
+            // - **Status**: PASS/WARN/FAIL
+            // - Status: **PASS/WARN/FAIL**
+            // - ## Status: **PASS/WARN/FAIL**
+            const statusPatterns = [
+              /\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i,
+              /Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /##\s*Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /Status:?\s*(PASS|WARN|FAIL)/i
+            ];
+            for (const pattern of statusPatterns) {
+              const match = reviewContent.match(pattern);
+              if (match) {
+                reviewStatus = match[1].toUpperCase();
+                break;
+              }
             }
             console.log('Review status:', reviewStatus);
             core.setOutput('status', reviewStatus);
