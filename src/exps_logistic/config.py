@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Configuration and argument parsing for logistic regression experiments."""
+"""Configuration and argument parsing for logistic regression experiments.
+
+This module defines the configuration for MI estimation experiments using
+multinomial logistic regression on CoT embeddings.
+"""
 
 import argparse
 from dataclasses import dataclass
