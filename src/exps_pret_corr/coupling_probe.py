@@ -251,7 +251,7 @@ def apply_prompt(z_text: str, x: dict[str, Any]) -> str:
             items = []
             for k, v in d.items():
                 if isinstance(v, list):
-                    items.append(f"{k}=[{','.join(map(str,v))}]")
+                    items.append(f"{k}=[{','.join(map(str, v))}]")
                 else:
                     items.append(f"{k}={v}")
             return "; ".join(items)
@@ -461,7 +461,7 @@ def main() -> None:
 
     # Subsample proportionally
     sample = proportional_subsample(corpora, rate=args.subsample_rate, seed=args.probe_seed)
-    print(f"[info] subsampled {len(sample)} rows (~{args.subsample_rate*100:.2f}%)")
+    print(f"[info] subsampled {len(sample)} rows (~{args.subsample_rate * 100:.2f}%)")
 
     # Build probes and reference vectors
     R_by_kind = gen_probes(args.probes_per_kind, seed=args.probe_seed)
@@ -488,7 +488,7 @@ def main() -> None:
         labeled.append({"id": r["id"], "rep": r["rep"], "text": r["text"], "label": lab, "conf": conf})
         if i % 250 == 0:
             dt = time.time() - t0
-            print(f"[label] processed={i}/{len(sample)} kept={len(labeled)} rate={i/max(dt,1e-6):.1f}/s")
+            print(f"[label] processed={i}/{len(sample)} kept={len(labeled)} rate={i / max(dt, 1e-6):.1f}/s")
     print(f"[label] done. kept {len(labeled)} labeled docs")
 
     # Persist labels

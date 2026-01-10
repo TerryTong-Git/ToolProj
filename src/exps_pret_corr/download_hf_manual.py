@@ -135,7 +135,7 @@ def download_and_upload_to_store(cfg: DownloadConfig) -> None:
     # Select subset
     selected = _select_files(all_files, cfg.include, cfg.exclude, cfg.max_files)
     if not selected:
-        logger.warning("No files matched your selection. " 'Tip: use --include "**" (quotes are important in shells).')
+        logger.warning('No files matched your selection. Tip: use --include "**" (quotes are important in shells).')
         return
 
     logger.info(f"Selected {len(selected)} files to transfer.")

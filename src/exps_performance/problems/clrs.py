@@ -10,7 +10,7 @@ from src.exps_performance.clrs.huggingface_generators import clrs_generator
 from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 
-clrs_desc = "Description: You are going to be given a set of algorithmic problem." "Question: Solve the following algorithmic problem: \n {question}"
+clrs_desc = "Description: You are going to be given a set of algorithmic problem.Question: Solve the following algorithmic problem: \n {question}"
 
 func_typing = "int"
 

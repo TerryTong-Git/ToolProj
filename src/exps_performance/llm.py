@@ -236,10 +236,7 @@ class VLLMClient(LLMClient):
             from vllm import LLM as VLLMEngine
             from vllm import SamplingParams
         except ImportError as e:
-            raise RuntimeError(
-                "vLLM is not installed. Install a CUDA-matching vLLM wheel "
-                "(e.g. vllm-cu121) or build from source."
-            ) from e
+            raise RuntimeError("vLLM is not installed. Install a CUDA-matching vLLM wheel (e.g. vllm-cu121) or build from source.") from e
 
         self._SamplingParams = SamplingParams  # Store for use in chat methods
         # vLLM engine (persistent)
