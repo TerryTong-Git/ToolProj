@@ -127,8 +127,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const core = require('@actions/core');
-
+            
             // Read the execution output from the action
             const executionFile = '${{ steps.review.outputs.execution_file }}';
             let reviewContent = '';
@@ -392,8 +391,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const core = require('@actions/core');
-
+            
             // Read the execution output from the action
             const executionFile = '${{ steps.quality-review.outputs.execution_file }}';
             let reviewContent = '';
