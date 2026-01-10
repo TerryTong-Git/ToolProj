@@ -53,7 +53,6 @@ def extract_functions_and_classes(filepath: Path) -> set[str]:
 def validate_mapping(mapping: dict, root: Path, verbose: bool = False) -> list[str]:
     """Validate a single mapping entry."""
     errors = []
-    warnings = []
 
     methodology_path = root / mapping["methodology"]
     implementations = mapping.get("implementation", [])
@@ -80,10 +79,7 @@ def validate_mapping(mapping: dict, root: Path, verbose: bool = False) -> list[s
     # Check key functions exist
     for func in key_functions:
         if func not in all_found_names:
-            errors.append(
-                f"Key function '{func}' not found in implementations "
-                f"for {mapping['methodology']}"
-            )
+            errors.append(f"Key function '{func}' not found in implementations for {mapping['methodology']}")
 
     return errors
 
@@ -91,9 +87,7 @@ def validate_mapping(mapping: dict, root: Path, verbose: bool = False) -> list[s
 def main():
     parser = argparse.ArgumentParser(description="Validate code-methodology alignment")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
-    parser.add_argument(
-        "--strict", action="store_true", help="Treat warnings as errors"
-    )
+    parser.add_argument("--strict", action="store_true", help="Treat warnings as errors")
     parser.add_argument(
         "--mapping",
         default="docs/code_mapping.json",
@@ -108,7 +102,7 @@ def main():
         print(f"[SKIP] No code mapping file found at {mapping_path}")
         sys.exit(0)
 
-    print(f"Validating code-methodology alignment...")
+    print("Validating code-methodology alignment...")
     print(f"Project root: {root}")
     print(f"Mapping file: {mapping_path}")
     print()
