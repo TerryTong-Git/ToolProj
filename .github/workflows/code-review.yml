@@ -120,6 +120,80 @@ jobs:
             Use WARN for documentation gaps, minor naming inconsistencies.
             Use PASS when all validations succeed.
 
+      - name: Post Research Review Comment
+        if: steps.changed-files.outputs.no_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read the execution output from the action
+            const executionFile = '${{ steps.review.outputs.execution_file }}';
+            let reviewContent = 'Review completed. See job summary for details.';
+
+            if (executionFile && fs.existsSync(executionFile)) {
+              try {
+                const output = JSON.parse(fs.readFileSync(executionFile, 'utf8'));
+                // Extract the last assistant message as the review
+                const messages = output.messages || [];
+                const lastAssistant = messages.filter(m => m.role === 'assistant').pop();
+                if (lastAssistant && lastAssistant.content) {
+                  // Handle both string and array content formats
+                  if (typeof lastAssistant.content === 'string') {
+                    reviewContent = lastAssistant.content;
+                  } else if (Array.isArray(lastAssistant.content)) {
+                    reviewContent = lastAssistant.content
+                      .filter(c => c.type === 'text')
+                      .map(c => c.text)
+                      .join('\n');
+                  }
+                }
+              } catch (e) {
+                console.log('Error parsing execution output:', e.message);
+              }
+            }
+
+            // Truncate if too long (GitHub comment limit is 65536)
+            if (reviewContent.length > 60000) {
+              reviewContent = reviewContent.substring(0, 60000) + '\n\n... (truncated)';
+            }
+
+            const commentBody = `## 📋 Research Code Review Report
+
+            ${reviewContent}
+
+            ---
+            *Automated review by Claude Research Code Reviewer*
+            *Commit: ${{ github.sha }}*`;
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = 'Research Code Review Report';
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes(marker)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
   quality-code-review:
     name: Quality Code Review
     runs-on: ubuntu-latest
@@ -224,3 +298,77 @@ jobs:
             Use FAIL for Critical or multiple High severity issues.
             Use WARN for High or multiple Medium severity issues.
             Use PASS when no significant issues found.
+
+      - name: Post Quality Review Comment
+        if: steps.changed-files.outputs.no_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read the execution output from the action
+            const executionFile = '${{ steps.quality-review.outputs.execution_file }}';
+            let reviewContent = 'Review completed. See job summary for details.';
+
+            if (executionFile && fs.existsSync(executionFile)) {
+              try {
+                const output = JSON.parse(fs.readFileSync(executionFile, 'utf8'));
+                // Extract the last assistant message as the review
+                const messages = output.messages || [];
+                const lastAssistant = messages.filter(m => m.role === 'assistant').pop();
+                if (lastAssistant && lastAssistant.content) {
+                  // Handle both string and array content formats
+                  if (typeof lastAssistant.content === 'string') {
+                    reviewContent = lastAssistant.content;
+                  } else if (Array.isArray(lastAssistant.content)) {
+                    reviewContent = lastAssistant.content
+                      .filter(c => c.type === 'text')
+                      .map(c => c.text)
+                      .join('\n');
+                  }
+                }
+              } catch (e) {
+                console.log('Error parsing execution output:', e.message);
+              }
+            }
+
+            // Truncate if too long (GitHub comment limit is 65536)
+            if (reviewContent.length > 60000) {
+              reviewContent = reviewContent.substring(0, 60000) + '\n\n... (truncated)';
+            }
+
+            const commentBody = `## 🔍 Quality Code Review Report
+
+            ${reviewContent}
+
+            ---
+            *Automated review by Claude Quality Code Reviewer*
+            *Commit: ${{ github.sha }}*`;
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = 'Quality Code Review Report';
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes(marker)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
