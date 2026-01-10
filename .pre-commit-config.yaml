@@ -21,3 +21,11 @@ repos:
         entry: uv run --frozen --no-sync pytest -m "not slow" -n 2
         language: system
         pass_filenames: false
+
+      - id: validate-code-mapping
+        name: validate code-methodology alignment
+        entry: uv run --frozen --no-sync python scripts/validate_code_mapping.py
+        language: system
+        pass_filenames: false
+        files: ^(src/.*\.py|docs/.*\.md|docs/code_mapping\.json)$
+        stages: [pre-push]

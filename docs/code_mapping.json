@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Mapping between methodology documentation and implementation files",
+  "mappings": [
+    {
+      "methodology": "docs/experiment_methodologies/01_embedding_ablation.md",
+      "implementation": [
+        "src/exps_logistic/featurizer.py"
+      ],
+      "key_functions": ["Featurizer", "transform", "build_featurizer"],
+      "notes": "Featurizer base class with transform method; build_featurizer factory"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/02_difficulty_scaling.md",
+      "implementation": [
+        "src/exps_logistic/data_utils.py",
+        "src/exps_logistic/config.py"
+      ],
+      "key_functions": ["load_data", "make_gamma_label"],
+      "notes": "load_data loads results; make_gamma_label creates difficulty labels"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/03_per_kind_analysis.md",
+      "implementation": [
+        "src/exps_logistic/main.py",
+        "src/exps_logistic/classifier.py"
+      ],
+      "key_functions": ["run", "ConceptClassifier"],
+      "notes": "run() is main entry point; ConceptClassifier handles classification"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/04_information_bottleneck_viz.md",
+      "implementation": [
+        "src/exps_logistic/notebooks/generate_plots.py"
+      ],
+      "key_functions": ["build_summary_df", "main"],
+      "notes": "build_summary_df aggregates results; main generates all plots"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/05_token_attribution.md",
+      "implementation": [
+        "src/exps_logistic/featurizer.py"
+      ],
+      "key_functions": ["HFCLSFeaturizer", "_pool_output"],
+      "notes": "Token attribution via HF embeddings; _pool_output handles pooling",
+      "status": "planned"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/06_noise_injection.md",
+      "implementation": [
+        "src/exps_performance/noise.py",
+        "src/exps_performance/scripts/noise_code_vs_nl.sh"
+      ],
+      "key_functions": ["perturb", "perturb_textual", "perturb_structural", "perturb_numerical", "perturb_irrelevant", "perturb_gaussian"],
+      "noise_types": ["textual", "structural", "numerical", "irrelevant", "gaussian"],
+      "sigma_levels": [0.0, 0.05, 0.10, 0.20, 0.30]
+    },
+    {
+      "methodology": "docs/experiment_methodologies/07_token_normalization.md",
+      "implementation": [
+        "src/exps_logistic/featurizer.py"
+      ],
+      "key_functions": ["TfidfFeaturizer", "fit"],
+      "notes": "TF-IDF handles normalization; fit trains the vectorizer",
+      "status": "planned"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/08_neural_mi_estimators.md",
+      "implementation": [
+        "src/exps_logistic/classifier.py"
+      ],
+      "key_functions": ["ConceptClassifier", "evaluate"],
+      "notes": "MI estimation via classifier cross-entropy; planned neural estimator",
+      "status": "planned"
+    },
+    {
+      "methodology": "docs/experiment_methodologies/09_ood_generalization.md",
+      "implementation": [
+        "src/exps_logistic/data_utils.py",
+        "src/exps_logistic/main.py"
+      ],
+      "key_functions": ["stratified_split_robust", "filter_by_kinds"],
+      "notes": "OOD via stratified splits and kind filtering",
+      "status": "planned"
+    }
+  ],
+  "validation_rules": {
+    "function_signature_match": true,
+    "parameter_names_match": true,
+    "output_format_match": true,
+    "algorithm_steps_documented": true
+  }
+}
