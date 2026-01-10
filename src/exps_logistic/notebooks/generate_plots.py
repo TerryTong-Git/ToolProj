@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -15,10 +16,17 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from scipy.stats import gaussian_kde, pearsonr, wilcoxon
 
-# Base paths
-LOGISTIC_RESULTS_DIR = Path("/nlpgpu/data/terry/ToolProj/src/exps_logistic/results")
-PERF_RESULTS_DIR = Path("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")
-PLOTS_DIR = Path("/nlpgpu/data/terry/ToolProj/src/exps_logistic/notebooks")
+# Base paths - use relative paths from project root or environment variables
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+LOGISTIC_RESULTS_DIR = Path(
+    os.getenv("LOGISTIC_RESULTS_DIR", _PROJECT_ROOT / "src/exps_logistic/results")
+)
+PERF_RESULTS_DIR = Path(
+    os.getenv("PERF_RESULTS_DIR", _PROJECT_ROOT / "src/exps_performance/results")
+)
+PLOTS_DIR = Path(
+    os.getenv("PLOTS_DIR", _PROJECT_ROOT / "src/exps_logistic/notebooks")
+)
 
 FILENAME_RE = re.compile(r"^(?P<model>.+)_seed(?P<seed>\d+)_(?P<rep>nl|code)_(?P<feats>[^_]+)-(?P<embed>[^_]+)_(?P<ts>\d{8}_\d{6})\.json$")
 
@@ -28,6 +36,10 @@ def parse_logistic_filename(path: Path):
     if not m:
         return None
     return m.group("model"), int(m.group("seed")), m.group("rep")
+
+
+# Target run date patterns for filtering results (configurable)
+TARGET_RUN_DATES = os.getenv("TARGET_RUN_DATES", "20260109_16,20260109_17").split(",")
 
 
 def main():
@@ -40,8 +52,8 @@ def main():
         if not parsed:
             continue
         model, seed, rep = parsed
-        # Only use files from today's extended run (starting with 16 or 17)
-        if "20260109_16" in path.name or "20260109_17" in path.name:
+        # Only use files from target run dates
+        if any(date in path.name for date in TARGET_RUN_DATES):
             key = (model, seed, rep)
             # Keep only the most recent file for each (model, seed, rep)
             if key not in latest_files or path.name > latest_files[key]:

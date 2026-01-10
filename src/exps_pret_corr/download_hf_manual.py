@@ -105,9 +105,13 @@ def _fs_put(fs: Any, src_path: str, dst_path: str) -> None:
 
 
 def _require_token() -> str:
-    tok = os.environ.get("HF_TOKEN") or ""
+    """Retrieve and validate the HuggingFace token from environment."""
+    tok = os.environ.get("HF_TOKEN", "").strip()
     if not tok:
         raise RuntimeError("HF_TOKEN is not set in the environment; set it to your HF access token.")
+    # HuggingFace tokens typically start with 'hf_' and are at least 10 characters
+    if len(tok) < 10:
+        raise RuntimeError("HF_TOKEN appears to be invalid (too short).")
     return tok
 
 

@@ -76,9 +76,11 @@ class FgCheckAndFormat(CheckAndFormat):
         return str_ans == instance.answer, ""
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
-        rng1 = random.Random(2)
+        # Secondary RNG with fixed seed for reproducible second operand generation
+SECONDARY_RNG_SEED = 2
+secondary_rng = random.Random(SECONDARY_RNG_SEED)
         a = sample_int(d, rng)
-        b = sample_int(d, rng1)
+        b = sample_int(d, secondary_rng)
         question = f"Compute: {a} + {b}"
         answer = int(float(a) + float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
@@ -102,9 +104,11 @@ class SubCheckAndFormat(FgCheckAndFormat):
     k: str = "sub"
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
-        rng1 = random.Random(2)
+        # Secondary RNG with fixed seed for reproducible second operand generation
+SECONDARY_RNG_SEED = 2
+secondary_rng = random.Random(SECONDARY_RNG_SEED)
         a = sample_int(d, rng)
-        b = sample_int(d, rng1)
+        b = sample_int(d, secondary_rng)
         question = f"Compute: {a} - {b}"
         if b > a:
             a, b = b, a
@@ -116,9 +120,11 @@ class MulCheckAndFormat(FgCheckAndFormat):
     k: str = "mul"
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
-        rng1 = random.Random(2)
+        # Secondary RNG with fixed seed for reproducible second operand generation
+SECONDARY_RNG_SEED = 2
+secondary_rng = random.Random(SECONDARY_RNG_SEED)
         a = sample_int(d, rng)
-        b = sample_int(d, rng1)
+        b = sample_int(d, secondary_rng)
         question = f"Compute: {a} * {b}"
         answer = int(float(a) * float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
@@ -129,9 +135,11 @@ class LcsCheckAndFormat(FgCheckAndFormat):
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         n = int(d)  # complexity O(n^2)
-        rng1 = random.Random(2)
+        # Secondary RNG with fixed seed for reproducible second operand generation
+SECONDARY_RNG_SEED = 2
+secondary_rng = random.Random(SECONDARY_RNG_SEED)
         s = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
-        t = rand_string(rng1, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
+        t = rand_string(secondary_rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
 
         question = f'Compute the length of the Longest Common Subsequence (LCS) between strings:\nS = "{s}"\nT = "{t}"'
         answer = lcs_len(s, t)
