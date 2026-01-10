@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -24,7 +25,8 @@ torch.backends.cudnn.deterministic = True
 
 try:
     torch.set_float32_matmul_precision("high")
-except Exception:
+except (AttributeError, RuntimeError):
+    # AttributeError if method doesn't exist, RuntimeError if CUDA not available
     pass
 
 
@@ -189,8 +191,9 @@ class OpenRouterChatClient(LLMClient):
                     )
                     return idx, self._extract_text(resp)
                 except asyncio.TimeoutError:
+                    logger.warning(f"OpenRouter chat_many timed out for idx={idx}")
                     return idx, ""
-                except Exception as exc:  # noqa: BLE001
+                except (ConnectionError, OSError, ValueError) as exc:
                     logger.warning(f"OpenRouter chat_many failed for idx={idx}: {exc}")
                     return idx, ""
 
@@ -329,7 +332,8 @@ class HFLocalClient(LLMClient):
             "float32": torch.float32,
         }
         torch_dtype = _map.get(dtype, None)
-        cache_dir = "../models"
+        # Use absolute path for cache directory to prevent path traversal issues
+        cache_dir = str((Path(__file__).parent.parent / "models").resolve())
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch_dtype,

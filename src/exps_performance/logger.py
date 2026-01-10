@@ -137,13 +137,15 @@ def init_tensorboard(args: Any, exp_dir: str) -> SummaryWriter:  # use the logdi
 
 
 def generate_unique_tag(kind: str, digit: int, idx: int, seed: int, model: str) -> str:
+    """Generate a unique tag using SHA256 for better security."""
     payload = f"{model}::{seed}::{kind}::{digit}::{idx}"
-    return hashlib.sha1(f"tag::{payload}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"tag::{payload}".encode("utf-8")).hexdigest()
 
 
 def make_request_id(kind: str, digit: int, idx: int, seed: int, model: str) -> str:
+    """Generate a request ID using SHA256 for better security."""
     payload = f"{model}::{seed}::{kind}::{digit}::{idx}"
-    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def tb_text(
@@ -430,7 +432,8 @@ class CheckpointManager:
         try:
             with open(self.jsonl_path, "rb") as f:
                 os.fsync(f.fileno())
-        except Exception:
+        except OSError:
+            # fsync may fail on some file systems or if file was deleted
             pass
         self._flushed_ids = set(self._records.keys())
         self._pending = []

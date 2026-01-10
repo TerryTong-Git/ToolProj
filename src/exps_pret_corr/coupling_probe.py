@@ -77,6 +77,11 @@ def looks_like_code(text: str) -> bool:
 
 
 def _rand_int_with_digits(d: int) -> int:
+    """Generate a random integer with exactly d digits.
+
+    Note: Uses Python's random module which is NOT cryptographically secure.
+    Suitable for test data generation but not for security-sensitive purposes.
+    """
     lo = 10 ** (d - 1)
     hi = 10**d - 1
     return random.randint(lo, hi)

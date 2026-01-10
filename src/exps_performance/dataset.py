@@ -35,7 +35,8 @@ torch.backends.cudnn.deterministic = True
 
 try:
     torch.set_float32_matmul_precision("high")
-except Exception:
+except (AttributeError, RuntimeError):
+    # AttributeError if method doesn't exist, RuntimeError if CUDA not available
     pass
 
 # data interface
@@ -131,7 +132,7 @@ class GSM8K(Dataset):
 @dataclass
 class FG(Dataset):
     n: int = 10
-    digits_list: List[int] = field(default_factory=[32])  # type: ignore
+    digits_list: List[int] = field(default_factory=lambda: [32])
 
     def load(self) -> Sequence[Question]:
         all_data: List[Question] = []
@@ -178,16 +179,18 @@ def make_dataset(
 
     all_data: List[Question] = []
     if clrs:
-        all_data += CLRS().load()[:clrs_samples]
+        all_data.extend(CLRS().load()[:clrs_samples])
     if gsm:
-        all_data += GSM8K().load()[:gsm_samples]
+        all_data.extend(GSM8K().load()[:gsm_samples])
     if fg:
-        all_data += FG(
-            n,
-            digits_list,
-        ).load_subset(fg)
+        all_data.extend(
+            FG(
+                n,
+                digits_list,
+            ).load_subset(fg)
+        )
     if np:
-        all_data += NPHARD(n).load_subset(np)
+        all_data.extend(NPHARD(n).load_subset(np))
     # attach stable original order
     for i, q in enumerate(all_data):
         setattr(q, "original_pos", i)

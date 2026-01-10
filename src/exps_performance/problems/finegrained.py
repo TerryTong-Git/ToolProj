@@ -13,7 +13,7 @@ from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 from src.exps_performance.utils import rand_string, sample_int
 
-clrs_desc = "Description: You are going to be given a set of algorithmic problem.Question: Solve the following algorithmic problem: \n {question}"
+clrs_desc = "Description: You are going to be given a set of algorithmic problem." "Question: Solve the following algorithmic problem: \n {question}"
 func_typing = "int"
 
 
@@ -76,9 +76,10 @@ class FgCheckAndFormat(CheckAndFormat):
         return str_ans == instance.answer, ""
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
-        rng1 = random.Random(2)
+        # Fixed-seed RNG for reproducible second operand (ensures consistent problem pairs)
+        secondary_rng = random.Random(2)
         a = sample_int(d, rng)
-        b = sample_int(d, rng1)
+        b = sample_int(d, secondary_rng)
         question = f"Compute: {a} + {b}"
         answer = int(float(a) + float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
@@ -102,9 +103,10 @@ class SubCheckAndFormat(FgCheckAndFormat):
     k: str = "sub"
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
-        rng1 = random.Random(2)
+        # Fixed-seed RNG for reproducible second operand (ensures consistent problem pairs)
+        secondary_rng = random.Random(2)
         a = sample_int(d, rng)
-        b = sample_int(d, rng1)
+        b = sample_int(d, secondary_rng)
         question = f"Compute: {a} - {b}"
         if b > a:
             a, b = b, a
@@ -116,9 +118,10 @@ class MulCheckAndFormat(FgCheckAndFormat):
     k: str = "mul"
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
-        rng1 = random.Random(2)
+        # Fixed-seed RNG for reproducible second operand (ensures consistent problem pairs)
+        secondary_rng = random.Random(2)
         a = sample_int(d, rng)
-        b = sample_int(d, rng1)
+        b = sample_int(d, secondary_rng)
         question = f"Compute: {a} * {b}"
         answer = int(float(a) * float(b))
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
@@ -129,9 +132,10 @@ class LcsCheckAndFormat(FgCheckAndFormat):
 
     def make_problem(self, rng: random.Random, d: int) -> FgQuestion:
         n = int(d)  # complexity O(n^2)
-        rng1 = random.Random(2)
+        # Fixed-seed RNG for reproducible second string (ensures consistent problem pairs)
+        secondary_rng = random.Random(2)
         s = rand_string(rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
-        t = rand_string(rng1, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
+        t = rand_string(secondary_rng, alpha="abcdefghijklmnopqrstuvwxyz", n=n)
 
         question = f'Compute the length of the Longest Common Subsequence (LCS) between strings:\nS = "{s}"\nT = "{t}"'
         answer = lcs_len(s, t)
@@ -166,7 +170,9 @@ class RodCheckAndFormat(FgCheckAndFormat):
         N = max(2, int(d))  # O(n^2)
         price_max = 32
         prices = [rng.randint(1, price_max) for _ in range(N)]
-        question = f"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.\nN = {N}\nP = {prices}"
+        question = (
+            "Rod cutting: Given a rod of length N and price list P[1..N], " "compute the maximum obtainable revenue.\n" f"N = {N}\nP = {prices}"
+        )
         answer = rod_cut_max(prices)
         return FgQuestion(kind="rod", digits=d, question=question, answer=str(answer))
 

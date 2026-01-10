@@ -7,12 +7,12 @@ on:
       - 'src/**/*.py'
       - 'docs/**/*.md'
       - 'docs/code_mapping.json'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
   pull-requests: write
   issues: write
-  id-token: write
 
 concurrency:
   group: code-review-${{ github.ref }}
@@ -22,9 +22,6 @@ jobs:
   code-methodology-alignment:
     name: Code-Methodology Alignment Check
     runs-on: ubuntu-latest
-    outputs:
-      review_status: ${{ steps.review.outputs.status }}
-      misalignments: ${{ steps.review.outputs.misalignments }}
 
     steps:
       - name: Checkout repository
@@ -37,9 +34,6 @@ jobs:
         run: |
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
-
-          echo "base_sha=$BASE_SHA" >> $GITHUB_OUTPUT
-          echo "head_sha=$HEAD_SHA" >> $GITHUB_OUTPUT
 
           # Get changed source and doc files
           CHANGED_SRC=$(git diff --name-only $BASE_SHA $HEAD_SHA -- 'src/**/*.py' 2>/dev/null | tr '\n' ' ' || echo "")
@@ -62,7 +56,6 @@ jobs:
         if: steps.changed-files.outputs.no_changes == 'true'
         run: |
           echo "::notice::No relevant source or documentation changes detected. Skipping review."
-          exit 0
 
       - name: Run Research Code Review
         id: review
@@ -70,6 +63,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are a research code reviewer specializing in empirical ML/alignment research.
             Your task is to validate alignment between implementation code and methodology documentation.
@@ -104,101 +98,198 @@ jobs:
                if annotated) match what's documented in the methodology.
 
             3. **Algorithm Steps**: The implementation follows the algorithm steps
-               described in the methodology document. Look for:
-               - Step ordering matches documentation
-               - All documented steps are implemented
-               - No undocumented algorithmic changes
+               described in the methodology document.
 
             4. **Parameter Alignment**: Variable names and parameters in code
-               correspond to those described in docs (e.g., sigma_levels, noise_types).
+               correspond to those described in docs.
 
             5. **Output Format**: Any output files or return structures match
                documented specifications.
 
-            ### Step 4: Generate Report
-            Create `review-report.md` with the following structure:
+            ### Step 4: Provide Your Review
 
-            ```markdown
-            # Research Code Review Report
+            Format your review as a structured report with:
+            - **Status**: PASS, WARN, or FAIL
+            - **Summary**: Brief 1-2 sentence summary
+            - **Files Reviewed**: List of files checked
+            - **Verified Alignments**: What matched correctly
+            - **Issues Found**: Any problems (Critical for FAIL, Warnings for WARN)
+            - **Recommendations**: Specific fixes needed
 
-            **Status**: PASS | FAIL | WARN
-            **Commit**: ${{ github.sha }}
-            **Reviewer**: Claude Research Code Reviewer
+            Use FAIL for missing key_functions, algorithm mismatches, critical parameter issues.
+            Use WARN for documentation gaps, minor naming inconsistencies.
+            Use PASS when all validations succeed.
 
-            ## Summary
-            [Brief 1-2 sentence summary]
-
-            ## Files Reviewed
-            - [List of files checked]
-
-            ## Verified Alignments
-            - [List what matched correctly]
-
-            ## Issues Found
-            ### Critical (FAIL)
-            - [Missing functions, algorithm mismatches]
-
-            ### Warnings (WARN)
-            - [Minor inconsistencies, documentation gaps]
-
-            ## Recommendations
-            - [Specific fixes needed]
-            ```
-
-            Use FAIL status for:
-            - Missing key_functions in implementation
-            - Algorithm implementation doesn't match documented steps
-            - Critical parameter mismatches
-
-            Use WARN status for:
-            - Documentation could be clearer
-            - Minor naming inconsistencies
-            - Suggested improvements
-
-            Use PASS status when all validations succeed.
-
-      - name: Upload Review Report
-        if: always() && steps.changed-files.outputs.no_changes != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-review-report-${{ github.sha }}
-          path: review-report.md
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Comment on PR
+      - name: Post Research Review Comment
+        id: post-research-comment
         if: steps.changed-files.outputs.no_changes != 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            let reportContent = '';
+            
+            // Read the execution output from the action
+            const executionFile = '${{ steps.review.outputs.execution_file }}';
+            let reviewContent = '';
+            let debugInfo = '';
+            let reviewStatus = 'UNKNOWN';
 
-            try {
-              reportContent = fs.readFileSync('review-report.md', 'utf8');
-            } catch (e) {
-              reportContent = 'Review report not generated. Check workflow logs.';
+            // Helper function to extract text content from various formats
+            function extractText(content) {
+              if (typeof content === 'string') {
+                return content;
+              }
+              if (Array.isArray(content)) {
+                return content
+                  .filter(c => c.type === 'text')
+                  .map(c => c.text)
+                  .join('\n');
+              }
+              return '';
             }
 
-            // Find existing comment to update
+            if (executionFile && fs.existsSync(executionFile)) {
+              try {
+                const rawContent = fs.readFileSync(executionFile, 'utf8');
+                const output = JSON.parse(rawContent);
+
+                // Debug: Log top-level keys
+                debugInfo = `Keys found: ${Object.keys(output).join(', ')}`;
+                console.log('Execution file keys:', Object.keys(output));
+
+                // Try multiple parsing strategies
+
+                // Strategy 0: Output is a top-level array (event log format)
+                // Events use 'type' field, not 'role' field
+                if (Array.isArray(output)) {
+                  // Try 'type' field first (claude-code-action format)
+                  let assistantMessages = output.filter(m => m.type === 'assistant');
+                  console.log('Found', assistantMessages.length, 'assistant messages (by type)');
+                  // Fallback to 'role' field (standard format)
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.filter(m => m.role === 'assistant');
+                    console.log('Found', assistantMessages.length, 'assistant messages (by role)');
+                  }
+                  if (assistantMessages.length > 0) {
+                    // Collect all text content from all assistant messages
+                    const allTexts = assistantMessages
+                      .map(m => extractText(m.message?.content || m.content))
+                      .filter(t => t.length > 0);
+                    console.log('Found', allTexts.length, 'non-empty text blocks');
+                    // Find the longest text which is likely the final review
+                    if (allTexts.length > 0) {
+                      reviewContent = allTexts.reduce((a, b) => a.length > b.length ? a : b, '');
+                      console.log('Using longest text block, length:', reviewContent.length);
+                    }
+                  }
+                }
+
+                // Strategy 1: Look for messages array (standard format)
+                if (!reviewContent && output.messages && Array.isArray(output.messages)) {
+                  let assistantMessages = output.messages.filter(m => m.type === 'assistant');
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  }
+                  if (assistantMessages.length > 0) {
+                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
+                    const content = lastAssistant.message?.content || lastAssistant.content;
+                    reviewContent = extractText(content);
+                  }
+                }
+
+                // Strategy 2: Look for result/response key
+                if (!reviewContent && output.result) {
+                  reviewContent = extractText(output.result);
+                }
+                if (!reviewContent && output.response) {
+                  reviewContent = extractText(output.response);
+                }
+
+                // Strategy 3: Look for content directly
+                if (!reviewContent && output.content) {
+                  reviewContent = extractText(output.content);
+                }
+
+                // Strategy 4: Look for text directly
+                if (!reviewContent && output.text) {
+                  reviewContent = output.text;
+                }
+
+                // Strategy 5: If output has a nested structure, try to find text
+                if (!reviewContent) {
+                  const jsonStr = JSON.stringify(output, null, 2);
+                  // Look for Status pattern in the JSON which indicates our report
+                  const statusMatch = jsonStr.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/);
+                  if (statusMatch) {
+                    // The report is somewhere in there, extract from the raw file
+                    // Find text blocks that look like our report format
+                    const reportPattern = /(?:\*\*Status\*\*[\s\S]*?(?:\*\*Recommendations\*\*[\s\S]*?))/;
+                    const reportMatch = rawContent.match(reportPattern);
+                    if (reportMatch) {
+                      reviewContent = reportMatch[0];
+                    }
+                  }
+                }
+
+                if (!reviewContent) {
+                  console.log('Could not extract review content. File structure:', JSON.stringify(output, null, 2).substring(0, 2000));
+                  reviewContent = `Review completed but content extraction failed.\n\nDebug: ${debugInfo}\n\nPlease check the job summary for the full review.`;
+                }
+              } catch (e) {
+                console.log('Error parsing execution output:', e.message);
+                reviewContent = `Review completed but encountered parsing error: ${e.message}\n\nPlease check the job summary for details.`;
+              }
+            } else {
+              console.log('Execution file not found:', executionFile);
+              reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
+            }
+
+            // Extract review status from content - handle various formats:
+            // - **Status**: PASS/WARN/FAIL
+            // - Status: **PASS/WARN/FAIL**
+            // - ## Status: **PASS/WARN/FAIL**
+            const statusPatterns = [
+              /\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i,
+              /Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /##\s*Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /Status:?\s*(PASS|WARN|FAIL)/i
+            ];
+            for (const pattern of statusPatterns) {
+              const match = reviewContent.match(pattern);
+              if (match) {
+                reviewStatus = match[1].toUpperCase();
+                break;
+              }
+            }
+            console.log('Review status:', reviewStatus);
+            core.setOutput('status', reviewStatus);
+
+            // Truncate if too long (GitHub comment limit is 65536)
+            if (reviewContent.length > 60000) {
+              reviewContent = reviewContent.substring(0, 60000) + '\n\n... (truncated)';
+            }
+
+            const commentBody = [
+              '## 📋 Research Code Review Report',
+              '',
+              reviewContent,
+              '',
+              '---',
+              '*Automated review by Claude Research Code Reviewer*',
+              `*Commit: ${{ github.sha }}*`
+            ].join('\n');
+
+            // Find and update existing comment or create new one
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
 
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('Research Code Review Report')
+            const marker = 'Research Code Review Report';
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes(marker)
             );
-
-            const commentBody = `## Research Code Review Report
-
-            ${reportContent}
-
-            ---
-            *Automated review by Claude Research Code Reviewer*
-            *Commit: ${{ github.sha }}*`;
 
             if (botComment) {
               await github.rest.issues.updateComment({
@@ -216,26 +307,320 @@ jobs:
               });
             }
 
-      - name: Check Review Status
+      - name: Check Research Review Status
         if: steps.changed-files.outputs.no_changes != 'true'
         run: |
-          if [ -f review-report.md ]; then
-            echo "=== Review Report ==="
-            cat review-report.md
-            echo "===================="
-
-            if grep -q "^**Status**: FAIL" review-report.md; then
-              echo "::error::Code-methodology misalignment detected. See review report for details."
-              exit 1
-            elif grep -q "^**Status**: WARN" review-report.md; then
-              echo "::warning::Review completed with warnings. See review report for details."
-              exit 0
-            else
-              echo "::notice::Review passed. Code and documentation are aligned."
-              exit 0
-            fi
-          else
-            echo "::warning::Review report was not generated"
-            exit 0
+          STATUS="${{ steps.post-research-comment.outputs.status }}"
+          echo "Research Code Review Status: $STATUS"
+          if [ "$STATUS" = "FAIL" ]; then
+            echo "::error::Research Code Review FAILED - blocking merge"
+            exit 1
+          fi
+          if [ "$STATUS" = "UNKNOWN" ]; then
+            echo "::warning::Could not determine review status"
           fi
 
+  quality-code-review:
+    name: Quality Code Review
+    runs-on: ubuntu-latest
+    needs: code-methodology-alignment
+    if: always() && needs.code-methodology-alignment.result != 'cancelled'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          # Get changed Python files
+          CHANGED_PY=$(git diff --name-only $BASE_SHA $HEAD_SHA -- '*.py' 2>/dev/null | tr '\n' ' ' || echo "")
+
+          echo "py_files=$CHANGED_PY" >> $GITHUB_OUTPUT
+
+          if [ -z "$CHANGED_PY" ]; then
+            echo "no_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "no_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "::notice::Changed Python files: $CHANGED_PY"
+
+      - name: Skip if no Python changes
+        if: steps.changed-files.outputs.no_changes == 'true'
+        run: |
+          echo "::notice::No Python file changes detected. Skipping quality review."
+
+      - name: Run Quality Code Review
+        id: quality-review
+        if: steps.changed-files.outputs.no_changes != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            You are a senior code reviewer focusing on code quality, security, and best practices.
+            Your task is to review the changed Python code for quality issues.
+
+            ## Changed Files
+            Python files: ${{ steps.changed-files.outputs.py_files }}
+
+            ## Review Focus Areas
+
+            ### 1. Security
+            - Check for OWASP Top 10 vulnerabilities
+            - Look for command injection, SQL injection, XSS risks
+            - Validate proper input sanitization
+            - Check for hardcoded secrets or credentials
+            - Review file path handling for path traversal
+
+            ### 2. Correctness
+            - Identify potential bugs and logic errors
+            - Check edge cases and error handling
+            - Validate type consistency
+            - Look for off-by-one errors, null pointer issues
+
+            ### 3. Performance
+            - Identify inefficient algorithms (O(n²) when O(n) possible)
+            - Check for unnecessary memory allocations
+            - Look for N+1 query patterns
+            - Identify blocking operations in async code
+
+            ### 4. Maintainability
+            - Check code complexity (deeply nested logic)
+            - Validate naming conventions and clarity
+            - Look for code duplication
+            - Check for proper error messages
+
+            ### 5. Python Best Practices
+            - Type hints usage and consistency
+            - Proper exception handling (not bare except)
+            - Resource management (context managers)
+            - Import organization
+
+            ## Review Instructions
+
+            1. Read each changed file carefully
+            2. For each issue found, note:
+               - File and line number
+               - Issue category (Security/Correctness/Performance/Maintainability)
+               - Severity (Critical/High/Medium/Low)
+               - Description of the problem
+               - Suggested fix
+
+            3. Format your review as a structured report with:
+               - **Status**: PASS, WARN, or FAIL
+               - **Summary**: Brief summary of findings
+               - **Files Reviewed**: List of files
+               - **Issues Found**: Organized by severity (Critical/High/Medium/Low)
+               - **Positive Observations**: Good patterns noticed
+               - **Recommendations**: Actionable suggestions
+
+            Use FAIL for Critical or multiple High severity issues.
+            Use WARN for High or multiple Medium severity issues.
+            Use PASS when no significant issues found.
+
+      - name: Post Quality Review Comment
+        id: post-quality-comment
+        if: steps.changed-files.outputs.no_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the execution output from the action
+            const executionFile = '${{ steps.quality-review.outputs.execution_file }}';
+            let reviewContent = '';
+            let debugInfo = '';
+            let reviewStatus = 'UNKNOWN';
+
+            // Helper function to extract text content from various formats
+            function extractText(content) {
+              if (typeof content === 'string') {
+                return content;
+              }
+              if (Array.isArray(content)) {
+                return content
+                  .filter(c => c.type === 'text')
+                  .map(c => c.text)
+                  .join('\n');
+              }
+              return '';
+            }
+
+            if (executionFile && fs.existsSync(executionFile)) {
+              try {
+                const rawContent = fs.readFileSync(executionFile, 'utf8');
+                const output = JSON.parse(rawContent);
+
+                // Debug: Log top-level keys
+                debugInfo = `Keys found: ${Object.keys(output).join(', ')}`;
+                console.log('Execution file keys:', Object.keys(output));
+
+                // Try multiple parsing strategies
+
+                // Strategy 0: Output is a top-level array (event log format)
+                // Events use 'type' field, not 'role' field
+                if (Array.isArray(output)) {
+                  // Try 'type' field first (claude-code-action format)
+                  let assistantMessages = output.filter(m => m.type === 'assistant');
+                  console.log('Found', assistantMessages.length, 'assistant messages (by type)');
+                  // Fallback to 'role' field (standard format)
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.filter(m => m.role === 'assistant');
+                    console.log('Found', assistantMessages.length, 'assistant messages (by role)');
+                  }
+                  if (assistantMessages.length > 0) {
+                    // Collect all text content from all assistant messages
+                    const allTexts = assistantMessages
+                      .map(m => extractText(m.message?.content || m.content))
+                      .filter(t => t.length > 0);
+                    console.log('Found', allTexts.length, 'non-empty text blocks');
+                    // Find the longest text which is likely the final review
+                    if (allTexts.length > 0) {
+                      reviewContent = allTexts.reduce((a, b) => a.length > b.length ? a : b, '');
+                      console.log('Using longest text block, length:', reviewContent.length);
+                    }
+                  }
+                }
+
+                // Strategy 1: Look for messages array (standard format)
+                if (!reviewContent && output.messages && Array.isArray(output.messages)) {
+                  let assistantMessages = output.messages.filter(m => m.type === 'assistant');
+                  if (assistantMessages.length === 0) {
+                    assistantMessages = output.messages.filter(m => m.role === 'assistant');
+                  }
+                  if (assistantMessages.length > 0) {
+                    const lastAssistant = assistantMessages[assistantMessages.length - 1];
+                    const content = lastAssistant.message?.content || lastAssistant.content;
+                    reviewContent = extractText(content);
+                  }
+                }
+
+                // Strategy 2: Look for result/response key
+                if (!reviewContent && output.result) {
+                  reviewContent = extractText(output.result);
+                }
+                if (!reviewContent && output.response) {
+                  reviewContent = extractText(output.response);
+                }
+
+                // Strategy 3: Look for content directly
+                if (!reviewContent && output.content) {
+                  reviewContent = extractText(output.content);
+                }
+
+                // Strategy 4: Look for text directly
+                if (!reviewContent && output.text) {
+                  reviewContent = output.text;
+                }
+
+                // Strategy 5: If output has a nested structure, try to find text
+                if (!reviewContent) {
+                  const jsonStr = JSON.stringify(output, null, 2);
+                  // Look for Status pattern in the JSON which indicates our report
+                  const statusMatch = jsonStr.match(/\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/);
+                  if (statusMatch) {
+                    // The report is somewhere in there, extract from the raw file
+                    // Find text blocks that look like our report format
+                    const reportPattern = /(?:\*\*Status\*\*[\s\S]*?(?:\*\*Recommendations\*\*[\s\S]*?))/;
+                    const reportMatch = rawContent.match(reportPattern);
+                    if (reportMatch) {
+                      reviewContent = reportMatch[0];
+                    }
+                  }
+                }
+
+                if (!reviewContent) {
+                  console.log('Could not extract review content. File structure:', JSON.stringify(output, null, 2).substring(0, 2000));
+                  reviewContent = `Review completed but content extraction failed.\n\nDebug: ${debugInfo}\n\nPlease check the job summary for the full review.`;
+                }
+              } catch (e) {
+                console.log('Error parsing execution output:', e.message);
+                reviewContent = `Review completed but encountered parsing error: ${e.message}\n\nPlease check the job summary for details.`;
+              }
+            } else {
+              console.log('Execution file not found:', executionFile);
+              reviewContent = `Review completed but execution file not found.\n\nFile path: ${executionFile || '(empty)'}\n\nPlease check the job summary for details.`;
+            }
+
+            // Extract review status from content - handle various formats:
+            // - **Status**: PASS/WARN/FAIL
+            // - Status: **PASS/WARN/FAIL**
+            // - ## Status: **PASS/WARN/FAIL**
+            const statusPatterns = [
+              /\*\*Status\*\*:?\s*(PASS|WARN|FAIL)/i,
+              /Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /##\s*Status:?\s*\*\*(PASS|WARN|FAIL)\*\*/i,
+              /Status:?\s*(PASS|WARN|FAIL)/i
+            ];
+            for (const pattern of statusPatterns) {
+              const match = reviewContent.match(pattern);
+              if (match) {
+                reviewStatus = match[1].toUpperCase();
+                break;
+              }
+            }
+            console.log('Review status:', reviewStatus);
+            core.setOutput('status', reviewStatus);
+
+            // Truncate if too long (GitHub comment limit is 65536)
+            if (reviewContent.length > 60000) {
+              reviewContent = reviewContent.substring(0, 60000) + '\n\n... (truncated)';
+            }
+
+            const commentBody = [
+              '## 🔍 Quality Code Review Report',
+              '',
+              reviewContent,
+              '',
+              '---',
+              '*Automated review by Claude Quality Code Reviewer*',
+              `*Commit: ${{ github.sha }}*`
+            ].join('\n');
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = 'Quality Code Review Report';
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes(marker)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Check Quality Review Status
+        if: steps.changed-files.outputs.no_changes != 'true'
+        run: |
+          STATUS="${{ steps.post-quality-comment.outputs.status }}"
+          echo "Quality Code Review Status: $STATUS"
+          if [ "$STATUS" = "FAIL" ]; then
+            echo "::error::Quality Code Review FAILED - blocking merge"
+            exit 1
+          fi
+          if [ "$STATUS" = "UNKNOWN" ]; then
+            echo "::warning::Could not determine review status"
+          fi

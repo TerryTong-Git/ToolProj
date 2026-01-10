@@ -326,11 +326,7 @@ def run(args: Any) -> None:
 
     logger.info("Saving Results")
     records = [d.record for d in completed]
-    df = accuracy(records)
-    # summarize here
-    for kind in df.values:
-        for val in kind:
-            continue
+    _ = accuracy(records)  # Compute accuracy (result logged internally)
 
     # serialize results
     # writer = init_tensorboard(args, exp_dir)
