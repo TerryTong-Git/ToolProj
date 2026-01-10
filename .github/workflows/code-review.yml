@@ -1,12 +1,6 @@
 name: Research Code Review
 
 on:
-  push:
-    branches: [master, main]
-    paths:
-      - 'src/**/*.py'
-      - 'docs/**/*.md'
-      - 'docs/code_mapping.json'
   pull_request:
     branches: [master, main]
     paths:
@@ -40,18 +34,8 @@ jobs:
       - name: Get changed files
         id: changed-files
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA=${{ github.event.pull_request.base.sha }}
-            HEAD_SHA=${{ github.event.pull_request.head.sha }}
-          else
-            # For push events, handle initial commits
-            if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-              BASE_SHA=$(git rev-list --max-parents=0 HEAD)
-            else
-              BASE_SHA=${{ github.event.before }}
-            fi
-            HEAD_SHA=${{ github.sha }}
-          fi
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
 
           echo "base_sha=$BASE_SHA" >> $GITHUB_OUTPUT
           echo "head_sha=$HEAD_SHA" >> $GITHUB_OUTPUT
@@ -184,7 +168,7 @@ jobs:
           retention-days: 30
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request' && steps.changed-files.outputs.no_changes != 'true'
+        if: steps.changed-files.outputs.no_changes != 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -256,50 +240,3 @@ jobs:
             exit 0
           fi
 
-  # Optional: Notify on failures
-  notify-failure:
-    name: Notify on Review Failure
-    needs: code-methodology-alignment
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create Issue on Failure
-        if: github.event_name == 'push'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = `Code-Methodology Misalignment Detected in ${context.sha.substring(0, 7)}`;
-            const body = `## Automated Review Failure
-
-            A code-methodology misalignment was detected in commit ${context.sha}.
-
-            **Branch**: ${context.ref}
-            **Commit**: ${context.sha}
-            **Workflow Run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
-
-            Please review the workflow artifacts for the detailed report and fix any misalignments.
-
-            ### Quick Links
-            - [View Commit](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
-            - [View Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-
-            ---
-            *This issue was created automatically by the Research Code Review workflow.*`;
-
-            // Check for existing open issue
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'code-review-failure'
-            });
-
-            if (issues.length === 0) {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                labels: ['code-review-failure', 'automated']
-              });
-            }
