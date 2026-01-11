@@ -1,15 +1,0 @@
-cpu-bind=MASK - nlpgpu07, task  0  0 [6506]: mask 0x100000001 set
-`torch_dtype` is deprecated! Use `dtype` instead!
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/4 [00:00<?, ?it/s]
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m Loading safetensors checkpoint shards:  25% Completed | 1/4 [00:41<02:03, 41.30s/it]
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m Loading safetensors checkpoint shards:  50% Completed | 2/4 [01:26<01:27, 43.85s/it]
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m Loading safetensors checkpoint shards:  75% Completed | 3/4 [02:12<00:44, 44.76s/it]
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m Loading safetensors checkpoint shards: 100% Completed | 4/4 [02:47<00:00, 40.64s/it]
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m Loading safetensors checkpoint shards: 100% Completed | 4/4 [02:47<00:00, 41.77s/it]
-[1;36m(VllmWorker rank=0 pid=6803)[0;0m 
-2025-11-24 17:36:35,700 - INFO - Making Dataset
-2025-11-24 17:36:39,467 - INFO - Running Arm2
-2025-11-24 17:36:42,139 - INFO - Running batches for sim
-Chatting:   0%|          | 0/4 [00:00<?, ?it/s]
-Processed prompts:   0%|          | 0/64 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][Aslurmstepd: error: *** JOB 139544 ON nlpgpu07 CANCELLED AT 2025-11-24T18:24:22 ***
-slurmstepd: error: Detected 2 oom_kill events in StepId=139544.batch. Some of the step tasks have been OOM Killed.
