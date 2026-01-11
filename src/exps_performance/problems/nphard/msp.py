@@ -24,7 +24,7 @@ class MspAnswer(BaseModel):
 
 @dataclass
 class MspQuestion(NpQuestion):
-    kind: str = "spp"
+    kind: str = "msp"
     type: str = "code"  # could be sim, nl etc
     time_slots: int = -1  # type: ignore
     meetings: List[Dict[str, int]] = field(default_factory=list)

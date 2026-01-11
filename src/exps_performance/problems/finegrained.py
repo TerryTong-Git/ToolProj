@@ -13,7 +13,7 @@ from src.exps_performance.logger import Record
 from src.exps_performance.problems import CheckAndFormat, Question
 from src.exps_performance.utils import rand_string, sample_int
 
-clrs_desc = "Description: You are going to be given a set of algorithmic problem." "Question: Solve the following algorithmic problem: \n {question}"
+clrs_desc = "Description: You are going to be given a set of algorithmic problem.Question: Solve the following algorithmic problem: \n {question}"
 func_typing = "int"
 
 
@@ -170,9 +170,7 @@ class RodCheckAndFormat(FgCheckAndFormat):
         N = max(2, int(d))  # O(n^2)
         price_max = 32
         prices = [rng.randint(1, price_max) for _ in range(N)]
-        question = (
-            "Rod cutting: Given a rod of length N and price list P[1..N], " "compute the maximum obtainable revenue.\n" f"N = {N}\nP = {prices}"
-        )
+        question = f"Rod cutting: Given a rod of length N and price list P[1..N], compute the maximum obtainable revenue.\nN = {N}\nP = {prices}"
         answer = rod_cut_max(prices)
         return FgQuestion(kind="rod", digits=d, question=question, answer=str(answer))
 

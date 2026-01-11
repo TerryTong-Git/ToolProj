@@ -385,11 +385,11 @@ class Args:
                 # NP-hard
                 "spp",
                 "tsp",
-                "tspd",
+                "tsp_d",
                 "msp",
                 "ksp",
                 "gcp",
-                "gcpd",
+                "gcp_d",
                 "bsp",
                 "edp",
             ]

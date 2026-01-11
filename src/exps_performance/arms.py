@@ -53,9 +53,9 @@ NPHARD = {
     "edp": EdpCheckAndFormat,
     "spp": SppCheckAndFormat,
     "tsp": TspCheckAndFormat,
-    "tspd": TspdCheckAndFormat,
+    "tsp_d": TspdCheckAndFormat,
     "gcp": GcpCheckAndFormat,
-    "gcpd": GcpdCheckAndFormat,
+    "gcp_d": GcpdCheckAndFormat,
     "msp": MspCheckAndFormat,
     "ksp": KspCheckAndFormat,
 }

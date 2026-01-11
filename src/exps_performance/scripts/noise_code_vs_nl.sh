@@ -31,10 +31,10 @@ KINDS="${KINDS:-${ARITHMETIC} ${DP} ${ILP} ${NPHARD} ${CLRS}}"
 
 # Experiment parameters
 NOISE_TYPES="${NOISE_TYPES:-gaussian uniform numerical textual structural irrelevant}"
-NOISE_LEVELS="${NOISE_LEVELS:-0.0 0.5 1.0}"
-N_SAMPLES="${N_SAMPLES:-10}"
-DIGITS_LIST="${DIGITS_LIST:-2 4}"
-ROOT_DIR="${ROOT_DIR:-src/exps_performance/results_noise_code_vs_nl}"
+NOISE_LEVELS="${NOISE_LEVELS:-0.0 0.25 0.5 0.75 1.0}"
+N_SAMPLES="${N_SAMPLES:-30}"
+DIGITS_LIST="${DIGITS_LIST:-2 4 6 8 10 12 14 16 18 20}"
+ROOT_DIR="${ROOT_DIR:-src/exps_performance/results/results_noise_code_vs_nl}"
 SEEDS=(${SEEDS:-0 1 2})
 
 # Runtime parameters

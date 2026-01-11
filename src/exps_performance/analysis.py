@@ -14,6 +14,7 @@ from src.exps_performance.logger import create_big_df
 goodset = [
     "clrs30",
     "add",
+    "sub",
     "mul",
     "lcs",
     "rod",
@@ -340,15 +341,14 @@ def analysis() -> None:
     if not jsonl_files:
         raise FileNotFoundError(f"No JSONL files found under {results_root}")
     df = create_big_df(jsonl_files)
+    # Target models from scaled experiment (plan-1.md)
     df = df[
         df["model"].isin(
             [
-                "openai/gpt-4o-mini",
-                "google/gemini-2.5-flash",
-                "anthropic/claude-haiku-4.5",
-                "mistralai/ministral-14b-2512",
-                "meta-llama/llama-3.1-405b-instruct",
-                "qwen/qwen-2.5-coder-32b-instruct",
+                "mistralai/codestral-2508",
+                "mistralai/mistral-large-2411",
+                "google/gemini-2.0-flash-001",
+                "mistralai/mixtral-8x22b-instruct",
             ]
         )
     ]

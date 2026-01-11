@@ -1,290 +1,0 @@
-cpu-bind=MASK - nlpgpu06, task  0  0 [629]: mask 0x100000001 set
-`rope_scaling`'s factor field must be a float >= 1, got 40
-`rope_scaling`'s beta_fast field must be a float, got 32
-`rope_scaling`'s beta_slow field must be a float, got 1
-`torch_dtype` is deprecated! Use `dtype` instead!
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m Loading safetensors checkpoint shards:   0% Completed | 0/4 [00:00<?, ?it/s]
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m Loading safetensors checkpoint shards:  25% Completed | 1/4 [00:50<02:31, 50.45s/it]
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m Loading safetensors checkpoint shards:  50% Completed | 2/4 [02:13<02:19, 69.73s/it]
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m Loading safetensors checkpoint shards:  75% Completed | 3/4 [03:36<01:15, 75.65s/it]
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m Loading safetensors checkpoint shards: 100% Completed | 4/4 [04:58<00:00, 78.13s/it]
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m Loading safetensors checkpoint shards: 100% Completed | 4/4 [04:58<00:00, 74.59s/it]
-[1;36m(VllmWorker rank=0 pid=1167)[0;0m 
-2025-11-24 16:49:10,508 - INFO - Making Dataset
-2025-11-24 16:49:14,336 - INFO - Running Arm2
-2025-11-24 16:49:16,857 - INFO - Running batches for sim
-Chatting:   0%|          | 0/4 [00:00<?, ?it/s]
-Processed prompts:   0%|          | 0/64 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
-Processed prompts:   2%|▏         | 1/64 [00:50<53:30, 50.96s/it, est. speed input: 9.12 toks/s, output: 2.88 toks/s][A
-Processed prompts:   3%|▎         | 2/64 [01:04<29:48, 28.85s/it, est. speed input: 14.59 toks/s, output: 5.63 toks/s][A
-Processed prompts:   5%|▍         | 3/64 [01:08<17:55, 17.63s/it, est. speed input: 20.95 toks/s, output: 8.73 toks/s][A
-Processed prompts:   6%|▋         | 4/64 [01:15<13:25, 13.43s/it, est. speed input: 25.56 toks/s, output: 11.53 toks/s][A
-Processed prompts:   8%|▊         | 5/64 [01:17<08:59,  9.14s/it, est. speed input: 32.18 toks/s, output: 14.95 toks/s][A
-Processed prompts:   9%|▉         | 6/64 [01:24<08:12,  8.50s/it, est. speed input: 35.29 toks/s, output: 17.44 toks/s][A
-Processed prompts:  11%|█         | 7/64 [01:25<05:55,  6.23s/it, est. speed input: 40.45 toks/s, output: 20.93 toks/s][A
-Processed prompts:  12%|█▎        | 8/64 [01:37<07:17,  7.82s/it, est. speed input: 41.38 toks/s, output: 22.49 toks/s][A
-Processed prompts:  14%|█▍        | 9/64 [02:31<20:32, 22.40s/it, est. speed input: 29.83 toks/s, output: 18.81 toks/s][A
-Processed prompts:  16%|█▌        | 10/64 [02:58<21:22, 23.75s/it, est. speed input: 28.21 toks/s, output: 20.49 toks/s][A
-Processed prompts:  17%|█▋        | 11/64 [03:34<24:17, 27.50s/it, est. speed input: 25.82 toks/s, output: 21.66 toks/s][A
-Processed prompts:  19%|█▉        | 12/64 [13:54<3:00:03, 207.76s/it, est. speed input: 7.21 toks/s, output: 10.59 toks/s][A
-Processed prompts:  30%|██▉       | 19/64 [13:54<38:34, 51.43s/it, est. speed input: 10.99 toks/s, output: 45.74 toks/s]  [A
-Processed prompts:  59%|█████▉    | 38/64 [13:54<05:41, 13.13s/it, est. speed input: 21.47 toks/s, output: 141.12 toks/s][A
-Processed prompts:  91%|█████████ | 58/64 [13:55<00:37,  6.20s/it, est. speed input: 32.64 toks/s, output: 241.48 toks/s][AProcessed prompts: 100%|██████████| 64/64 [13:55<00:00, 13.05s/it, est. speed input: 36.10 toks/s, output: 271.59 toks/s]
-Chatting:  25%|██▌       | 1/4 [13:56<41:49, 836.38s/it]
-Processed prompts:   0%|          | 0/64 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
-Processed prompts:   2%|▏         | 1/64 [13:54<14:35:44, 834.04s/it, est. speed input: 0.58 toks/s, output: 5.03 toks/s][A
-Processed prompts:   3%|▎         | 2/64 [13:54<5:55:00, 343.56s/it, est. speed input: 1.17 toks/s, output: 10.05 toks/s][A
-Processed prompts:  23%|██▎       | 15/64 [13:54<23:32, 28.83s/it, est. speed input: 9.09 toks/s, output: 75.35 toks/s]  [A
-Processed prompts:  47%|████▋     | 30/64 [13:54<06:30, 11.49s/it, est. speed input: 20.47 toks/s, output: 150.66 toks/s][A
-Processed prompts:  62%|██████▎   | 40/64 [13:54<02:55,  7.32s/it, est. speed input: 30.08 toks/s, output: 200.83 toks/s][A
-Processed prompts:  78%|███████▊  | 50/64 [13:55<01:07,  4.82s/it, est. speed input: 40.41 toks/s, output: 250.97 toks/s][AProcessed prompts: 100%|██████████| 64/64 [13:55<00:00, 13.05s/it, est. speed input: 49.96 toks/s, output: 321.24 toks/s]
-Chatting:  50%|█████     | 2/4 [27:52<27:52, 836.45s/it]
-Processed prompts:   0%|          | 0/64 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
-Processed prompts:   2%|▏         | 1/64 [13:53<14:35:01, 833.35s/it, est. speed input: 0.74 toks/s, output: 5.03 toks/s][A
-Processed prompts:   3%|▎         | 2/64 [13:53<5:54:42, 343.27s/it, est. speed input: 1.47 toks/s, output: 10.06 toks/s][A
-Processed prompts:  16%|█▌        | 10/64 [13:53<40:01, 44.47s/it, est. speed input: 11.24 toks/s, output: 50.28 toks/s] [A
-Processed prompts:  25%|██▌       | 16/64 [13:53<18:25, 23.03s/it, est. speed input: 22.17 toks/s, output: 80.42 toks/s][A
-Processed prompts:  47%|████▋     | 30/64 [13:54<05:00,  8.84s/it, est. speed input: 32.39 toks/s, output: 150.76 toks/s][A
-Processed prompts:  70%|███████   | 45/64 [13:54<01:26,  4.55s/it, est. speed input: 43.96 toks/s, output: 226.07 toks/s][A
-Processed prompts:  97%|█████████▋| 62/64 [13:54<00:05,  2.56s/it, est. speed input: 54.92 toks/s, output: 311.40 toks/s][AProcessed prompts: 100%|██████████| 64/64 [13:54<00:00, 13.04s/it, est. speed input: 56.14 toks/s, output: 321.44 toks/s]
-Chatting:  75%|███████▌  | 3/4 [41:49<13:56, 836.31s/it]
-Processed prompts:   0%|          | 0/12 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A
-Processed prompts:   8%|▊         | 1/12 [13:01<2:23:19, 781.80s/it, est. speed input: 0.65 toks/s, output: 5.36 toks/s][A
-Processed prompts:  33%|███▎      | 4/12 [13:02<19:43, 147.96s/it, est. speed input: 2.58 toks/s, output: 21.44 toks/s] [AProcessed prompts: 100%|██████████| 12/12 [13:02<00:00, 65.17s/it, est. speed input: 7.75 toks/s, output: 64.33 toks/s]
-Chatting: 100%|██████████| 4/4 [54:51<00:00, 814.94s/it]Chatting: 100%|██████████| 4/4 [54:51<00:00, 822.80s/it]
-2025-11-24 17:44:08,088 - INFO - Running parsing for sim
-parsing: 0it [00:00, ?it/s]parsing: 1it [00:00,  1.85it/s]parsing: 4it [00:00,  5.59it/s]parsing: 6it [00:00,  8.10it/s]parsing: 8it [00:06,  1.06s/it]parsing: 10it [00:06,  1.41it/s]parsing: 12it [00:06,  1.78it/s]parsing: 13it [00:08,  1.36it/s]parsing: 14it [00:09,  1.15it/s]parsing: 15it [00:10,  1.02it/s]parsing: 16it [00:12,  1.08s/it]parsing: 17it [00:13,  1.16s/it]parsing: 18it [00:14,  1.21s/it]parsing: 19it [00:16,  1.26s/it]parsing: 20it [00:17,  1.30s/it]parsing: 21it [00:19,  1.32s/it]parsing: 22it [00:20,  1.34s/it]parsing: 23it [00:21,  1.37s/it]parsing: 24it [00:23,  1.37s/it]parsing: 25it [00:24,  1.38s/it]parsing: 26it [00:26,  1.39s/it]parsing: 27it [00:27,  1.39s/it]parsing: 28it [00:28,  1.39s/it]parsing: 29it [00:30,  1.39s/it]parsing: 30it [00:31,  1.40s/it]parsing: 31it [00:33,  1.39s/it]parsing: 32it [00:34,  1.39s/it]parsing: 33it [00:35,  1.38s/it]parsing: 34it [00:37,  1.38s/it]parsing: 35it [00:38,  1.37s/it]parsing: 36it [00:40,  1.38s/it]parsing: 37it [00:41,  1.36s/it]parsing: 38it [00:42,  1.38s/it]parsing: 39it [00:44,  1.38s/it]parsing: 40it [00:45,  1.37s/it]parsing: 41it [00:46,  1.38s/it]parsing: 42it [00:48,  1.38s/it]parsing: 43it [00:49,  1.38s/it]parsing: 44it [00:50,  1.37s/it]parsing: 45it [00:52,  1.37s/it]parsing: 46it [00:53,  1.39s/it]parsing: 47it [00:55,  1.38s/it]parsing: 48it [00:56,  1.38s/it]parsing: 49it [00:57,  1.36s/it]parsing: 50it [00:59,  1.37s/it]parsing: 51it [01:00,  1.37s/it]parsing: 52it [01:01,  1.37s/it]parsing: 53it [01:03,  1.36s/it]parsing: 54it [01:04,  1.36s/it]parsing: 55it [01:06,  1.36s/it]parsing: 56it [01:07,  1.38s/it]parsing: 57it [01:08,  1.38s/it]parsing: 58it [01:10,  1.39s/it]parsing: 59it [01:11,  1.40s/it]parsing: 60it [01:13,  1.40s/it]parsing: 61it [01:14,  1.39s/it]parsing: 62it [01:15,  1.38s/it]parsing: 63it [01:17,  1.39s/it]parsing: 64it [01:18,  1.37s/it]parsing: 65it [01:19,  1.38s/it]parsing: 66it [01:21,  1.38s/it]parsing: 67it [01:22,  1.38s/it]parsing: 68it [01:24,  1.37s/it]parsing: 69it [01:25,  1.38s/it]parsing: 70it [01:26,  1.40s/it]parsing: 71it [01:28,  1.38s/it]parsing: 72it [01:29,  1.38s/it]parsing: 73it [01:30,  1.38s/it]parsing: 74it [01:32,  1.38s/it]parsing: 75it [01:33,  1.39s/it]parsing: 76it [01:35,  1.38s/it]parsing: 77it [01:36,  1.38s/it]parsing: 78it [01:37,  1.39s/it]parsing: 79it [01:39,  1.38s/it]parsing: 80it [01:40,  1.37s/it]parsing: 81it [01:42,  1.37s/it]parsing: 82it [01:43,  1.37s/it]parsing: 83it [01:44,  1.38s/it]parsing: 84it [01:46,  1.38s/it]parsing: 85it [01:47,  1.38s/it]parsing: 86it [01:48,  1.38s/it]parsing: 87it [01:50,  1.38s/it]parsing: 88it [01:51,  1.38s/it]parsing: 89it [01:53,  1.38s/it]parsing: 90it [01:54,  1.36s/it]parsing: 91it [01:55,  1.35s/it]parsing: 92it [01:57,  1.37s/it]parsing: 93it [01:58,  1.37s/it]parsing: 94it [01:59,  1.38s/it]parsing: 95it [02:01,  1.38s/it]parsing: 96it [02:02,  1.38s/it]parsing: 97it [02:04,  1.38s/it]parsing: 98it [02:05,  1.38s/it]parsing: 99it [02:06,  1.39s/it]parsing: 100it [02:08,  1.39s/it]parsing: 101it [02:09,  1.38s/it]parsing: 102it [02:10,  1.37s/it]parsing: 103it [02:12,  1.37s/it]parsing: 104it [02:13,  1.37s/it]parsing: 105it [02:15,  1.37s/it]parsing: 106it [02:16,  1.38s/it]parsing: 107it [02:17,  1.39s/it]parsing: 108it [02:19,  1.39s/it]parsing: 109it [02:20,  1.38s/it]parsing: 110it [02:22,  1.38s/it]parsing: 111it [02:23,  1.39s/it]parsing: 112it [02:24,  1.39s/it]parsing: 113it [02:26,  1.40s/it]parsing: 114it [02:27,  1.40s/it]parsing: 115it [02:28,  1.39s/it]parsing: 116it [02:30,  1.41s/it]parsing: 117it [02:31,  1.40s/it]parsing: 118it [02:33,  1.40s/it]parsing: 119it [02:34,  1.39s/it]parsing: 120it [02:35,  1.39s/it]parsing: 121it [02:37,  1.39s/it]parsing: 122it [02:38,  1.38s/it]parsing: 123it [02:40,  1.38s/it]parsing: 124it [02:41,  1.39s/it]parsing: 125it [02:42,  1.38s/it]parsing: 126it [02:44,  1.38s/it]parsing: 127it [02:45,  1.38s/it]parsing: 128it [02:47,  1.39s/it]parsing: 129it [02:48,  1.39s/it]parsing: 130it [02:49,  1.38s/it]parsing: 131it [02:51,  1.38s/it]parsing: 132it [02:52,  1.38s/it]parsing: 133it [02:53,  1.37s/it]parsing: 134it [02:55,  1.38s/it]parsing: 135it [02:56,  1.40s/it]parsing: 136it [02:58,  1.39s/it]parsing: 137it [02:59,  1.39s/it]parsing: 138it [03:00,  1.40s/it]parsing: 139it [03:02,  1.39s/it]parsing: 140it [03:03,  1.38s/it]parsing: 141it [03:05,  1.39s/it]parsing: 142it [03:06,  1.38s/it]parsing: 143it [03:07,  1.39s/it]parsing: 144it [03:09,  1.39s/it]parsing: 145it [03:10,  1.38s/it]parsing: 146it [03:11,  1.39s/it]parsing: 147it [03:13,  1.39s/it]parsing: 148it [03:14,  1.38s/it]parsing: 149it [03:16,  1.38s/it]parsing: 150it [03:17,  1.38s/it]parsing: 151it [03:18,  1.38s/it]parsing: 152it [03:20,  1.39s/it]parsing: 153it [03:21,  1.38s/it]parsing: 154it [03:23,  1.39s/it]parsing: 155it [03:24,  1.39s/it]parsing: 156it [03:25,  1.37s/it]parsing: 157it [03:27,  1.37s/it]parsing: 158it [03:28,  1.36s/it]parsing: 159it [03:29,  1.36s/it]parsing: 160it [03:31,  1.36s/it]parsing: 161it [03:32,  1.38s/it]parsing: 162it [03:34,  1.40s/it]parsing: 163it [03:35,  1.39s/it]parsing: 164it [03:36,  1.38s/it]parsing: 165it [03:38,  1.38s/it]parsing: 166it [03:39,  1.37s/it]parsing: 167it [03:40,  1.36s/it]parsing: 168it [03:42,  1.37s/it]parsing: 169it [03:43,  1.37s/it]parsing: 170it [03:45,  1.38s/it]parsing: 171it [03:46,  1.37s/it]parsing: 172it [03:47,  1.39s/it]parsing: 173it [03:49,  1.39s/it]parsing: 174it [03:50,  1.38s/it]parsing: 175it [03:51,  1.39s/it]parsing: 176it [03:53,  1.38s/it]parsing: 177it [03:54,  1.36s/it]parsing: 178it [03:56,  1.37s/it]parsing: 179it [03:57,  1.37s/it]parsing: 180it [03:58,  1.37s/it]parsing: 181it [04:00,  1.37s/it]parsing: 182it [04:01,  1.39s/it]parsing: 183it [04:02,  1.39s/it]parsing: 184it [04:04,  1.38s/it]parsing: 185it [04:05,  1.38s/it]parsing: 186it [04:07,  1.37s/it]parsing: 187it [04:08,  1.37s/it]parsing: 188it [04:09,  1.37s/it]parsing: 189it [04:11,  1.36s/it]parsing: 190it [04:12,  1.38s/it]parsing: 191it [04:13,  1.38s/it]parsing: 192it [04:15,  1.40s/it]parsing: 193it [04:16,  1.40s/it]parsing: 194it [04:18,  1.41s/it]parsing: 195it [04:19,  1.40s/it]parsing: 196it [04:20,  1.39s/it]parsing: 197it [04:22,  1.38s/it]parsing: 198it [04:23,  1.38s/it]parsing: 199it [04:25,  1.38s/it]parsing: 200it [04:26,  1.36s/it]parsing: 201it [04:27,  1.37s/it]parsing: 202it [04:29,  1.37s/it]parsing: 203it [04:30,  1.38s/it]parsing: 204it [04:31,  1.39s/it]parsing: 204it [04:31,  1.33s/it]
-Chatting:   0%|          | 0/10 [00:00<?, ?it/s]
-Processed prompts:   0%|          | 0/64 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s][A[rank6]:[E1124 18:09:26.952354868 ProcessGroupNCCL.cpp:629] [Rank 6] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600083 milliseconds before timing out.
-[rank6]:[E1124 18:09:26.971606114 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 6]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank6]:[E1124 18:09:26.971637783 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank6]:[E1124 18:09:26.971650663 ProcessGroupNCCL.cpp:681] [Rank 6] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank6]:[E1124 18:09:26.971662423 ProcessGroupNCCL.cpp:695] [Rank 6] To avoid data inconsistency, we are taking the entire process down.
-[rank6]:[E1124 18:09:26.976547831 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 6] Process group watchdog thread terminated with exception: [Rank 6] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600083 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 6] Process group watchdog thread terminated with exception: [Rank 6] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600083 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-[rank2]:[E1124 18:09:35.754129377 ProcessGroupNCCL.cpp:629] [Rank 2] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600057 milliseconds before timing out.
-[rank2]:[E1124 18:09:35.755174906 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 2]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank2]:[E1124 18:09:35.755210066 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank2]:[E1124 18:09:35.755222795 ProcessGroupNCCL.cpp:681] [Rank 2] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank2]:[E1124 18:09:35.755234135 ProcessGroupNCCL.cpp:695] [Rank 2] To avoid data inconsistency, we are taking the entire process down.
-[rank2]:[E1124 18:09:35.756993427 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 2] Process group watchdog thread terminated with exception: [Rank 2] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600057 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 2] Process group watchdog thread terminated with exception: [Rank 2] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600057 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-[rank7]:[E1124 18:09:38.772387281 ProcessGroupNCCL.cpp:629] [Rank 7] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600009 milliseconds before timing out.
-[rank7]:[E1124 18:09:38.773351410 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 7]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank7]:[E1124 18:09:38.773377640 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank7]:[E1124 18:09:38.773397360 ProcessGroupNCCL.cpp:681] [Rank 7] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank7]:[E1124 18:09:38.773408730 ProcessGroupNCCL.cpp:695] [Rank 7] To avoid data inconsistency, we are taking the entire process down.
-[rank7]:[E1124 18:09:38.775176331 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 7] Process group watchdog thread terminated with exception: [Rank 7] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600009 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 7] Process group watchdog thread terminated with exception: [Rank 7] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600009 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-[rank1]:[E1124 18:09:51.469475513 ProcessGroupNCCL.cpp:629] [Rank 1] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600068 milliseconds before timing out.
-[rank1]:[E1124 18:09:51.470413613 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 1]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank1]:[E1124 18:09:51.470440553 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank1]:[E1124 18:09:51.470453843 ProcessGroupNCCL.cpp:681] [Rank 1] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank1]:[E1124 18:09:51.470466083 ProcessGroupNCCL.cpp:695] [Rank 1] To avoid data inconsistency, we are taking the entire process down.
-[rank1]:[E1124 18:09:51.472251294 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 1] Process group watchdog thread terminated with exception: [Rank 1] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600068 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 1] Process group watchdog thread terminated with exception: [Rank 1] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600068 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-[rank4]:[E1124 18:10:01.379549536 ProcessGroupNCCL.cpp:629] [Rank 4] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600017 milliseconds before timing out.
-[rank4]:[E1124 18:10:01.380563146 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 4]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank4]:[E1124 18:10:01.380589875 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank4]:[E1124 18:10:01.380602485 ProcessGroupNCCL.cpp:681] [Rank 4] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank4]:[E1124 18:10:01.380614255 ProcessGroupNCCL.cpp:695] [Rank 4] To avoid data inconsistency, we are taking the entire process down.
-[rank4]:[E1124 18:10:01.382359176 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 4] Process group watchdog thread terminated with exception: [Rank 4] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600017 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 4] Process group watchdog thread terminated with exception: [Rank 4] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600017 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-[rank5]:[E1124 18:10:24.598203802 ProcessGroupNCCL.cpp:629] [Rank 5] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600047 milliseconds before timing out.
-[rank5]:[E1124 18:10:24.599132712 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 5]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank5]:[E1124 18:10:24.599158562 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank5]:[E1124 18:10:24.599171272 ProcessGroupNCCL.cpp:681] [Rank 5] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank5]:[E1124 18:10:24.599182312 ProcessGroupNCCL.cpp:695] [Rank 5] To avoid data inconsistency, we are taking the entire process down.
-[rank5]:[E1124 18:10:24.600942103 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 5] Process group watchdog thread terminated with exception: [Rank 5] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600047 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 5] Process group watchdog thread terminated with exception: [Rank 5] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600047 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-[rank3]:[E1124 18:11:12.932222827 ProcessGroupNCCL.cpp:629] [Rank 3] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600050 milliseconds before timing out.
-[rank3]:[E1124 18:11:12.933237386 ProcessGroupNCCL.cpp:2168] [PG ID 2 PG GUID 3 Rank 3]  failure detected by watchdog at work sequence id: 16796 PG status: last enqueued work: 16796, last completed work: 16795
-[rank3]:[E1124 18:11:12.933274646 ProcessGroupNCCL.cpp:667] Stack trace of the failed collective not found, potentially because FlightRecorder is disabled. You can enable it by setting TORCH_NCCL_TRACE_BUFFER_SIZE to a non-zero value.
-[rank3]:[E1124 18:11:12.933290236 ProcessGroupNCCL.cpp:681] [Rank 3] Some NCCL operations have failed or timed out. Due to the asynchronous nature of CUDA kernels, subsequent GPU operations might run on corrupted/incomplete data.
-[rank3]:[E1124 18:11:12.933303656 ProcessGroupNCCL.cpp:695] [Rank 3] To avoid data inconsistency, we are taking the entire process down.
-[rank3]:[E1124 18:11:12.935120576 ProcessGroupNCCL.cpp:1895] [PG ID 2 PG GUID 3 Rank 3] Process group watchdog thread terminated with exception: [Rank 3] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600050 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-terminate called after throwing an instance of 'c10::DistBackendError'
-  what():  [PG ID 2 PG GUID 3 Rank 3] Process group watchdog thread terminated with exception: [Rank 3] Watchdog caught collective operation timeout: WorkNCCL(SeqNum=16796, OpType=_ALLGATHER_BASE, NumelIn=819200, NumelOut=6553600, Timeout(ms)=600000) ran for 600050 milliseconds before timing out.
-Exception raised from checkTimeout at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:632 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: c10d::ProcessGroupNCCL::WorkNCCL::checkTimeout(std::optional<std::chrono::duration<long, std::ratio<1l, 1000l> > >) + 0x2b4 (0x7f3db1829c74 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: c10d::ProcessGroupNCCL::watchdogHandler() + 0x890 (0x7f3db182b7d0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #3: c10d::ProcessGroupNCCL::ncclCommWatchdog() + 0x14d (0x7f3db182c6ed in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #4: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #5: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #6: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-Exception raised from ncclCommWatchdog at /pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:1901 (most recent call first):
-frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x96 (0x7f3e0356c1b6 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libc10.so)
-frame #1: <unknown function> + 0xe5c6fc (0x7f3db14876fc in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch_cuda.so)
-frame #2: <unknown function> + 0x145c0 (0x7f3e03a2e5c0 in /mnt/nlpgpu-io1/data/terry/ToolProj/.pixi/envs/default/lib/python3.10/site-packages/torch/lib/libtorch.so)
-frame #3: <unknown function> + 0xa6f6c (0x7f3e042a6f6c in /lib64/libc.so.6)
-frame #4: <unknown function> + 0x12e388 (0x7f3e0432e388 in /lib64/libc.so.6)
-
-slurmstepd: error: *** JOB 139541 ON nlpgpu06 CANCELLED AT 2025-11-24T18:24:16 ***
-slurmstepd: error: Detected 1 oom_kill event in StepId=139541.batch. Some of the step tasks have been OOM Killed.

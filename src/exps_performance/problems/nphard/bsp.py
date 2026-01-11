@@ -22,7 +22,7 @@ class BspAnswer(BaseModel):
 
 @dataclass
 class BspQuestion(NpQuestion):
-    kind: str = "edp"
+    kind: str = "bsp"
     type: str = "code"  # could be sim, nl etc
     target: str = ""
     array: list[int] = field(default_factory=list)

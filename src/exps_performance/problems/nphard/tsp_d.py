@@ -19,7 +19,7 @@ tsp_desc = (
 
 @dataclass
 class TspdQuestion(NpQuestion):
-    kind: str = "TSP_D"
+    kind: str = "tsp_d"
     type: str = "code"  # could be sim, nl etc
     distance_matrix: pd.DataFrame = field(default_factory=pd.DataFrame)  # type: ignore
     threshold: int = -1
