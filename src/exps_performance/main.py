@@ -395,7 +395,7 @@ class Args:
             ]
         },
     )
-    gsm_samples: int = field(default=500, metadata={"help": "Samples to use for GSM8K (override env: GSM8K_SAMPLES)."})
+    gsm_samples: int = field(default=0, metadata={"help": "Samples to use for GSM8K (override env: GSM8K_SAMPLES)."})
     clrs_samples: int = field(default=500, metadata={"help": "Samples to use for CLRS30 (override env: CLRS30_SAMPLES)."})
     seed: int = 1
     backend: str = field(

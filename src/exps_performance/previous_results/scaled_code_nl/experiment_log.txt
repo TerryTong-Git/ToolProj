@@ -1,0 +1,8 @@
+Experiment started: Sat Jan 10 16:10:31 PST 2026
+[Sat Jan 10 16:10:31 PST 2026] Starting: mistralai/codestral-2508 seed=0
+[Sat Jan 10 16:40:11 PST 2026] SUCCESS: mistralai/codestral-2508 seed=0
+[Sat Jan 10 16:40:11 PST 2026] Starting: mistralai/mistral-large-2411 seed=0
+[Sat Jan 10 17:06:00 PST 2026] SUCCESS: mistralai/mistral-large-2411 seed=0
+[Sat Jan 10 17:06:00 PST 2026] Starting: google/gemini-2.0-flash-001 seed=0
+[Sat Jan 10 17:42:05 PST 2026] SUCCESS: google/gemini-2.0-flash-001 seed=0
+[Sat Jan 10 17:42:05 PST 2026] Starting: mistralai/mixtral-8x22b-instruct seed=0
