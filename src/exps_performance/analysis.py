@@ -87,7 +87,7 @@ def plot_v_graph(df: pd.DataFrame) -> None:
     df1 = df[df["kind"].isin(["gsm8k"])]
     melted_df = pd.melt(df1, value_vars=cols, id_vars=["model", "kind"])
     # Classify models by provider prefix to split markers between open/closed
-    closed_providers = {"anthropic", "openai", "google", "xai"}
+    closed_providers = {"anthropic", "openai", "xai"}
     open_providers = {"meta-llama", "mistral", "mistralai", "qwen", "deepseek", "microsoft", "allenai", "zhipuai"}
 
     def _is_open_model(model_name: str) -> bool:
@@ -208,6 +208,223 @@ def plot_v_graph(df: pd.DataFrame) -> None:
     plt.xlabel("Arm")
     ax.set_xticklabels(["NL", "Sim", "ControlSim", "Code"])
     plt.savefig("figures/line.png", bbox_inches="tight")
+
+
+def bootstrap_ci(data: np.ndarray, n_bootstrap: int = 1000, ci: float = 0.95) -> tuple[float, float]:
+    """Compute bootstrap confidence interval for the mean."""
+    if len(data) == 0:
+        return (np.nan, np.nan)
+    rng = np.random.default_rng(42)
+    boot_means = []
+    for _ in range(n_bootstrap):
+        sample = rng.choice(data, size=len(data), replace=True)
+        boot_means.append(np.mean(sample))
+    boot_means = np.array(boot_means)
+    alpha = (1 - ci) / 2
+    lower = np.percentile(boot_means, alpha * 100)
+    upper = np.percentile(boot_means, (1 - alpha) * 100)
+    return (lower, upper)
+
+
+def plot_v_graph_closed(df: pd.DataFrame) -> None:
+    """
+    Line figure for closed models only, with bootstrap CIs and p-value annotations.
+    Uses CLRS30, NPHard, and fine-grained tasks (excludes gsm8k).
+    """
+    from matplotlib import rcParams
+    from matplotlib.lines import Line2D
+
+    rcParams["figure.dpi"] = 500
+    rcParams["savefig.dpi"] = 500
+    rcParams["font.family"] = "Arial"
+    rcParams["axes.labelsize"] = 18
+    rcParams["axes.titlesize"] = 18
+    rcParams["legend.fontsize"] = 14
+    rcParams["figure.titlesize"] = 18
+    rcParams["markers.fillstyle"] = "none"
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    cols = ["nl_correct", "sim_correct", "controlsim_correct", "code_correct"]
+    arm_labels = ["NL", "Sim", "ControlSim", "Code"]
+
+    # Define task sets
+    CLRS_KINDS = {
+        "activity_selector", "articulation_points", "bellman_ford", "bfs",
+        "binary_search", "bridges", "bubble_sort", "dag_shortest_paths",
+        "dfs", "dijkstra", "find_maximum_subarray_kadane", "floyd_warshall",
+        "graham_scan", "heapsort", "insertion_sort", "jarvis_march",
+        "kmp_matcher", "lcs_length", "matrix_chain_order", "minimum",
+        "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
+        "quickselect", "quicksort", "segments_intersect",
+        "strongly_connected_components", "task_scheduling", "topological_sort",
+    }
+    NPHARD_KINDS = {"edp", "gcp", "ksp", "spp", "tsp"}
+    FG_KINDS = {"add", "sub", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"}
+
+    # Combine all task sets (exclude gsm8k)
+    target_kinds = CLRS_KINDS | NPHARD_KINDS | FG_KINDS
+    df1 = df[df["kind"].isin(target_kinds)]
+
+    print(f"[plot_v_graph_closed] Filtering to {len(target_kinds)} task kinds")
+    print(f"[plot_v_graph_closed] Kinds in data: {sorted(df1['kind'].unique())}")
+
+    # Define closed providers
+    closed_providers = {"anthropic", "openai", "google", "xai"}
+
+    def _is_closed_model(model_name: str) -> bool:
+        prefix = str(model_name).split("/")[0].lower()
+        return prefix in closed_providers
+
+    # Filter to closed models only
+    df_closed = df1[df1["model"].apply(_is_closed_model)]
+
+    if df_closed.empty:
+        print("[plot_v_graph_closed] No closed models found in data.")
+        return
+
+    melted_df = pd.melt(df_closed, value_vars=cols, id_vars=["model", "kind"])
+    melted_df = melted_df.copy()
+
+    # Get unique models and set up palette
+    unique_models = sorted(melted_df["model"].unique())
+    palette_base = sns.color_palette("tab10", n_colors=len(unique_models))
+    palette_map = {model: palette_base[i] for i, model in enumerate(unique_models)}
+
+    # Compute aggregated stats per arm with bootstrap CIs
+    arm_stats = []
+    for col in cols:
+        values = df_closed[col].dropna().values
+        mean_val = np.mean(values) if len(values) > 0 else np.nan
+        ci_lower, ci_upper = bootstrap_ci(values, n_bootstrap=1000, ci=0.95)
+        arm_stats.append({
+            "arm": col,
+            "mean": mean_val,
+            "ci_lower": ci_lower,
+            "ci_upper": ci_upper,
+        })
+    stats_df = pd.DataFrame(arm_stats)
+
+    # Plot individual model points
+    for model in unique_models:
+        model_data = melted_df[melted_df["model"] == model]
+        model_means = model_data.groupby("variable")["value"].mean().reindex(cols)
+        x_positions = list(range(len(cols)))
+        ax.scatter(
+            x_positions,
+            model_means.values,
+            marker="x",
+            s=120,
+            color=palette_map[model],
+            alpha=0.8,
+            linewidths=2,
+            label=model,
+        )
+
+    # Plot aggregated line with bootstrap CI error bars
+    x_positions = list(range(len(cols)))
+    means = stats_df["mean"].values
+    ci_lower = stats_df["ci_lower"].values
+    ci_upper = stats_df["ci_upper"].values
+    yerr_lower = means - ci_lower
+    yerr_upper = ci_upper - means
+
+    ax.errorbar(
+        x_positions,
+        means,
+        yerr=[yerr_lower, yerr_upper],
+        fmt="o-",
+        color="black",
+        markersize=10,
+        linewidth=2,
+        capsize=5,
+        capthick=2,
+        label="All closed models (mean)",
+    )
+
+    # Compute and display p-values between adjacent arms only (cleaner visualization)
+    # Adjacent pairs: NL-Sim, Sim-ControlSim, ControlSim-Code
+    adjacent_pairs = [(cols[i], cols[i + 1]) for i in range(len(cols) - 1)]
+    mdf_grouped = melted_df.groupby(["variable", "model"])["value"].mean().reset_index()
+    mdf_pivot = mdf_grouped.pivot(index="model", columns="variable", values="value")
+
+    p_values = []
+    for pair in adjacent_pairs:
+        col1, col2 = pair
+        if col1 in mdf_pivot.columns and col2 in mdf_pivot.columns:
+            x = mdf_pivot[col1].dropna()
+            y = mdf_pivot[col2].dropna()
+            common_idx = x.index.intersection(y.index)
+            if len(common_idx) >= 2:
+                try:
+                    stat, p_val = wilcoxon(x.loc[common_idx], y.loc[common_idx])
+                except Exception:
+                    p_val = 1.0
+            else:
+                p_val = 1.0
+        else:
+            p_val = 1.0
+        p_values.append(p_val)
+
+    # Draw p-value annotations for adjacent pairs
+    max_val = max(ci_upper) if len(ci_upper) > 0 else 1.0
+    offset = 0.05
+    col_to_x = {col: i for i, col in enumerate(cols)}
+
+    for i, (pair, p_val) in enumerate(zip(adjacent_pairs, p_values)):
+        col1, col2 = pair
+        x1 = col_to_x[col1]
+        x2 = col_to_x[col2]
+        y = max_val + offset
+        h = 0.02
+        ax.plot([x1, x1, x2, x2], [y, y + h, y + h, y], lw=1.2, color="steelblue")
+
+        # Format p-value
+        if p_val < 0.001:
+            p_text = "p<0.001"
+        elif p_val < 0.01:
+            p_text = f"p={p_val:.3f}"
+        else:
+            p_text = f"p={p_val:.2f}"
+        ax.text((x1 + x2) * 0.5, y + h + 0.01, p_text, ha="center", va="bottom", fontsize=9)
+        offset += 0.08
+
+    # Set up axes
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(arm_labels)
+    ax.set_xlabel("Arm")
+    ax.set_ylabel("Accuracy")
+    # Fix y-axis at [0, 1] for accuracy, extend slightly above for annotations
+    y_max = max(1.0, max_val + offset + 0.1)
+    ax.set_ylim([0, y_max])
+    ax.set_title("Closed Models: Accuracy Across Arms\n(CLRS + NPHard + Fine-grained)")
+
+    # Build legend
+    handles_custom: list[Line2D] = []
+    labels_custom: list[str] = []
+    for model in unique_models:
+        handles_custom.append(
+            Line2D([0], [0], marker="x", color=palette_map[model], linestyle="", markersize=10, markeredgewidth=2)
+        )
+        labels_custom.append(model)
+    # Add aggregated line entry
+    handles_custom.append(
+        Line2D([0], [0], marker="o", color="black", linestyle="-", markersize=10, linewidth=2)
+    )
+    labels_custom.append("All closed models (mean)")
+
+    ax.legend(
+        handles_custom,
+        labels_custom,
+        title="Closed Models",
+        loc="upper left",
+        fontsize=10,
+        title_fontsize=12,
+    )
+
+    plt.tight_layout()
+    plt.savefig("figures/line_closed.png", bbox_inches="tight")
+    print("[plot_v_graph_closed] Saved figures/line_closed.png")
 
 
 def wilcoxon_test(mdf: pd.DataFrame, complexity_pairs: List[tuple[str, str]]) -> List[float]:
@@ -363,4 +580,21 @@ def analysis() -> None:
     # return rows
 
 
-analysis()
+def analysis_closed_models() -> None:
+    """Run analysis on closed models only with the new line_closed figure."""
+    # Use local results directory
+    results_root = Path(__file__).parent / "results"
+    jsonl_files = sorted(results_root.rglob("*.jsonl"))
+    if not jsonl_files:
+        raise FileNotFoundError(f"No JSONL files found under {results_root}")
+    df = create_big_df(jsonl_files)
+    print(f"[analysis_closed_models] Loaded {len(df)} rows from {len(jsonl_files)} files")
+    print(f"[analysis_closed_models] Models: {df['model'].unique()}")
+    print(f"[analysis_closed_models] Kinds: {df['kind'].unique()}")
+
+    # Generate the closed models figure
+    plot_v_graph_closed(df)
+
+
+if __name__ == "__main__":
+    analysis_closed_models()

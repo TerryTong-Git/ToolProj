@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #ffffff; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.title {
+  margin: 6pt 15pt 3pt 15pt;
+  font-size: 20pt; font-weight: bold; color: #2C3E50;
+}
+.stage-header {
+  display: flex; margin: 0 15pt 0 70pt; gap: 0;
+  padding-bottom: 2pt;
+  border-bottom: 2pt solid #BDC3C7;
+}
+.stage-col {
+  flex: 1; text-align: center;
+}
+.stage-col-small {
+  width: 45pt; text-align: center;
+}
+.stage-col p {
+  font-size: 11pt; font-weight: bold; color: #5D6D7E; margin: 0;
+}
+.content-row {
+  display: flex; flex-direction: row;
+  margin: 3pt 15pt 0 15pt;
+  flex: 1;
+}
+.section-bracket {
+  width: 55pt; display: flex; flex-direction: column;
+  gap: 1pt;
+}
+.bracket-group {
+  display: flex; flex-direction: row;
+  align-items: stretch;
+  flex: 1;
+}
+.bracket-bar {
+  width: 5pt; border-radius: 2pt;
+  margin-right: 4pt;
+}
+.bracket-bar-blue {
+  background: #3498DB;
+}
+.bracket-bar-purple {
+  background: #9B59B6;
+}
+.bracket-label {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  width: 46pt;
+}
+.bracket-label .sec-num {
+  font-size: 11pt; font-weight: bold; margin: 0;
+}
+.bracket-label .sec-desc {
+  font-size: 9pt; color: #5D6D7E; margin: 0;
+}
+.bracket-label-blue .sec-num {
+  color: #2980B9;
+}
+.bracket-label-purple .sec-num {
+  color: #8E44AD;
+}
+.arms-container {
+  display: flex; flex-direction: column;
+  flex: 1;
+  gap: 1pt;
+}
+.arm-row {
+  display: flex; align-items: center;
+  gap: 0;
+  padding: 1pt 0;
+}
+.arm-label {
+  width: 45pt; text-align: left;
+}
+.arm-label p {
+  font-size: 12pt; font-weight: bold; color: #2C3E50; margin: 0;
+}
+.stages-flow {
+  display: flex; align-items: center; flex: 1;
+  gap: 0;
+}
+.stage-box {
+  flex: 1; display: flex; justify-content: center;
+}
+.stage-box-small {
+  width: 45pt; display: flex; justify-content: center;
+}
+.box {
+  padding: 8pt 6pt; border-radius: 5pt;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 90pt;
+}
+.box-small {
+  padding: 8pt 4pt; border-radius: 5pt;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 38pt;
+}
+.input-box {
+  background: #EBF5FB; border: 2pt solid #3498DB;
+}
+.nl-box {
+  background: #FDF2E9; border: 2pt solid #E67E22;
+}
+.code-box {
+  background: #E8F8F5; border: 2pt solid #1ABC9C;
+}
+.code-sim-box {
+  background: #D4EFDF; border: 2pt solid #27AE60;
+}
+.answer-box {
+  background: #F5EEF8; border: 2pt solid #9B59B6;
+}
+.masked-box {
+  background: #FADBD8; border: 2pt dashed #C0392B;
+}
+.exec-box {
+  background: #145A32; border: 2pt solid #0B3D23;
+}
+.exec-box p {
+  color: #FFFFFF;
+}
+.exec-box .sub {
+  color: #A9DFBF;
+}
+.box p, .box-small p {
+  font-size: 11pt; color: #2C3E50; margin: 0; text-align: center;
+}
+.box .sub, .box-small .sub {
+  font-size: 8pt; color: #7F8C8D; font-style: italic;
+}
+.arrow-h {
+  width: 10pt; height: 0; border-top: 2pt solid #7F8C8D;
+}
+.context-note {
+  font-size: 7pt; color: #C0392B; font-style: italic; margin-top: 1pt;
+}
+.spacer {
+  height: 2pt;
+}
+.key-insight {
+  margin: 3pt 15pt 2pt 15pt;
+  padding: 6pt 12pt;
+  background: #FEF9E7;
+  border-left: 5pt solid #F4D03F;
+  border-radius: 0 5pt 5pt 0;
+}
+.key-insight p {
+  font-size: 10pt; color: #7D6608; margin: 0;
+}
+.legend {
+  display: flex; justify-content: center; gap: 15pt;
+  margin: 2pt 15pt 5pt 15pt;
+  padding-top: 3pt;
+  border-top: 1pt solid #EAECEE;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 4pt;
+}
+.legend-box {
+  width: 12pt; height: 12pt; border-radius: 3pt;
+}
+.legend-nl { background: #FDF2E9; border: 1.5pt solid #E67E22; }
+.legend-code { background: #E8F8F5; border: 1.5pt solid #1ABC9C; }
+.legend-sim { background: #D4EFDF; border: 1.5pt solid #27AE60; }
+.legend-exec { background: #145A32; border: 1.5pt solid #0B3D23; }
+.legend-masked { background: #FADBD8; border: 1.5pt dashed #C0392B; }
+.legend-item p {
+  font-size: 9pt; color: #5D6D7E; margin: 0;
+}
+</style>
+</head>
+<body>
+<p class="title">Evaluation Arms: Decomposing the CoT Representation Gap</p>
+
+<!-- Stage Headers -->
+<div class="stage-header">
+  <div class="stage-col"><p>Input</p></div>
+  <div class="stage-col"><p>Thought Generation</p></div>
+  <div class="stage-col"><p>Thought Execution</p></div>
+  <div class="stage-col-small"><p>Answer</p></div>
+</div>
+
+<div class="content-row">
+  <!-- Left side: Section brackets with horizontal text -->
+  <div class="section-bracket">
+    <div class="bracket-group">
+      <div class="bracket-bar bracket-bar-blue"></div>
+      <div class="bracket-label bracket-label-blue">
+        <p class="sec-num">Sec 3.2</p>
+        <p class="sec-desc">NL vs Code</p>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bracket-group">
+      <div class="bracket-bar bracket-bar-purple"></div>
+      <div class="bracket-label bracket-label-purple">
+        <p class="sec-num">Sec 3.1</p>
+        <p class="sec-desc">LLM vs Ext</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right side: Arms -->
+  <div class="arms-container">
+    <!-- Arm 1 -->
+    <div class="arm-row">
+      <div class="arm-label"><p>Arm 1</p></div>
+      <div class="stages-flow">
+        <div class="stage-box">
+          <div class="box input-box">
+            <p>NL Prompt</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box nl-box">
+            <p>NL Thought</p>
+            <p class="sub">(LLM generates)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box nl-box">
+            <p>NL Reasoning</p>
+            <p class="sub">(LLM executes)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box-small">
+          <div class="box-small answer-box">
+            <p>Ans</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arm 2 -->
+    <div class="arm-row">
+      <div class="arm-label"><p>Arm 2</p></div>
+      <div class="stages-flow">
+        <div class="stage-box">
+          <div class="box input-box">
+            <p>NL Prompt</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box code-box">
+            <p>Code Thought</p>
+            <p class="sub">(LLM generates)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box code-sim-box">
+            <p>Code Simulation</p>
+            <p class="sub">(LLM executes)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box-small">
+          <div class="box-small answer-box">
+            <p>Ans</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Arm 2.5 -->
+    <div class="arm-row">
+      <div class="arm-label"><p>Arm 2.5</p></div>
+      <div class="stages-flow">
+        <div class="stage-box">
+          <div class="box masked-box">
+            <p>Prompt Hidden</p>
+            <p class="context-note">excluded from LLM</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box code-box">
+            <p>Code Thought</p>
+            <p class="sub">(only LLM input)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box code-sim-box">
+            <p>Code Simulation</p>
+            <p class="sub">(LLM executes)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box-small">
+          <div class="box-small answer-box">
+            <p>Ans</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arm 3 -->
+    <div class="arm-row">
+      <div class="arm-label"><p>Arm 3</p></div>
+      <div class="stages-flow">
+        <div class="stage-box">
+          <div class="box masked-box">
+            <p>Prompt Hidden</p>
+            <p class="context-note">not needed</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box code-box">
+            <p>Code Thought</p>
+            <p class="sub">(given to runtime)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box">
+          <div class="box exec-box">
+            <p>Code Execution</p>
+            <p class="sub">(external runtime)</p>
+          </div>
+        </div>
+        <div class="arrow-h"></div>
+        <div class="stage-box-small">
+          <div class="box-small answer-box">
+            <p>Ans</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Key insight box -->
+<div class="key-insight">
+  <p><b>Tractability:</b> Arm 1→3 hard directly. Decompose: Arm 1↔2 (Sec 3.2: same executor) + Arm 2.5↔3 (Sec 3.1: same code context).</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-box legend-nl"></div>
+    <p>NL (LLM)</p>
+  </div>
+  <div class="legend-item">
+    <div class="legend-box legend-code"></div>
+    <p>Code Gen</p>
+  </div>
+  <div class="legend-item">
+    <div class="legend-box legend-sim"></div>
+    <p>Code Sim (LLM)</p>
+  </div>
+  <div class="legend-item">
+    <div class="legend-box legend-exec"></div>
+    <p>Code Exec (Ext)</p>
+  </div>
+  <div class="legend-item">
+    <div class="legend-box legend-masked"></div>
+    <p>Excluded</p>
+  </div>
+</div>
+</body>
+</html>
