@@ -108,8 +108,7 @@ def plot_accuracy_vs_noise_aggregated(data: pd.DataFrame, output_path: Path) -> 
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # Aggregate: mean accuracy by arm, sigma (across all kinds, models, seeds)
-    agg = data.groupby(["arm", "sigma"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
-    agg.columns = ["arm", "sigma", "mean", "std", "count"]
+    agg = data.groupby(["arm", "sigma"])["accuracy"].agg(["mean", "std", "count"]).reset_index()
     agg["se"] = agg["std"] / np.sqrt(agg["count"])
 
     colors = {"nl": "#1f77b4", "code": "#ff7f0e"}
@@ -164,8 +163,7 @@ def plot_accuracy_by_noise_type(data: pd.DataFrame, output_path: Path) -> None:
         ax = axes[idx]
         subset = data[data["noise_type"] == noise_type]
 
-        agg = subset.groupby(["arm", "sigma"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
-        agg.columns = ["arm", "sigma", "mean", "std", "count"]
+        agg = subset.groupby(["arm", "sigma"])["accuracy"].agg(["mean", "std", "count"]).reset_index()
         agg["se"] = agg["std"] / np.sqrt(agg["count"])
 
         for arm in ["nl", "code"]:
@@ -219,8 +217,7 @@ def plot_accuracy_vs_digits(data: pd.DataFrame, output_path: Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 6))
 
     # Aggregate: mean accuracy by arm, digit (across all noise types, sigmas, kinds, models, seeds)
-    agg = noisy_data.groupby(["arm", "digit"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
-    agg.columns = ["arm", "digit", "mean", "std", "count"]
+    agg = noisy_data.groupby(["arm", "digit"])["accuracy"].agg(["mean", "std", "count"]).reset_index()
     agg["se"] = agg["std"] / np.sqrt(agg["count"])
 
     colors = {"nl": "#1f77b4", "code": "#ff7f0e"}
@@ -265,8 +262,7 @@ def plot_degradation_slope_comparison(data: pd.DataFrame, output_path: Path) -> 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # Aggregate by arm and sigma
-    agg = data.groupby(["arm", "sigma"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
-    agg.columns = ["arm", "sigma", "mean", "std", "count"]
+    agg = data.groupby(["arm", "sigma"])["accuracy"].agg(["mean", "std", "count"]).reset_index()
     agg["se"] = agg["std"] / np.sqrt(agg["count"])
 
     colors = {"nl": "#1f77b4", "code": "#ff7f0e"}
@@ -338,10 +334,14 @@ def plot_accuracy_by_category(data: pd.DataFrame, output_path: Path) -> None:
     categories = sorted(data["category"].unique())
     n_cats = len(categories)
 
-    n_cols = 3
+    if n_cats == 0:
+        print("No categories found for category plot")
+        return
+
+    n_cols = min(3, n_cats)
     n_rows = (n_cats + n_cols - 1) // n_cols
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5 * n_rows), sharey=True)
-    axes = axes.flatten() if n_cats > 1 else [axes]
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 5 * n_rows), sharey=True, squeeze=False)
+    axes = axes.flatten()
 
     colors = {"nl": "#1f77b4", "code": "#ff7f0e"}
     labels = {"nl": "NL", "code": "Code Exec"}
@@ -350,8 +350,7 @@ def plot_accuracy_by_category(data: pd.DataFrame, output_path: Path) -> None:
         ax = axes[idx]
         subset = data[data["category"] == category]
 
-        agg = subset.groupby(["arm", "sigma"], as_index=False)["accuracy"].agg(["mean", "std", "count"]).reset_index()
-        agg.columns = ["arm", "sigma", "mean", "std", "count"]
+        agg = subset.groupby(["arm", "sigma"])["accuracy"].agg(["mean", "std", "count"]).reset_index()
         agg["se"] = agg["std"] / np.sqrt(agg["count"])
 
         for arm in ["nl", "code"]:
@@ -620,28 +619,31 @@ def main(results_dir: str = "src/exps_performance/results_noise_code_vs_nl") -> 
     stats_df.to_csv(stats_csv_path, index=False)
     print(f"Saved: {stats_csv_path}")
 
-    print("\nStatistical Test Summary:")
-    print(
-        stats_df[
-            [
-                "noise_type",
-                "sigma",
-                "n_pairs",
-                "mean_nl",
-                "mean_code",
-                "mean_diff",
-                "t_pval",
-                "noninferiority_pval",
-                "code_noninferior",
-            ]
-        ].to_string(index=False)
-    )
+    if stats_df.empty:
+        print("\nNo statistical tests could be run (insufficient data for paired comparisons)")
+    else:
+        print("\nStatistical Test Summary:")
+        print(
+            stats_df[
+                [
+                    "noise_type",
+                    "sigma",
+                    "n_pairs",
+                    "mean_nl",
+                    "mean_code",
+                    "mean_diff",
+                    "t_pval",
+                    "noninferiority_pval",
+                    "code_noninferior",
+                ]
+            ].to_string(index=False)
+        )
 
-    plot_statistical_summary(stats_df, figures_dir / "statistical_summary.png")
-    plot_effect_sizes(stats_df, figures_dir / "effect_sizes.png")
+        plot_statistical_summary(stats_df, figures_dir / "statistical_summary.png")
+        plot_effect_sizes(stats_df, figures_dir / "effect_sizes.png")
 
-    # Summary interpretation
-    print_summary(stats_df)
+        # Summary interpretation
+        print_summary(stats_df)
 
 
 if __name__ == "__main__":
