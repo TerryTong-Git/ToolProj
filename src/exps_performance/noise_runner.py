@@ -22,6 +22,16 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
+# Kind presets for noise robustness experiments
+FG_KINDS = ["add", "sub", "mul", "lcs", "knap", "rod"]
+CLRS_SUBSET_KINDS = ["binary_search", "bellman_ford", "dijkstra", "dfs", "segments_intersect"]
+NPHARD_KINDS = ["gcp", "spp", "tsp"]
+EXPERIMENT_KINDS = FG_KINDS + CLRS_SUBSET_KINDS + NPHARD_KINDS  # 14 total
+
+# Finer sigma levels for capturing degradation curves
+FINE_SIGMA_LEVELS = [0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
+
+
 @dataclass
 class NoiseArgs:
     model: str = "dummy"
@@ -33,27 +43,17 @@ class NoiseArgs:
     checkpoint_every: int = 8
     exec_workers: int = 4
     seed: int = 1
-    kinds: List[str] = field(
-        default_factory=lambda: [
-            "add",
-            "sub",
-            "mul",
-            "lcs",
-            "knap",
-            "rod",
-            "ilp_assign",
-            "ilp_prod",
-            "ilp_partition",
-        ]
-    )
-    digits_list: List[int] = field(default_factory=lambda: [2, 4])
-    n: int = 4
-    sigma: List[float] = field(default_factory=lambda: [0.0, 0.25, 0.5, 0.75, 1.0])
+    kinds: List[str] = field(default_factory=lambda: EXPERIMENT_KINDS.copy())
+    digits_list: List[int] = field(default_factory=lambda: [2, 4, 8, 16])
+    n: int = 10  # 10 samples per condition for statistical power
+    sigma: List[float] = field(default_factory=lambda: FINE_SIGMA_LEVELS.copy())
     noise_types: List[str] = field(default_factory=lambda: list(NOISE_FUNCS.keys()))
-    root: str = "results_noise"
+    root: str = "results_noise_v3"
     save_path: str | None = None
     openrouter_api_key: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Pilot mode for quick calibration runs
+    pilot: bool = False
 
 
 def _run_all_arms(data: List[Any], args: NoiseArgs, client: Any) -> List[Any]:
@@ -113,16 +113,34 @@ def _evaluate_noise(base_data: List[Any], args: NoiseArgs, client: Any, noise_ty
 
 
 def run(args: NoiseArgs) -> None:
+    # Apply pilot mode overrides for quick calibration
+    if args.pilot:
+        logger.info("PILOT MODE: Using reduced configuration for calibration")
+        args.kinds = ["add", "sub", "binary_search"]  # 3 kinds only
+        args.digits_list = [2, 4]  # 2 digit levels only
+        args.n = 4  # Fewer samples
+        args.sigma = [0.0, 0.05, 0.10, 0.15, 0.20]  # Finer focus on early degradation
+        args.root = "results_noise_pilot"
+
     seed_all_and_setup(args)
     client = llm(args)
     logger.info(f"Using backend={args.backend} model={args.model}")
+    logger.info(f"Kinds: {args.kinds}")
+    logger.info(f"Digits: {args.digits_list}")
+    logger.info(f"Sigma levels: {args.sigma}")
+    logger.info(f"Noise types: {args.noise_types}")
+    logger.info(f"n={args.n} samples per condition")
 
     base_data = list(make_dataset(args.kinds, args.n, args.digits_list))
+    logger.info(f"Generated {len(base_data)} base questions")
 
     results: List[pd.DataFrame] = []
+    total_conditions = len(args.noise_types) * len(args.sigma)
+    current = 0
     for noise_type in args.noise_types:
         for sigma in args.sigma:
-            logger.info(f"Running noise_type={noise_type} sigma={sigma}")
+            current += 1
+            logger.info(f"[{current}/{total_conditions}] Running noise_type={noise_type} sigma={sigma}")
             acc_df = _evaluate_noise(base_data, args, client, noise_type, sigma)
             acc_df["noise_type"] = noise_type
             acc_df["sigma"] = sigma
@@ -132,6 +150,7 @@ def run(args: NoiseArgs) -> None:
     save_path = Path(args.save_path) if args.save_path else _default_save_path(args)
     _serialize_results(final_df, args, save_path)
     logger.info(f"Wrote noise results to {save_path} (JSON)")
+    logger.info(f"Total records: {len(final_df)}")
 
 
 def main() -> None:
