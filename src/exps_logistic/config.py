@@ -103,7 +103,7 @@ class ExperimentConfig:
     enable_cv: bool = True
 
     # Feature extraction
-    feats: str = "tfidf"  # tfidf, hf-cls, st, openai
+    feats: str = "tfidf"  # tfidf, hf-cls, st, openai, openrouter
     embed_model: Optional[str] = None
     pool: str = "mean"  # mean or cls
     device: Optional[str] = None
@@ -192,7 +192,7 @@ def parse_args() -> ExperimentConfig:
     )
 
     # Feature extraction
-    p.add_argument("--feats", choices=["tfidf", "hf-cls", "st", "openai"], default="tfidf")
+    p.add_argument("--feats", choices=["tfidf", "hf-cls", "st", "openai", "openrouter"], default="tfidf")
     p.add_argument("--embed-model", type=str, default=None, help="hf-cls: HF repo; st: ST repo; openai: embedding model.")
     p.add_argument("--pool", choices=["mean", "cls"], default="mean", help="Pooling for hf-cls.")
     p.add_argument("--device", type=str, default=None, help="Force device for hf-cls/st (e.g. cuda, cpu).")

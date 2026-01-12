@@ -7,14 +7,14 @@ Generates:
 3. Main figure (main.png) - Faceted by problem type
 """
 
+import itertools
 from pathlib import Path
-import pandas as pd
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from scipy.stats import wilcoxon
-import itertools
-from matplotlib.lines import Line2D
 
 # Import from the project
 from src.exps_performance.logger import create_big_df
@@ -61,7 +61,7 @@ def plot_line_graph(df: pd.DataFrame, output_path: Path) -> None:
 
     # Color palette for models
     models = sorted(melted_df["model"].unique())
-    palette = dict(zip(models, sns.color_palette("husl", len(models))))
+    dict(zip(models, sns.color_palette("husl", len(models))))
 
     # Plot each model
     for model in models:
@@ -200,18 +200,18 @@ def print_summary_stats(df: pd.DataFrame) -> None:
     print("=" * 60)
 
     print(f"\nTotal samples: {len(df)}")
-    print(f"\nSamples by model:")
+    print("\nSamples by model:")
     print(df.groupby("model").size())
 
-    print(f"\nSamples by kind:")
+    print("\nSamples by kind:")
     print(df.groupby("kind").size())
 
-    print(f"\nMean accuracy by arm:")
+    print("\nMean accuracy by arm:")
     for col in ["nl_correct", "sim_correct", "controlsim_correct", "code_correct"]:
         if col in df.columns:
             print(f"  {col}: {df[col].mean():.4f}")
 
-    print(f"\nMean accuracy by model and arm:")
+    print("\nMean accuracy by model and arm:")
     arm_cols = ["nl_correct", "sim_correct", "controlsim_correct", "code_correct"]
     arm_cols_present = [c for c in arm_cols if c in df.columns]
     print(df.groupby("model")[arm_cols_present].mean())

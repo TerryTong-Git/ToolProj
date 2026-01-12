@@ -84,7 +84,7 @@ def test_noise_runner_serialization(tmp_path, monkeypatch):
     class FakeRecord:
         def __init__(self, kind: str):
             self.kind = kind
-            self.digits = 2
+            self.digit = 2
             self.nl_correct = True
             self.sim_correct = False
             self.controlsim_correct = False
@@ -93,7 +93,7 @@ def test_noise_runner_serialization(tmp_path, monkeypatch):
         def model_dump(self):
             return {
                 "kind": self.kind,
-                "digits": self.digits,
+                "digit": self.digit,
                 "nl_correct": self.nl_correct,
                 "sim_correct": self.sim_correct,
                 "controlsim_correct": self.controlsim_correct,

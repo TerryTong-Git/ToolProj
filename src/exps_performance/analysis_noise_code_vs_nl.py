@@ -319,7 +319,15 @@ def plot_degradation_slope_comparison(data: pd.DataFrame, output_path: Path) -> 
         # Add slope ratio annotation
         if "nl" in slopes and "code" in slopes and slopes["nl"] != 0:
             ratio = slopes["code"] / slopes["nl"]
-            ax.text(0.5, 0.95, f"Slope ratio (code/nl): {ratio:.2f}", transform=ax.transAxes, ha="center", fontsize=12, bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5))
+            ax.text(
+                0.5,
+                0.95,
+                f"Slope ratio (code/nl): {ratio:.2f}",
+                transform=ax.transAxes,
+                ha="center",
+                fontsize=12,
+                bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5),
+            )
 
     plt.tight_layout()
     plt.savefig(output_path, bbox_inches="tight")
