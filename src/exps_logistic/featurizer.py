@@ -198,6 +198,38 @@ class OpenAIEmbeddingFeaturizer(Featurizer):
         return np.vstack(OUT)
 
 
+class OpenRouterEmbeddingFeaturizer(Featurizer):
+    """OpenRouter Embeddings API featurizer (OpenAI-compatible)."""
+
+    def __init__(self, model_name: str = "openai/text-embedding-3-large", batch: int = 128):
+        import os
+
+        try:
+            from openai import OpenAI
+        except ImportError as e:
+            raise RuntimeError("pip install openai>=1.0 required for --feats openrouter") from e
+
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENROUTER_API_KEY environment variable required for --feats openrouter")
+
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+        self.model = model_name
+        self.batch = int(batch)
+
+    def transform(self, texts: List[str]) -> np.ndarray:
+        OUT = []
+        for i in range(0, len(texts), self.batch):
+            chunk = texts[i : i + self.batch]
+            resp = self.client.embeddings.create(model=self.model, input=chunk)
+            vecs = [np.array(d.embedding, dtype=np.float32) for d in resp.data]
+            OUT.append(np.stack(vecs, axis=0))
+        return np.vstack(OUT)
+
+
 def build_featurizer(
     kind: str,
     embed_model: Optional[str] = None,
@@ -234,5 +266,8 @@ def build_featurizer(
 
     if kind == "openai":
         return OpenAIEmbeddingFeaturizer(embed_model or "text-embedding-3-large", batch=batch)
+
+    if kind == "openrouter":
+        return OpenRouterEmbeddingFeaturizer(embed_model or "openai/text-embedding-3-large", batch=batch)
 
     raise ValueError(f"Unknown --feats {kind}")

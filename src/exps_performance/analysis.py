@@ -344,9 +344,10 @@ def plot_v_graph_closed(df: pd.DataFrame) -> None:
 
     # Compute and display p-values between adjacent arms only (cleaner visualization)
     # Adjacent pairs: NL-Sim, Sim-ControlSim, ControlSim-Code
+    # Use model×kind combinations for proper sample size (not just n=4 models)
     adjacent_pairs = [(cols[i], cols[i + 1]) for i in range(len(cols) - 1)]
-    mdf_grouped = melted_df.groupby(["variable", "model"])["value"].mean().reset_index()
-    mdf_pivot = mdf_grouped.pivot(index="model", columns="variable", values="value")
+    mdf_grouped = melted_df.groupby(["variable", "model", "kind"])["value"].mean().reset_index()
+    mdf_pivot = mdf_grouped.pivot(index=["model", "kind"], columns="variable", values="value")
 
     p_values = []
     for pair in adjacent_pairs:
