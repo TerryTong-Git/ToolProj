@@ -250,14 +250,36 @@ def plot_v_graph_closed(df: pd.DataFrame) -> None:
 
     # Define task sets
     CLRS_KINDS = {
-        "activity_selector", "articulation_points", "bellman_ford", "bfs",
-        "binary_search", "bridges", "bubble_sort", "dag_shortest_paths",
-        "dfs", "dijkstra", "find_maximum_subarray_kadane", "floyd_warshall",
-        "graham_scan", "heapsort", "insertion_sort", "jarvis_march",
-        "kmp_matcher", "lcs_length", "matrix_chain_order", "minimum",
-        "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
-        "quickselect", "quicksort", "segments_intersect",
-        "strongly_connected_components", "task_scheduling", "topological_sort",
+        "activity_selector",
+        "articulation_points",
+        "bellman_ford",
+        "bfs",
+        "binary_search",
+        "bridges",
+        "bubble_sort",
+        "dag_shortest_paths",
+        "dfs",
+        "dijkstra",
+        "find_maximum_subarray_kadane",
+        "floyd_warshall",
+        "graham_scan",
+        "heapsort",
+        "insertion_sort",
+        "jarvis_march",
+        "kmp_matcher",
+        "lcs_length",
+        "matrix_chain_order",
+        "minimum",
+        "mst_kruskal",
+        "mst_prim",
+        "naive_string_matcher",
+        "optimal_bst",
+        "quickselect",
+        "quicksort",
+        "segments_intersect",
+        "strongly_connected_components",
+        "task_scheduling",
+        "topological_sort",
     }
     NPHARD_KINDS = {"edp", "gcp", "ksp", "spp", "tsp"}
     FG_KINDS = {"add", "sub", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"}
@@ -297,12 +319,14 @@ def plot_v_graph_closed(df: pd.DataFrame) -> None:
         values = df_closed[col].dropna().values
         mean_val = np.mean(values) if len(values) > 0 else np.nan
         ci_lower, ci_upper = bootstrap_ci(values, n_bootstrap=1000, ci=0.95)
-        arm_stats.append({
-            "arm": col,
-            "mean": mean_val,
-            "ci_lower": ci_lower,
-            "ci_upper": ci_upper,
-        })
+        arm_stats.append(
+            {
+                "arm": col,
+                "mean": mean_val,
+                "ci_lower": ci_lower,
+                "ci_upper": ci_upper,
+            }
+        )
     stats_df = pd.DataFrame(arm_stats)
 
     # Plot individual model points
@@ -404,14 +428,10 @@ def plot_v_graph_closed(df: pd.DataFrame) -> None:
     handles_custom: list[Line2D] = []
     labels_custom: list[str] = []
     for model in unique_models:
-        handles_custom.append(
-            Line2D([0], [0], marker="x", color=palette_map[model], linestyle="", markersize=10, markeredgewidth=2)
-        )
+        handles_custom.append(Line2D([0], [0], marker="x", color=palette_map[model], linestyle="", markersize=10, markeredgewidth=2))
         labels_custom.append(model)
     # Add aggregated line entry
-    handles_custom.append(
-        Line2D([0], [0], marker="o", color="black", linestyle="-", markersize=10, linewidth=2)
-    )
+    handles_custom.append(Line2D([0], [0], marker="o", color="black", linestyle="-", markersize=10, linewidth=2))
     labels_custom.append("All closed models (mean)")
 
     ax.legend(

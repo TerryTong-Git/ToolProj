@@ -25,7 +25,7 @@ import argparse
 import json
 import logging
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -88,7 +88,7 @@ MODEL_CONFIGS = {
 def generate_code_rationale(kind: str, digits: int, op1: Any, op2: Any, config: SyntheticConfig, rng: np.random.Generator) -> str:
     """Generate structured code rationale."""
     noise = rng.normal(0, config.noise_level)
-    quality = config.code_quality + noise
+    config.code_quality + noise
 
     if kind == "add":
         return f"def add(a={op1}, b={op2}):\n    # {digits}-digit addition\n    return a + b  # = {op1 + op2}"
@@ -107,15 +107,15 @@ def generate_code_rationale(kind: str, digits: int, op1: Any, op2: Any, config: 
 def generate_nl_rationale(kind: str, digits: int, op1: Any, op2: Any, config: SyntheticConfig, rng: np.random.Generator) -> str:
     """Generate natural language rationale with less structure."""
     if kind == "add":
-        return f"To add these numbers, I add digit by digit from right to left, carrying when needed. The result is computed."
+        return "To add these numbers, I add digit by digit from right to left, carrying when needed. The result is computed."
     elif kind == "sub":
-        return f"For subtraction, I subtract each digit, borrowing if necessary. The difference is found step by step."
+        return "For subtraction, I subtract each digit, borrowing if necessary. The difference is found step by step."
     elif kind == "mul":
-        return f"Multiplication involves computing partial products and summing them appropriately."
+        return "Multiplication involves computing partial products and summing them appropriately."
     elif kind == "lcs":
-        return f"Finding the longest common subsequence requires dynamic programming with a table."
+        return "Finding the longest common subsequence requires dynamic programming with a table."
     elif kind == "knap":
-        return f"The knapsack problem maximizes value while respecting capacity constraints."
+        return "The knapsack problem maximizes value while respecting capacity constraints."
     else:
         return f"This {kind} problem requires careful step-by-step reasoning to solve."
 
@@ -222,7 +222,9 @@ def run_logistic_experiment(
 ) -> Optional[ExperimentResult]:
     """Run logistic regression MI estimation."""
     try:
-        from .config import ExperimentConfig, FG_KINDS as FG_KINDS_SET
+        from .classifier import ConceptClassifier
+        from .config import FG_KINDS as FG_KINDS_SET
+        from .config import ExperimentConfig
         from .data_utils import (
             filter_by_kinds,
             filter_by_rep,
@@ -231,7 +233,6 @@ def run_logistic_experiment(
             stratified_split_robust,
         )
         from .featurizer import build_featurizer
-        from .classifier import ConceptClassifier
         from .metrics import compute_metrics
 
         config = ExperimentConfig(
