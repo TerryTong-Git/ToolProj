@@ -52,6 +52,24 @@ Create a synchronized pipeline that runs logistic regression experiments on all 
 - [ ] Verify 48 result files created
 - [ ] Verify 10 plots generated
 
+### Phase 5: Algorithm Name Filtering
+**Status:** `in_progress`
+
+**Goal:** Filter algorithm names from CoT to prevent label leakage in MI estimation.
+
+- [x] Add `filter_algorithm_names()` function in `data_utils.py`
+- [x] Add `--no-filter-algo-names` CLI flag in `config.py`
+- [x] Apply filtering to both NL and code arms
+- [x] Remove comments from code files
+- [x] Tests pass (69/69)
+- [ ] Run experiments with filtering enabled
+- [ ] Compare MI estimates with/without filtering
+
+**Files Modified:**
+- `src/exps_logistic/data_utils.py` - Added filtering function
+- `src/exps_logistic/config.py` - Added CLI flag
+- `src/exps_logistic/main.py` - Removed comments
+
 ---
 
 ## Errors Encountered

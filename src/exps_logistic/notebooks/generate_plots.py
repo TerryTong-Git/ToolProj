@@ -22,7 +22,7 @@ LOGISTIC_RESULTS_DIR = Path(os.getenv("LOGISTIC_RESULTS_DIR", _PROJECT_ROOT / "s
 PERF_RESULTS_DIR = Path(os.getenv("PERF_RESULTS_DIR", _PROJECT_ROOT / "src/exps_performance/results"))
 PLOTS_DIR = Path(os.getenv("PLOTS_DIR", _PROJECT_ROOT / "src/exps_logistic/notebooks"))
 
-FILENAME_RE = re.compile(r"^(?P<model>.+)_seed(?P<seed>\d+)_(?P<rep>nl|code)_(?P<feats>[^_]+)-(?P<embed>[^_]+)_(?P<ts>\d{8}_\d{6})\.json$")
+FILENAME_RE = re.compile(r"^(?P<model>.+)_seed(?P<seed>\d+)_(?P<rep>nl|code|sim_reasoning)_(?P<feats>[^_]+)-(?P<embed>[^_]+)_(?P<ts>\d{8}_\d{6})\.json$")
 
 
 def parse_logistic_filename(path: Path):
@@ -64,7 +64,7 @@ def main():
     print(f"Models: {sorted(set(k[0] for k in logistic_dfs.keys()))}")
 
     # Load performance accuracy (excluding gsm8k)
-    REP_TO_COL = {"nl": "nl_correct", "code": "code_correct"}
+    REP_TO_COL = {"nl": "nl_correct", "code": "code_correct", "sim_reasoning": "sim_correct"}
     perf_accuracy = {}
 
     for model, seed, _ in sorted({(m, s, r)[:2] + ("",) for m, s, r in logistic_dfs.keys()}):
@@ -129,95 +129,100 @@ def main():
     sns.set_palette("husl")
 
     # Plot 1: Boxplot with p-values: Code vs NL MI lower bound
-    fig, ax = plt.subplots(figsize=(6, 6))
     mi_code = summary_corr_df[summary_corr_df["rep"] == "code"]["mutual_info_lower_bound_bits"].dropna()
     mi_nl = summary_corr_df[summary_corr_df["rep"] == "nl"]["mutual_info_lower_bound_bits"].dropna()
 
-    palette = sns.color_palette("Set2", n_colors=2)
-    colors = [palette[0], palette[1]]
-
-    bp = ax.boxplot([mi_code, mi_nl], tick_labels=["code", "nl"], patch_artist=True, widths=0.6)
-    bp["boxes"][0].set_facecolor(colors[0])
-    bp["boxes"][0].set_alpha(0.7)
-    bp["boxes"][1].set_facecolor(colors[1])
-    bp["boxes"][1].set_alpha(0.7)
-
-    mi_code_mean = mi_code.mean()
-    mi_nl_mean = mi_nl.mean()
-    mean_diff = mi_code_mean - mi_nl_mean
-
-    paired_df_box = summary_corr_df.pivot_table(index=["model", "seed"], columns="rep", values="mutual_info_lower_bound_bits").dropna(
-        subset=["code", "nl"]
-    )
-
+    # Only generate code vs nl plots if we have both representations
     p_value = None
-    if len(paired_df_box) >= 3:
-        statistic, p_value = wilcoxon(paired_df_box["code"], paired_df_box["nl"], alternative="two-sided")
-        max_height = max(mi_code.max(), mi_nl.max())
-        y_pval = max_height + 0.1 * max_height
-        ax.plot([1, 1, 2, 2], [max_height + 0.05 * max_height, y_pval, y_pval, max_height + 0.05 * max_height], color="steelblue", linewidth=1.5)
-        ax.text(1.5, y_pval + 0.02 * max_height, f"p={p_value:.4f}", ha="center", va="bottom", fontsize=12, fontweight="bold", color="steelblue")
-        ax.text(
-            1.5,
-            max_height * 0.5,
-            f"Δ = {mean_diff:.3f} bits",
-            ha="center",
-            va="center",
-            fontsize=11,
-            style="italic",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5),
+    if len(mi_code) > 0 and len(mi_nl) > 0:
+        fig, ax = plt.subplots(figsize=(6, 6))
+
+        palette = sns.color_palette("Set2", n_colors=2)
+        colors = [palette[0], palette[1]]
+
+        bp = ax.boxplot([mi_code, mi_nl], tick_labels=["code", "nl"], patch_artist=True, widths=0.6)
+        bp["boxes"][0].set_facecolor(colors[0])
+        bp["boxes"][0].set_alpha(0.7)
+        bp["boxes"][1].set_facecolor(colors[1])
+        bp["boxes"][1].set_alpha(0.7)
+
+        mi_code_mean = mi_code.mean()
+        mi_nl_mean = mi_nl.mean()
+        mean_diff = mi_code_mean - mi_nl_mean
+
+        paired_df_box = summary_corr_df.pivot_table(index=["model", "seed"], columns="rep", values="mutual_info_lower_bound_bits").dropna(
+            subset=["code", "nl"]
         )
 
-    ax.set_ylabel("MI Lower Bound (bits)", fontsize=12)
-    ax.set_xlabel("Representation", fontsize=12)
-    ax.set_title("Variational Lower Bound: Code vs NL (Extended)", fontsize=14, fontweight="bold")
-    ax.grid(True, alpha=0.2, axis="y")
-
-    plt.tight_layout()
-    plt.savefig(PLOTS_DIR / "boxplot_extended.png", dpi=150)
-    print(f"Saved boxplot to {PLOTS_DIR / 'boxplot_extended.png'}")
-    plt.close()
-
-    # Plot 2: KDE density plot
-    fig, ax = plt.subplots(figsize=(6, 2.5))
-    palette = sns.color_palette("Set2", n_colors=2)
-    colors = [palette[0], palette[1]]
-
-    if len(mi_code) > 1 and len(mi_nl) > 1:
-        kde_code = gaussian_kde(mi_code)
-        kde_nl = gaussian_kde(mi_nl)
-        x_range = np.linspace(min(mi_code.min(), mi_nl.min()) - 0.5, max(mi_code.max(), mi_nl.max()) + 0.5, 200)
-
-        ax.plot(x_range, kde_code(x_range), color=colors[0], linewidth=4, label="code", alpha=0.8)
-        ax.plot(x_range, kde_nl(x_range), color=colors[1], linewidth=4, label="nl", alpha=0.8)
-
-        ax.axvline(mi_code.mean(), color=colors[0], linestyle="--", linewidth=2.5, alpha=0.7)
-        ax.axvline(mi_nl.mean(), color=colors[1], linestyle="--", linewidth=2.5, alpha=0.7)
-
-        if p_value is not None:
+        if len(paired_df_box) >= 3:
+            statistic, p_value = wilcoxon(paired_df_box["code"], paired_df_box["nl"], alternative="two-sided")
+            max_height = max(mi_code.max(), mi_nl.max())
+            y_pval = max_height + 0.1 * max_height
+            ax.plot([1, 1, 2, 2], [max_height + 0.05 * max_height, y_pval, y_pval, max_height + 0.05 * max_height], color="steelblue", linewidth=1.5)
+            ax.text(1.5, y_pval + 0.02 * max_height, f"p={p_value:.4f}", ha="center", va="bottom", fontsize=12, fontweight="bold", color="steelblue")
             ax.text(
-                0.98,
-                0.15,
-                f"Δ = {mean_diff:.3f} bits\np = {p_value:.4f}",
-                transform=ax.transAxes,
-                fontsize=14,
-                fontweight="bold",
-                verticalalignment="bottom",
-                horizontalalignment="right",
-                bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="black", linewidth=1.5),
+                1.5,
+                max_height * 0.5,
+                f"Δ = {mean_diff:.3f} bits",
+                ha="center",
+                va="center",
+                fontsize=11,
+                style="italic",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5),
             )
 
-    ax.set_ylabel("Density", fontsize=14)
-    ax.set_xlabel("Mutual information lower bound (bits)", fontsize=14)
-    ax.set_title("Variational Lower Bound: Code vs NL (Extended)", fontsize=15, fontweight="bold")
-    ax.legend(fontsize=12)
-    ax.grid(True, alpha=0.2)
-    ax.tick_params(labelsize=12)
+        ax.set_ylabel("MI Lower Bound (bits)", fontsize=12)
+        ax.set_xlabel("Representation", fontsize=12)
+        ax.set_title("Variational Lower Bound: Code vs NL (Extended)", fontsize=14, fontweight="bold")
+        ax.grid(True, alpha=0.2, axis="y")
 
-    plt.tight_layout()
-    plt.savefig(PLOTS_DIR / "kde_extended.png", dpi=150)
-    print(f"Saved KDE plot to {PLOTS_DIR / 'kde_extended.png'}")
-    plt.close()
+        plt.tight_layout()
+        plt.savefig(PLOTS_DIR / "boxplot_extended.png", dpi=150)
+        print(f"Saved boxplot to {PLOTS_DIR / 'boxplot_extended.png'}")
+        plt.close()
+
+        # Plot 2: KDE density plot
+        fig, ax = plt.subplots(figsize=(6, 2.5))
+        palette = sns.color_palette("Set2", n_colors=2)
+        colors = [palette[0], palette[1]]
+
+        if len(mi_code) > 1 and len(mi_nl) > 1:
+            kde_code = gaussian_kde(mi_code)
+            kde_nl = gaussian_kde(mi_nl)
+            x_range = np.linspace(min(mi_code.min(), mi_nl.min()) - 0.5, max(mi_code.max(), mi_nl.max()) + 0.5, 200)
+
+            ax.plot(x_range, kde_code(x_range), color=colors[0], linewidth=4, label="code", alpha=0.8)
+            ax.plot(x_range, kde_nl(x_range), color=colors[1], linewidth=4, label="nl", alpha=0.8)
+
+            ax.axvline(mi_code.mean(), color=colors[0], linestyle="--", linewidth=2.5, alpha=0.7)
+            ax.axvline(mi_nl.mean(), color=colors[1], linestyle="--", linewidth=2.5, alpha=0.7)
+
+            if p_value is not None:
+                ax.text(
+                    0.98,
+                    0.15,
+                    f"Δ = {mean_diff:.3f} bits\np = {p_value:.4f}",
+                    transform=ax.transAxes,
+                    fontsize=14,
+                    fontweight="bold",
+                    verticalalignment="bottom",
+                    horizontalalignment="right",
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="black", linewidth=1.5),
+                )
+
+        ax.set_ylabel("Density", fontsize=14)
+        ax.set_xlabel("Mutual information lower bound (bits)", fontsize=14)
+        ax.set_title("Variational Lower Bound: Code vs NL (Extended)", fontsize=15, fontweight="bold")
+        ax.legend(fontsize=12)
+        ax.grid(True, alpha=0.2)
+        ax.tick_params(labelsize=12)
+
+        plt.tight_layout()
+        plt.savefig(PLOTS_DIR / "kde_extended.png", dpi=150)
+        print(f"Saved KDE plot to {PLOTS_DIR / 'kde_extended.png'}")
+        plt.close()
+    else:
+        print("Skipping code vs NL plots - insufficient data")
 
     # Plot 3: MI vs Accuracy scatter
     clean_df = summary_corr_df.dropna(subset=["mutual_info_lower_bound_bits", "accuracy_performance"])
@@ -259,82 +264,186 @@ def main():
         plt.close()
 
     # Plot 4: Contrast plot with scattered x positions by group
-    paired_df = summary_corr_df.pivot_table(index=["model", "seed"], columns="rep", values="mutual_info_lower_bound_bits").reset_index()
-    paired_df = paired_df.dropna(subset=["code", "nl"])
-    paired_df["difference"] = paired_df["code"] - paired_df["nl"]
+    # Only generate if we have both code and nl columns
+    if len(mi_code) > 0 and len(mi_nl) > 0:
+        paired_df = summary_corr_df.pivot_table(index=["model", "seed"], columns="rep", values="mutual_info_lower_bound_bits").reset_index()
+        paired_df = paired_df.dropna(subset=["code", "nl"])
+        paired_df["difference"] = paired_df["code"] - paired_df["nl"]
 
-    if len(paired_df) >= 2:
-        fig, ax = plt.subplots(1, 1, figsize=(6, 4.5))
+        if len(paired_df) >= 2:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 4.5))
 
-        models = sorted(paired_df["model"].unique())
-        n_models = len(models)
-        palette_colors = sns.color_palette("Set2", n_colors=len(models))
-        color_map = {model: palette_colors[i] for i, model in enumerate(models)}
+            models = sorted(paired_df["model"].unique())
+            n_models = len(models)
+            palette_colors = sns.color_palette("Set2", n_colors=len(models))
+            color_map = {model: palette_colors[i] for i, model in enumerate(models)}
 
-        x_positions = []
-        y_values = []
-        colors = []
+            x_positions = []
+            y_values = []
+            colors = []
 
-        np.random.seed(42)
-        for i, (idx, row) in enumerate(paired_df.iterrows()):
-            model = row["model"]
-            model_idx = list(models).index(model)
-            jitter = np.random.uniform(-0.15, 0.15)
-            x_pos = model_idx + 1 + jitter
-            x_positions.append(x_pos)
-            y_values.append(row["difference"])
-            colors.append(color_map[model])
-
-        ax.scatter(x_positions, y_values, c=colors, alpha=0.8, s=100, edgecolors="black", linewidth=2.0, zorder=3)
-
-        mean_diff = paired_df["difference"].mean()
-        if len(paired_df) >= 3:
-            statistic, p_value = wilcoxon(paired_df["code"], paired_df["nl"], alternative="two-sided")
-
-        within_group_means = []
-        within_group_x = []
-        within_group_colors = []
-        for model in models:
-            model_data = paired_df[paired_df["model"] == model]["difference"]
-            if len(model_data) > 0:
-                within_group_means.append(model_data.mean())
+            np.random.seed(42)
+            for i, (idx, row) in enumerate(paired_df.iterrows()):
+                model = row["model"]
                 model_idx = list(models).index(model)
-                within_group_x.append(model_idx + 1)
-                within_group_colors.append(color_map[model])
+                jitter = np.random.uniform(-0.15, 0.15)
+                x_pos = model_idx + 1 + jitter
+                x_positions.append(x_pos)
+                y_values.append(row["difference"])
+                colors.append(color_map[model])
 
-        ax.scatter(
-            within_group_x,
-            within_group_means,
-            marker="^",
-            s=200,
-            c=within_group_colors,
-            edgecolors="black",
-            linewidth=3.0,
-            zorder=5,
-            label="Within-group mean",
-        )
+            ax.scatter(x_positions, y_values, c=colors, alpha=0.8, s=100, edgecolors="black", linewidth=2.0, zorder=3)
 
-        ax.axhline(0, color="black", linestyle="-", linewidth=4.5, alpha=0.9, label="Zero difference", zorder=2)
-        mean_line = ax.axhline(
-            mean_diff, color=sns.color_palette("dark")[2], linestyle="--", linewidth=4.5, alpha=1.0, label=f"Overall mean={mean_diff:.3f}", zorder=2
-        )
+            mean_diff = paired_df["difference"].mean()
+            if len(paired_df) >= 3:
+                statistic, p_value = wilcoxon(paired_df["code"], paired_df["nl"], alternative="two-sided")
 
-        ax.set_xticks(range(1, n_models + 1))
-        ax.set_xticklabels(models, rotation=45, ha="right", fontsize=9)
-        ax.set_xlabel("Model", fontsize=11, fontweight="bold")
-        ax.set_ylabel("Contrast (Code - NL) in bits", fontsize=11, fontweight="bold")
-        ax.set_title("Variational Lower Bound Contrasts (Extended)", fontsize=12, fontweight="bold")
-        ax.grid(True, alpha=0.3, axis="y", linewidth=1.0)
-        ax.set_ylim(-0.05, None)
+            within_group_means = []
+            within_group_x = []
+            within_group_colors = []
+            for model in models:
+                model_data = paired_df[paired_df["model"] == model]["difference"]
+                if len(model_data) > 0:
+                    within_group_means.append(model_data.mean())
+                    model_idx = list(models).index(model)
+                    within_group_x.append(model_idx + 1)
+                    within_group_colors.append(color_map[model])
 
-        legend_elements = [Patch(facecolor=color_map[model], label=model, edgecolor="black", linewidth=1.5) for model in models]
-        triangle_legend = Line2D([0], [0], marker="^", color="black", linestyle="None", markersize=10, markeredgewidth=2.5, label="Within-group mean")
-        ax.legend(handles=legend_elements + [triangle_legend, mean_line], loc="upper right", fontsize=6, frameon=True, framealpha=0.95)
+            ax.scatter(
+                within_group_x,
+                within_group_means,
+                marker="^",
+                s=200,
+                c=within_group_colors,
+                edgecolors="black",
+                linewidth=3.0,
+                zorder=5,
+                label="Within-group mean",
+            )
 
-        plt.subplots_adjust(right=0.97, left=0.15, top=0.94, bottom=0.25)
-        plt.savefig(PLOTS_DIR / "contrast_extended.png", dpi=150)
-        print(f"Saved contrast plot to {PLOTS_DIR / 'contrast_extended.png'}")
+            ax.axhline(0, color="black", linestyle="-", linewidth=4.5, alpha=0.9, label="Zero difference", zorder=2)
+            mean_line = ax.axhline(
+                mean_diff, color=sns.color_palette("dark")[2], linestyle="--", linewidth=4.5, alpha=1.0, label=f"Overall mean={mean_diff:.3f}", zorder=2
+            )
+
+            ax.set_xticks(range(1, n_models + 1))
+            ax.set_xticklabels(models, rotation=45, ha="right", fontsize=9)
+            ax.set_xlabel("Model", fontsize=11, fontweight="bold")
+            ax.set_ylabel("Contrast (Code - NL) in bits", fontsize=11, fontweight="bold")
+            ax.set_title("Variational Lower Bound Contrasts (Extended)", fontsize=12, fontweight="bold")
+            ax.grid(True, alpha=0.3, axis="y", linewidth=1.0)
+            ax.set_ylim(-0.05, None)
+
+            legend_elements = [Patch(facecolor=color_map[model], label=model, edgecolor="black", linewidth=1.5) for model in models]
+            triangle_legend = Line2D([0], [0], marker="^", color="black", linestyle="None", markersize=10, markeredgewidth=2.5, label="Within-group mean")
+            ax.legend(handles=legend_elements + [triangle_legend, mean_line], loc="upper right", fontsize=6, frameon=True, framealpha=0.95)
+
+            plt.subplots_adjust(right=0.97, left=0.15, top=0.94, bottom=0.25)
+            plt.savefig(PLOTS_DIR / "contrast_extended.png", dpi=150)
+            print(f"Saved contrast plot to {PLOTS_DIR / 'contrast_extended.png'}")
+            plt.close()
+
+    # =========================================================================
+    # sim_reasoning vs NL Comparison Plots (2-way)
+    # =========================================================================
+    mi_sim = summary_corr_df[summary_corr_df["rep"] == "sim_reasoning"]["mutual_info_lower_bound_bits"].dropna()
+
+    if len(mi_sim) > 0 and len(mi_nl) > 0:
+        print("\n=== sim_reasoning vs NL Comparison ===")
+        print(f"sim_reasoning samples: {len(mi_sim)}, NL samples: {len(mi_nl)}")
+
+        # Plot: Boxplot - sim_reasoning vs NL
+        fig, ax = plt.subplots(figsize=(6, 6))
+        palette = sns.color_palette("Set2", n_colors=3)
+        colors_sim_nl = [palette[2], palette[1]]  # Different color for sim_reasoning
+
+        bp = ax.boxplot([mi_sim, mi_nl], tick_labels=["sim_reasoning", "nl"], patch_artist=True, widths=0.6)
+        bp["boxes"][0].set_facecolor(colors_sim_nl[0])
+        bp["boxes"][0].set_alpha(0.7)
+        bp["boxes"][1].set_facecolor(colors_sim_nl[1])
+        bp["boxes"][1].set_alpha(0.7)
+
+        mi_sim_mean = mi_sim.mean()
+        mi_nl_mean = mi_nl.mean()
+        mean_diff_sim_nl = mi_sim_mean - mi_nl_mean
+
+        # Paired test for sim_reasoning vs nl
+        paired_sim_nl = summary_corr_df.pivot_table(
+            index=["model", "seed"], columns="rep", values="mutual_info_lower_bound_bits"
+        ).dropna(subset=["sim_reasoning", "nl"])
+
+        p_value_sim_nl = None
+        if len(paired_sim_nl) >= 3:
+            statistic, p_value_sim_nl = wilcoxon(paired_sim_nl["sim_reasoning"], paired_sim_nl["nl"], alternative="two-sided")
+            max_height = max(mi_sim.max(), mi_nl.max())
+            y_pval = max_height + 0.1 * max_height
+            ax.plot([1, 1, 2, 2], [max_height + 0.05 * max_height, y_pval, y_pval, max_height + 0.05 * max_height], color="steelblue", linewidth=1.5)
+            ax.text(1.5, y_pval + 0.02 * max_height, f"p={p_value_sim_nl:.4f}", ha="center", va="bottom", fontsize=12, fontweight="bold", color="steelblue")
+            ax.text(
+                1.5,
+                max_height * 0.5,
+                f"Δ = {mean_diff_sim_nl:.3f} bits",
+                ha="center",
+                va="center",
+                fontsize=11,
+                style="italic",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5),
+            )
+            print(f"Wilcoxon test: p={p_value_sim_nl:.4f}, Δ={mean_diff_sim_nl:.3f} bits")
+
+        ax.set_ylabel("MI Lower Bound (bits)", fontsize=12)
+        ax.set_xlabel("Representation", fontsize=12)
+        ax.set_title("Variational Lower Bound: sim_reasoning vs NL", fontsize=14, fontweight="bold")
+        ax.grid(True, alpha=0.2, axis="y")
+
+        plt.tight_layout()
+        plt.savefig(PLOTS_DIR / "boxplot_sim_vs_nl.png", dpi=150)
+        print(f"Saved boxplot to {PLOTS_DIR / 'boxplot_sim_vs_nl.png'}")
         plt.close()
+
+        # Plot: KDE - sim_reasoning vs NL
+        fig, ax = plt.subplots(figsize=(6, 2.5))
+
+        if len(mi_sim) > 1 and len(mi_nl) > 1:
+            kde_sim = gaussian_kde(mi_sim)
+            kde_nl = gaussian_kde(mi_nl)
+            x_range = np.linspace(min(mi_sim.min(), mi_nl.min()) - 0.5, max(mi_sim.max(), mi_nl.max()) + 0.5, 200)
+
+            ax.plot(x_range, kde_sim(x_range), color=colors_sim_nl[0], linewidth=4, label="sim_reasoning", alpha=0.8)
+            ax.plot(x_range, kde_nl(x_range), color=colors_sim_nl[1], linewidth=4, label="nl", alpha=0.8)
+
+            ax.axvline(mi_sim.mean(), color=colors_sim_nl[0], linestyle="--", linewidth=2.5, alpha=0.7)
+            ax.axvline(mi_nl.mean(), color=colors_sim_nl[1], linestyle="--", linewidth=2.5, alpha=0.7)
+
+            if p_value_sim_nl is not None:
+                ax.text(
+                    0.98,
+                    0.15,
+                    f"Δ = {mean_diff_sim_nl:.3f} bits\np = {p_value_sim_nl:.4f}",
+                    transform=ax.transAxes,
+                    fontsize=14,
+                    fontweight="bold",
+                    verticalalignment="bottom",
+                    horizontalalignment="right",
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.9, edgecolor="black", linewidth=1.5),
+                )
+
+        ax.set_ylabel("Density", fontsize=14)
+        ax.set_xlabel("Mutual information lower bound (bits)", fontsize=14)
+        ax.set_title("Variational Lower Bound: sim_reasoning vs NL", fontsize=15, fontweight="bold")
+        ax.legend(fontsize=12)
+        ax.grid(True, alpha=0.2)
+        ax.tick_params(labelsize=12)
+
+        plt.tight_layout()
+        plt.savefig(PLOTS_DIR / "kde_sim_vs_nl.png", dpi=150)
+        print(f"Saved KDE plot to {PLOTS_DIR / 'kde_sim_vs_nl.png'}")
+        plt.close()
+
+    else:
+        print("\n=== sim_reasoning vs NL Comparison ===")
+        print("Skipping sim_reasoning vs NL plots - insufficient data")
+        print(f"sim_reasoning samples: {len(mi_sim)}, NL samples: {len(mi_nl)}")
 
     # =========================================================================
     # Label Distribution Plots

@@ -188,6 +188,7 @@ class Arm2(BaseArm):
         q.record.answer = str(q.answer)
         q.code = p[0].code
         q.record.sim_code = q.code
+        q.record.sim_reasoning = getattr(p[0], "simulation", "")
         q.record.kind = q.kind
         q.record.digit = q.digits
         q.record.model = self.default_args.model

@@ -52,6 +52,37 @@
 
 ---
 
+## Session: 2026-01-14 - Algorithm Name Filtering
+
+### Activity Log
+
+**Started:** Algorithm name filtering implementation
+
+- Implemented `filter_algorithm_names()` function in `data_utils.py`
+- Added `--no-filter-algo-names` CLI flag in `config.py`
+- Filtering applies to both NL and code arms
+- Removed comments from code files
+- All 69 tests passed
+
+### Comparison Experiments Completed (09:18-09:26)
+
+Ran 4 experiments comparing WITH vs WITHOUT filtering:
+- Model: llama-3.1-405b-instruct
+- Label: theta_new (79 classes for code, 36 for NL)
+- Kinds: fg preset (9 kinds)
+
+**Results:**
+| Arm | Filter | MI ≥ (bits) | Accuracy |
+|-----|--------|-------------|----------|
+| Code | ON | 3.3420 | 46.88% |
+| Code | OFF | 3.3383 | 46.88% |
+| NL | ON | 2.5989 | 62.50% |
+| NL | OFF | 2.6286 | 62.50% |
+
+**Conclusion:** Algorithm name filtering has minimal impact (<0.05 bits). The MI signal comes from reasoning structure, not algorithm keywords.
+
+---
+
 ## Commands Reference
 
 ```bash
