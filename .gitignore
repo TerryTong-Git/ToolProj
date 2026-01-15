@@ -28,9 +28,9 @@ dmypy.json
 /src/exps_benchmarks/*
 /src/exps_logistic/results/*
 
-# Allow exps_performance/results to be tracked (validated experiment data)
-# but block other results directories
+# Allow exps_performance results to be tracked (validated experiment data)
 !/src/exps_performance/results/
+!/src/exps_performance/previous_results/
 
 # Project-specific scratch / temp
 /**/tmp/
