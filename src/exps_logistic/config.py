@@ -1,30 +1,23 @@
 #!/usr/bin/env python3
-"""Configuration and argument parsing for logistic regression experiments.
-
-This module defines the configuration for MI estimation experiments using
-multinomial logistic regression on CoT embeddings.
-"""
 
 import argparse
 from dataclasses import dataclass
 from typing import FrozenSet, List, Optional
 
-# Fine-grained problem kinds (custom examples only)
 FG_KINDS: FrozenSet[str] = frozenset(
     {
         "add",
         "sub",
-        "mul",  # Arithmetic
+        "mul",
         "lcs",
         "knap",
-        "rod",  # Dynamic programming
+        "rod",
         "ilp_assign",
         "ilp_prod",
-        "ilp_partition",  # Integer linear programming
+        "ilp_partition",
     }
 )
 
-# CLRS algorithmic reasoning benchmark (30 algorithms)
 CLRS_KINDS: FrozenSet[str] = frozenset(
     {
         "activity_selector",
@@ -60,185 +53,128 @@ CLRS_KINDS: FrozenSet[str] = frozenset(
     }
 )
 
-# NP-hard problem evaluation
 NPHARD_KINDS: FrozenSet[str] = frozenset(
     {
         "edp",
         "gcp",
+        "ilp_assign",
+        "ilp_partition",
+        "ilp_prod",
+        "knap",
         "ksp",
         "spp",
         "tsp",
     }
 )
 
-# Extended kinds: fine-grained + CLRS + NP-hard (excluding gsm8k)
+ARITHMETIC_KINDS: FrozenSet[str] = frozenset(
+    {
+        "add",
+        "sub",
+        "mul",
+    }
+)
+
+ILP_KINDS: FrozenSet[str] = frozenset(
+    {
+        "ilp_assign",
+        "ilp_partition",
+        "ilp_prod",
+    }
+)
+
 EXTENDED_KINDS: FrozenSet[str] = FG_KINDS | CLRS_KINDS | NPHARD_KINDS
 
-# Preset mappings for --kinds-preset argument
 KINDS_PRESETS: dict[str, FrozenSet[str]] = {
     "fg": FG_KINDS,
     "clrs": CLRS_KINDS,
     "nphard": NPHARD_KINDS,
     "extended": EXTENDED_KINDS,
+    "arithmetic": ARITHMETIC_KINDS,
+    "ilp": ILP_KINDS,
 }
 
 
 @dataclass
 class ExperimentConfig:
-    """Configuration for the logistic regression concept classification experiment."""
+    results_dir: Optional[str] = None
+    models: Optional[List[str]] = None
+    seeds: Optional[List[int]] = None
+    kinds: FrozenSet[str] = FG_KINDS
+    rep: str = "all"
 
-    # Data sources
-    results_dir: Optional[str] = None  # Directory containing JSONL result files
-    models: Optional[List[str]] = None  # Optional model name filter
-    seeds: Optional[List[int]] = None  # Optional seed filter
-    kinds: FrozenSet[str] = FG_KINDS  # Problem kinds to include (default: fine-grained only)
-    rep: str = "all"  # nl, code, or all
-
-    # Label configuration
-    label: str = "gamma"  # theta_new, gamma, or kind
+    label: str = "gamma"
     value_bins: int = 8
     test_size: float = 0.2
     seed: int = 0
     cv: int = 0
     enable_cv: bool = True
 
-    # Feature extraction
-    feats: str = "tfidf"  # tfidf, hf-cls, st, openai, openrouter
+    feats: str = "tfidf"
     embed_model: Optional[str] = None
-    pool: str = "mean"  # mean or cls
+    pool: str = "mean"
     device: Optional[str] = None
     batch: int = 128
     hf_batch: int = 16
     hf_dtype: str = "auto"
     hf_window_stride: int = 0
     strip_fences: bool = False
+    filter_algo_names: bool = True
+    filter_comments: bool = True
 
-    # Classifier
     C: float = 2.0
     max_iter: int = 400
     logreg_c_grid: tuple[float, ...] = (0.25, 0.5, 1.0, 2.0, 4.0)
     logreg_max_iter_grid: tuple[int, ...] = (100, 200, 400)
     logreg_cv_folds: int = 5
 
-    # Reporting
     bits: bool = False
-    save_preds: Optional[str] = None  # Path to save predictions JSON, None for auto-generated path
+    save_preds: Optional[str] = None
 
 
 def parse_args() -> ExperimentConfig:
-    """Parse command-line arguments and return an ExperimentConfig."""
-    p = argparse.ArgumentParser(description="CoT -> joint label classification with LM embeddings + multinomial logistic regression.")
+    p = argparse.ArgumentParser()
 
-    # Data sources
-    p.add_argument(
-        "--results-dir",
-        type=str,
-        required=True,
-        help="Directory containing JSONL result files (Record schema) to load via create_big_df.",
-    )
-    p.add_argument(
-        "--models",
-        type=str,
-        nargs="+",
-        default=None,
-        help="Optional list of model names to include (matches the `model` column).",
-    )
-    p.add_argument(
-        "--seeds",
-        type=int,
-        nargs="+",
-        default=None,
-        help="Optional list of seed values to include (matches the `seed` column).",
-    )
-    p.add_argument(
-        "--kinds",
-        type=str,
-        nargs="+",
-        default=None,
-        help="Optional list of problem kinds to include. Defaults to fine-grained only (add, sub, mul, lcs, knap, rod, ilp_*).",
-    )
-    p.add_argument(
-        "--kinds-preset",
-        type=str,
-        choices=list(KINDS_PRESETS.keys()),
-        default=None,
-        help="Use a preset kinds configuration: 'fg' (fine-grained only) or 'extended' (fg + clrs30 + nphardeval). Overridden by --kinds.",
-    )
-    p.add_argument("--rep", choices=["nl", "code", "all"], default="all")
+    p.add_argument("--results-dir", type=str, required=True)
+    p.add_argument("--models", type=str, nargs="+", default=None)
+    p.add_argument("--seeds", type=int, nargs="+", default=None)
+    p.add_argument("--kinds", type=str, nargs="+", default=None)
+    p.add_argument("--kinds-preset", type=str, choices=list(KINDS_PRESETS.keys()), default=None)
+    p.add_argument("--rep", choices=["nl", "code", "sim_reasoning", "all"], default="all")
 
-    # Label configuration
-    p.add_argument(
-        "--label",
-        choices=["theta_new", "gamma", "kind"],
-        default="gamma",
-        help="Classification target: θ_new=(kind,digits) or γ=(kind,digits,value-bin) or kind only.",
-    )
-    p.add_argument("--value-bins", type=int, default=8, help="Number of equal-width bins per operand for gamma.")
+    p.add_argument("--label", choices=["theta_new", "gamma", "kind"], default="gamma")
+    p.add_argument("--value-bins", type=int, default=8)
     p.add_argument("--test-size", type=float, default=0.2)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--cv", type=int, default=0, help="K-fold cross-validation (0 to disable)")
-    p.add_argument(
-        "--enable-cv",
-        dest="enable_cv",
-        action="store_true",
-        default=True,
-        help="Enable hyperparameter CV grid search (default: enabled).",
-    )
-    p.add_argument(
-        "--no-cv",
-        dest="enable_cv",
-        action="store_false",
-        help="Disable hyperparameter CV grid search and use provided C/max_iter.",
-    )
+    p.add_argument("--cv", type=int, default=0)
+    p.add_argument("--enable-cv", dest="enable_cv", action="store_true", default=True)
+    p.add_argument("--no-cv", dest="enable_cv", action="store_false")
 
-    # Feature extraction
     p.add_argument("--feats", choices=["tfidf", "hf-cls", "st", "openai", "openrouter"], default="tfidf")
-    p.add_argument("--embed-model", type=str, default=None, help="hf-cls: HF repo; st: ST repo; openai: embedding model.")
-    p.add_argument("--pool", choices=["mean", "cls"], default="mean", help="Pooling for hf-cls.")
-    p.add_argument("--device", type=str, default=None, help="Force device for hf-cls/st (e.g. cuda, cpu).")
-    p.add_argument("--batch", type=int, default=128, help="Batch size for OpenAI embeddings.")
-    p.add_argument("--hf-batch", type=int, default=16, help="Batch size for hf-cls encoder to reduce memory.")
-    p.add_argument(
-        "--hf-dtype",
-        type=str,
-        default="auto",
-        choices=["auto", "float32", "float16", "bfloat16"],
-        help="Torch dtype for hf-cls encoder to reduce memory.",
-    )
-    p.add_argument(
-        "--hf-window-stride",
-        type=int,
-        default=0,
-        help="Stride for sliding window over long sequences for hf-cls. 0 = truncate to max length (lowest memory).",
-    )
-    p.add_argument("--strip-fences", action="store_true", help="Strip ``` code fences before embedding.")
+    p.add_argument("--embed-model", type=str, default=None)
+    p.add_argument("--pool", choices=["mean", "cls"], default="mean")
+    p.add_argument("--device", type=str, default=None)
+    p.add_argument("--batch", type=int, default=128)
+    p.add_argument("--hf-batch", type=int, default=16)
+    p.add_argument("--hf-dtype", type=str, default="auto", choices=["auto", "float32", "float16", "bfloat16"])
+    p.add_argument("--hf-window-stride", type=int, default=0)
+    p.add_argument("--strip-fences", action="store_true")
+    p.add_argument("--filter-algo-names", dest="filter_algo_names", action="store_true", default=True)
+    p.add_argument("--no-filter-algo-names", dest="filter_algo_names", action="store_false")
+    p.add_argument("--filter-comments", dest="filter_comments", action="store_true", default=True)
+    p.add_argument("--no-filter-comments", dest="filter_comments", action="store_false")
 
-    # Classifier
-    p.add_argument("--C", type=float, default=2.0, help="Regularization strength")
+    p.add_argument("--C", type=float, default=2.0)
     p.add_argument("--max_iter", type=int, default=400)
-    p.add_argument(
-        "--logreg-c-grid",
-        type=float,
-        nargs="+",
-        default=[0.25, 0.5, 1.0, 2.0, 4.0],
-        help="Grid of C values for logistic regression CV.",
-    )
-    p.add_argument(
-        "--logreg-max-iter-grid",
-        type=int,
-        nargs="+",
-        default=[100, 200, 400],
-        help="Grid of max_iter values for logistic regression CV.",
-    )
-    p.add_argument("--logreg-cv-folds", type=int, default=5, help="CV folds for logistic regression hyperparameter search.")
+    p.add_argument("--logreg-c-grid", type=float, nargs="+", default=[0.25, 0.5, 1.0, 2.0, 4.0])
+    p.add_argument("--logreg-max-iter-grid", type=int, nargs="+", default=[100, 200, 400])
+    p.add_argument("--logreg-cv-folds", type=int, default=5)
 
-    # Reporting
-    p.add_argument("--bits", action="store_true", help="Report CE in bits and print MI lower bound.")
-    p.add_argument("--save-preds", type=str, default=None, help="Optional path to save test predictions JSON.")
+    p.add_argument("--bits", action="store_true")
+    p.add_argument("--save-preds", type=str, default=None)
 
     args = p.parse_args()
 
-    # Determine kinds: explicit --kinds overrides --kinds-preset, which overrides default
     if args.kinds:
         kinds = frozenset(args.kinds)
     elif args.kinds_preset:
@@ -267,6 +203,8 @@ def parse_args() -> ExperimentConfig:
         hf_dtype=args.hf_dtype,
         hf_window_stride=args.hf_window_stride,
         strip_fences=getattr(args, "strip_fences", False),
+        filter_algo_names=args.filter_algo_names,
+        filter_comments=args.filter_comments,
         C=args.C,
         max_iter=args.max_iter,
         logreg_c_grid=tuple(args.logreg_c_grid),

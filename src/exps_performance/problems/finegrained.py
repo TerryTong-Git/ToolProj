@@ -81,7 +81,7 @@ class FgCheckAndFormat(CheckAndFormat):
         a = sample_int(d, rng)
         b = sample_int(d, secondary_rng)
         question = f"Compute: {a} + {b}"
-        answer = int(float(a) + float(b))
+        answer = a + b  # Use integer arithmetic to avoid float precision loss
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
     def load_data(self) -> list[FgQuestion]:
@@ -110,7 +110,7 @@ class SubCheckAndFormat(FgCheckAndFormat):
         question = f"Compute: {a} - {b}"
         if b > a:
             a, b = b, a
-        answer = int(float(a) - float(b))
+        answer = a - b  # Use integer arithmetic to avoid float precision loss
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
 
@@ -123,7 +123,7 @@ class MulCheckAndFormat(FgCheckAndFormat):
         a = sample_int(d, rng)
         b = sample_int(d, secondary_rng)
         question = f"Compute: {a} * {b}"
-        answer = int(float(a) * float(b))
+        answer = a * b  # Use integer arithmetic to avoid float precision loss
         return FgQuestion(kind=self.k, digits=d, question=question, answer=str(answer))
 
 

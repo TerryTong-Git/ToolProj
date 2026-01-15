@@ -48,6 +48,7 @@ dependencies = [
     "torchvision==0.23.0",
     "torchaudio==2.8.0",
     "simple-parsing>=0.1.7",
+    "sentence-transformers>=3.0.0,<4",
 ]
 
 [build-system]
