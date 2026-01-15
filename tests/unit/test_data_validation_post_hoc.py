@@ -36,9 +36,8 @@ REQUIRED_FIELDS = {
 ARM_NAMES = ["nl", "code", "sim", "controlsim"]
 ARM_FIELDS = ["question", "answer", "correct", "parse_err"]
 
-# Minimum expected samples per result file (allow some variation for different experiment configs)
-MIN_EXPECTED_SAMPLES = 200
-MAX_EXPECTED_SAMPLES = 5000
+# Exact expected sample count (all files must have this exact count)
+EXPECTED_SAMPLE_COUNT = 1580
 
 
 def get_all_result_files() -> list[Path]:
@@ -103,27 +102,22 @@ class TestSampleCounts:
         for path, records in result_file_data.items():
             assert len(records) > 0, f"Empty result file: {path}"
 
-    def test_sample_counts_within_range(self, result_file_data: dict[Path, list[dict]]) -> None:
-        """Verify all result files have sample counts within expected range."""
+    def test_exact_sample_count(self, result_file_data: dict[Path, list[dict]]) -> None:
+        """Verify all result files have exactly the expected sample count."""
         for path, records in result_file_data.items():
             count = len(records)
-            assert MIN_EXPECTED_SAMPLES <= count <= MAX_EXPECTED_SAMPLES, (
+            assert count == EXPECTED_SAMPLE_COUNT, (
                 f"File {path.relative_to(RESULTS_DIR)} has {count} samples, "
-                f"expected between {MIN_EXPECTED_SAMPLES} and {MAX_EXPECTED_SAMPLES}"
+                f"expected exactly {EXPECTED_SAMPLE_COUNT}"
             )
 
-    def test_report_sample_count_distribution(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
-        """Report sample count distribution (informational, always passes)."""
+    def test_consistent_sample_counts(self, result_file_data: dict[Path, list[dict]]) -> None:
+        """Verify all result files have identical sample counts."""
         counts = {path: len(records) for path, records in result_file_data.items()}
-        count_groups: dict[int, list[Path]] = {}
-        for path, count in counts.items():
-            count_groups.setdefault(count, []).append(path)
-
-        print("\nSample count distribution:")
-        for count, paths in sorted(count_groups.items()):
-            print(f"  {count} samples: {len(paths)} files")
+        unique_counts = set(counts.values())
+        assert len(unique_counts) == 1, (
+            f"Inconsistent sample counts: {unique_counts}. All files must have the same count."
+        )
 
 
 class TestRequiredFields:
@@ -173,42 +167,80 @@ class TestNoBlankResults:
                     f"Blank kind field in {path.relative_to(RESULTS_DIR)} record {i}"
                 )
 
-    def test_blank_ground_truth_answer_rate(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
-        """Verify blank ground truth answer rate is below threshold."""
-        max_blank_rate = 0.35  # Allow up to 35% blank answers (CLRS problems may not have simple answers)
-        for path, records in result_file_data.items():
-            blank_count = sum(
-                1 for r in records
-                if r.get("answer") is None or str(r.get("answer", "")).strip() == ""
-            )
-            blank_rate = blank_count / len(records) if records else 0
-            assert blank_rate <= max_blank_rate, (
-                f"High blank answer rate in {path.relative_to(RESULTS_DIR)}: "
-                f"{blank_rate:.1%} ({blank_count}/{len(records)}) exceeds {max_blank_rate:.0%}"
-            )
+    # NP-hard kinds that have blank answers at digit=0 by design
+    # (graph/combinatorial problems with 0 nodes have no meaningful answers)
+    NP_HARD_KINDS = {"spp", "tsp", "tsp_d", "msp", "ksp", "gcp", "gcp_d", "bsp", "edp"}
 
-    def test_blank_questions_rate_aggregated(
+    def test_no_blank_ground_truth_answers(
         self, result_file_data: dict[Path, list[dict]]
     ) -> None:
-        """Verify at least one arm has questions populated for most records."""
-        min_populated_rate = 0.5  # At least 50% of records should have some question
+        """Verify no blank ground truth answers - all must be populated.
+
+        Note: NP-hard kinds at digit=0 are intentionally blank by design
+        (graph/combinatorial problems with 0 nodes have no meaningful answers).
+        These are excluded from the check.
+        """
         for path, records in result_file_data.items():
-            populated_count = 0
-            for r in records:
-                # Check if at least one arm has a question
-                has_question = any(
-                    r.get(f"{arm}_question") and str(r.get(f"{arm}_question", "")).strip()
-                    for arm in ARM_NAMES
+            for i, record in enumerate(records):
+                # Skip NP-hard kinds at digit=0 (intentionally blank by design)
+                if record.get("kind") in self.NP_HARD_KINDS and record.get("digit") == 0:
+                    continue
+                answer = record.get("answer")
+                assert answer is not None and str(answer).strip() != "", (
+                    f"Blank ground truth answer in {path.relative_to(RESULTS_DIR)} "
+                    f"record {i} (kind={record.get('kind')}, digit={record.get('digit')})"
                 )
-                if has_question:
-                    populated_count += 1
-            populated_rate = populated_count / len(records) if records else 0
-            assert populated_rate >= min_populated_rate, (
-                f"Low question population in {path.relative_to(RESULTS_DIR)}: "
-                f"only {populated_rate:.1%} of records have any questions"
-            )
+
+    def test_all_questions_populated(
+        self, result_file_data: dict[Path, list[dict]]
+    ) -> None:
+        """Verify arm questions have acceptable population rates.
+
+        - nl_question and sim_question: 100% population required
+        - code_question and controlsim_question: Max 15% blank allowed
+          (blanks occur due to model generation/parsing failures)
+        """
+        # Arms with 100% required vs arms with tolerance for generation failures
+        strict_arms = {"nl", "sim"}
+        tolerant_arms = {"code", "controlsim"}
+        max_blank_rate = 0.15  # 15% max blank rate for tolerant arms
+
+        for path, records in result_file_data.items():
+            # Check strict arms (100% required)
+            for arm in strict_arms:
+                question_field = f"{arm}_question"
+                for i, record in enumerate(records):
+                    question = record.get(question_field)
+                    assert question and str(question).strip(), (
+                        f"Blank {question_field} in {path.relative_to(RESULTS_DIR)} "
+                        f"record {i} (kind={record.get('kind')}, digit={record.get('digit')})"
+                    )
+
+            # Check tolerant arms (max blank rate)
+            for arm in tolerant_arms:
+                question_field = f"{arm}_question"
+                blank_count = sum(
+                    1 for r in records
+                    if not r.get(question_field) or str(r.get(question_field)).strip() == ""
+                )
+                blank_rate = blank_count / len(records)
+                assert blank_rate <= max_blank_rate, (
+                    f"{question_field} in {path.relative_to(RESULTS_DIR)} "
+                    f"has {blank_rate:.1%} blank rate (max allowed: {max_blank_rate:.0%})"
+                )
+
+    def test_all_answers_populated(
+        self, result_file_data: dict[Path, list[dict]]
+    ) -> None:
+        """Verify all arm answers are populated (may be empty string for parse errors, but field must exist)."""
+        for path, records in result_file_data.items():
+            for i, record in enumerate(records):
+                for arm in ARM_NAMES:
+                    answer_field = f"{arm}_answer"
+                    assert answer_field in record, (
+                        f"Missing {answer_field} in {path.relative_to(RESULTS_DIR)} "
+                        f"record {i} (kind={record.get('kind')}, digit={record.get('digit')})"
+                    )
 
 
 class TestDataTypes:
@@ -343,7 +375,7 @@ class TestParseErrorRates:
 class TestKindCoverage:
     """Tests for verifying problem kinds are valid and covered."""
 
-    # All valid kinds that can appear in results
+    # All valid kinds that can appear in results (current experiment config only)
     VALID_KINDS = {
         # Fine-grained arithmetic
         "add", "sub", "mul",
@@ -360,10 +392,10 @@ class TestKindCoverage:
         "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
         "quickselect", "quicksort", "segments_intersect",
         "strongly_connected_components", "task_scheduling", "topological_sort",
-        # NP-hard
-        "edp", "gcp", "ksp", "spp", "tsp",
-        # Legacy/older experiment kinds (from earlier runs)
-        "msp", "bsp", "gsm8k", "gcp_d", "tsp_d",
+        # NP-hard (base and decision variants)
+        "edp", "gcp", "gcp_d", "ksp", "spp", "tsp", "tsp_d",
+        # NP-hard additional variants
+        "msp", "bsp",
     }
 
     def test_all_kinds_are_valid(self, result_file_data: dict[Path, list[dict]]) -> None:
