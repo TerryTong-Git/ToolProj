@@ -17,16 +17,16 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${REPO_ROOT}/src/models/}"
 
 SEEDS=(0 1 2)
 MODELS=( #7B Models
-# anthropic/claude-haiku-4.5
-# qwen/qwen-2.5-coder-32b-instruct
-# mistralai/ministral-14b-2512
-# meta-llama/llama-3.1-405b-instruct
-# openai/gpt-4o-mini
-# google/gemini-2.5-flash
-# mistralai/codestral-2508 
-# mistralai/mistral-large-2411 
-# google/gemini-2.0-flash-001 
-# mistralai/mixtral-8x22b-instruct
+anthropic/claude-haiku-4.5
+qwen/qwen-2.5-coder-32b-instruct
+mistralai/ministral-14b-2512
+meta-llama/llama-3.1-405b-instruct
+openai/gpt-4o-mini
+google/gemini-2.5-flash
+mistralai/codestral-2508 
+mistralai/mistral-large-2411 
+google/gemini-2.0-flash-001 
+mistralai/mixtral-8x22b-instruct
 
 allenai/olmo-2-0325-32b-instruct
 anthropic/claude-opus-4
