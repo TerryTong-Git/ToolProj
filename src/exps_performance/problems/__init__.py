@@ -16,7 +16,7 @@ from src.exps_performance.utils import remove_json_backticks, remove_python_trip
 
 class CheckAndFormat(ABC):
     def __init__(self, prob_type: str, func_typing: str, desc: str, answerClass: BaseModel) -> None:
-        available = ["code", "nl", "sim"]
+        available = ["code", "nl", "sim", "nlcode"]
         PROB_TYPES = {name: classes for name, classes in zip(available, get_prompt_classes(answerClass, func_typing))}
         PROMPTS = {name: classes for name, classes in zip(available, get_prompts(desc))}
         self.PROB_TYPES = PROB_TYPES
@@ -171,16 +171,32 @@ def solution():
 
 FORMATTING = "FOLLOW THE FORMAT CAREFULLY. Here are the format instructions: {format_instructions}"
 NL_INSTRUCT = "YOU ARE NEVER ALLOWED TO USE CODE."
+CODE_INSTRUCT = "YOU MAY USE CODE TO HELP SOLVE THIS PROBLEM. Include your code in the 'code' field."
 SIM_TEMPLATE = "Simulate the execution of the provided code: {code} \n. ALL NECESSARY INFORMATION IS IN THE CODE PROVIDED " + FORMATTING
 
 
-def get_prompts(desc: str) -> Tuple[str, str, str]:
+def get_prompts(desc: str) -> Tuple[str, str, str, str]:
+    """Return prompts for code, nl, sim, and nlcode arms.
+
+    Returns:
+        Tuple of (code_prompt, nl_prompt, sim_template, nlcode_prompt)
+        - code_prompt: standard code generation prompt
+        - nl_prompt: NL-only reasoning (no code allowed)
+        - sim_template: code simulation template
+        - nlcode_prompt: NL reasoning WITH code generation (symmetric to nl_prompt)
+    """
     Prompts = desc + FORMATTING
     Prompts_nl = desc + NL_INSTRUCT + FORMATTING
-    return Prompts, Prompts_nl, SIM_TEMPLATE
+    Prompts_nlcode = desc + CODE_INSTRUCT + FORMATTING
+    return Prompts, Prompts_nl, SIM_TEMPLATE, Prompts_nlcode
 
 
-def get_prompt_classes(SpecificModel: BaseModel, func_typing: str) -> Tuple[Type[BaseModel], Type[BaseModel], Type[BaseModel]]:
+def get_prompt_classes(SpecificModel: BaseModel, func_typing: str) -> Tuple[Type[BaseModel], Type[BaseModel], Type[BaseModel], Type[BaseModel]]:
+    """Return response classes for code, nl, sim, and nlcode arms.
+
+    Returns:
+        Tuple of (CodeReasoning, NLReasoning, ControlledCodeSim, NLWithCodeReasoning)
+    """
     class CodeReasoning(SpecificModel):
         code: str = Field(
             description=DEFAULT_CODE_INSTR + f"Here are the required types: def solution() -> {func_typing}",
@@ -200,4 +216,15 @@ def get_prompt_classes(SpecificModel: BaseModel, func_typing: str) -> Tuple[Type
             default="",
         )
 
-    return CodeReasoning, NLReasoning, ControlledCodeSim
+    class NLWithCodeReasoning(SpecificModel):
+        """NL reasoning arm that ALLOWS code generation (symmetric to NLReasoning but with code enabled)."""
+        code: str = Field(
+            description=DEFAULT_CODE_INSTR + f"Here are the required types: def solution() -> {func_typing}",
+            default="",
+        )
+        simulation: str = Field(
+            description="The attempt at simulating the problem in natural language reasoning to give the final answer. You may use code to assist your reasoning.",
+            default="",
+        )
+
+    return CodeReasoning, NLReasoning, ControlledCodeSim, NLWithCodeReasoning

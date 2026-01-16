@@ -277,3 +277,24 @@ class Arm4(BaseArm):
 class Arm1(BaseArm):
     run_type: str = "nl"
     set_name: str = "nl"
+
+
+class Arm5(BaseArm):
+    """NL reasoning WITH code generation enabled (symmetric to Arm1/NL but allows code).
+
+    This arm uses the same prompt structure as NL, but with CODE_INSTRUCT instead of NL_INSTRUCT.
+    The key difference is:
+    - Arm1 (NL): "YOU ARE NEVER ALLOWED TO USE CODE."
+    - Arm5 (NLCode): "YOU MAY USE CODE TO HELP SOLVE THIS PROBLEM."
+
+    This creates a controlled experiment where NL and NLCode are symmetric
+    up to the code generation instruction.
+    """
+    run_type: str = "nlcode"
+    set_name: str = "nlcode"
+
+    def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
+        # Store the generated code (similar to Arm2)
+        q.record.nlcode_code = getattr(p[0], "code", "")
+        q = super().each_record(q, a, p, e, s)
+        return q
