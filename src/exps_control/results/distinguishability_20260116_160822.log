@@ -1,0 +1,9 @@
+[16:08:22] Starting experiment with 1000 samples
+[16:08:22] Translator: openai/gpt-5.2
+[16:08:22] Judge: google/gemini-2.5-pro-preview-06-05
+[16:08:22] 
+[16:08:22] ============================================================
+[16:08:22] PHASE 1: Translating code to NL
+[16:08:22] ============================================================
+[16:11:12]   25/1000 translated...
+[16:13:43]   Warning: Translation failed for sample 39 (ilp_prod): The read operation timed out

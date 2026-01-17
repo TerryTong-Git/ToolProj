@@ -1,0 +1,25 @@
+[16:39:01] Starting experiment with 10 samples
+[16:39:01] Translator: openai/gpt-5.2
+[16:39:01] Judge: google/gemini-2.5-pro-preview-06-05
+[16:39:01] 
+[16:39:01] PHASE 1: Translating code to NL
+[16:39:27] Done! 10/10 translated (0 failed)
+[16:39:27] 
+[16:39:27] PHASE 2: Judging distinguishability (label-agnostic)
+[16:40:10] Done!
+[16:40:10] 
+
+============================================================
+FINAL RESULTS (Label-Agnostic)
+============================================================
+Samples: 10
+  SAME: 0 | DIFFERENT: 10 | Invalid: 0
+
+Distinguishability Rate: 100.0%
+Indistinguishability Rate: 0.0%
+95% CI for dist rate: [100.0%, 100.0%]
+
+POOR - Translations are frequently distinguishable
+
+By problem kind (% distinguishable):
+  add: 100%
