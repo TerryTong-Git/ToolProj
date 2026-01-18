@@ -1,11 +1,11 @@
 #!/bin/bash
 # Script to run missing model/seed combinations for exps_performance
-# Generated: 2026-01-17
+# Updated: 2026-01-17
 #
 # Target: Each model should have 3 seeds (0, 1, 2)
 #
-# Missing experiments (18 total):
-#   - anthropic/claude-haiku-4.5: seeds 1, 2
+# Missing experiments (17 total):
+#   - anthropic/claude-haiku-4.5: seed 2
 #   - anthropic/claude-opus-4: seeds 1, 2
 #   - anthropic/claude-sonnet-4: seeds 0, 1, 2
 #   - deepseek/deepseek-chat-v3-0324: seeds 0, 1, 2
@@ -36,7 +36,7 @@ COMMON_ARGS="--root src/exps_performance/ \
   --n 60 --digits 2 4 6 8 10 12 14 16 18 20 \
   --kinds spp bsp edp gcp gcp_d tsp tsp_d ksp msp clrs30 add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
   --temperature 0.1 --top_p 0.90 \
-  --exec_code --batch_size 256 --checkpoint_every 256 --controlled_sim --resume --exec_workers 4"
+  --exec_code --batch_size 64 --checkpoint_every 64 --controlled_sim --resume --exec_workers 4"
 
 run_experiment() {
     local model=$1
@@ -51,7 +51,6 @@ run_experiment() {
 }
 
 # Claude models
-run_experiment "anthropic/claude-haiku-4.5" 1
 run_experiment "anthropic/claude-haiku-4.5" 2
 
 run_experiment "anthropic/claude-opus-4" 1
@@ -85,5 +84,5 @@ run_experiment "mistralai/ministral-14b-2512" 2
 run_experiment "qwen/qwen-2.5-coder-32b-instruct" 0
 
 echo "========================================"
-echo "All 18 experiments complete!"
+echo "All 17 experiments complete!"
 echo "========================================"

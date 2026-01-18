@@ -49,6 +49,7 @@ dependencies = [
     "torchaudio==2.8.0",
     "simple-parsing>=0.1.7",
     "sentence-transformers>=3.0.0,<4",
+    "anthropic>=0.76.0",
 ]
 
 [build-system]

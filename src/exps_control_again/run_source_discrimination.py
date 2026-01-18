@@ -47,10 +47,15 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 CLASSIFIER_PROMPT_PATH = PROMPTS_DIR / "source_classifier.md"
 TRANSLATOR_PROMPT_PATH = Path(__file__).parent / "prompts" / "translator_native_10shot.md"
 
-# Models
-TRANSLATOR_MODEL = "openai/gpt-4o"
-JUDGE_MODEL = "google/gemini-2.5-pro-preview-06-05"
+# Models (defaults, can be overridden via CLI)
+DEFAULT_TRANSLATOR_MODEL = "openai/gpt-4o"
+DEFAULT_JUDGE_MODEL = "google/gemini-2.5-pro-preview-06-05"
 BASE_URL = "https://openrouter.ai/api/v1"
+
+# Global model settings (set by main())
+TRANSLATOR_MODEL = DEFAULT_TRANSLATOR_MODEL
+JUDGE_MODEL = DEFAULT_JUDGE_MODEL
+REASONING_EFFORT = None  # None, "low", "medium", "high"
 
 
 @dataclass
@@ -189,8 +194,15 @@ async def call_llm_async(
     messages: list[dict],
     max_tokens: int = 500,
     temperature: float = 0.7,
+    reasoning_effort: Optional[str] = None,
 ) -> str:
-    """Call an LLM via OpenRouter."""
+    """Call an LLM via OpenRouter.
+
+    Args:
+        reasoning_effort: Optional reasoning effort level ("low", "medium", "high").
+            Only applies to models that support it (e.g., Claude with extended thinking,
+            OpenAI o-series models).
+    """
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -201,8 +213,22 @@ async def call_llm_async(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
+
+    # Add reasoning effort if specified (OpenRouter unified reasoning parameter)
+    # See: https://openrouter.ai/docs/guides/best-practices/reasoning-tokens
+    if reasoning_effort:
+        payload["reasoning"] = {
+            "effort": reasoning_effort,
+        }
+
     resp = await client.post(f"{BASE_URL}/chat/completions", headers=headers, json=payload)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        error_detail = resp.text[:500] if resp.text else "No error details"
+        raise httpx.HTTPStatusError(
+            f"{resp.status_code}: {error_detail}",
+            request=resp.request,
+            response=resp
+        )
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
@@ -238,7 +264,8 @@ async def classify_source_async(
     response = await call_llm_async(
         client, api_key, JUDGE_MODEL,
         [{"role": "user", "content": prompt}],
-        max_tokens=400, temperature=0.1
+        max_tokens=400, temperature=0.1,
+        reasoning_effort=REASONING_EFFORT,
     )
 
     # Parse response
@@ -607,6 +634,8 @@ def save_results(
 
 
 def main():
+    global TRANSLATOR_MODEL, JUDGE_MODEL, REASONING_EFFORT
+
     parser = argparse.ArgumentParser(description="Source Discrimination Test")
     parser.add_argument("--n_samples", type=int, default=100, help="Number of samples (each gives 2 trials)")
     parser.add_argument("--kinds", type=str, default=None, help="Comma-separated kinds to include")
@@ -614,7 +643,18 @@ def main():
     parser.add_argument("--concurrency", type=int, default=32, help="Concurrent requests")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--output", type=str, default=None, help="Output file path")
+    parser.add_argument("--translator_model", type=str, default=DEFAULT_TRANSLATOR_MODEL,
+                        help=f"Translator model (default: {DEFAULT_TRANSLATOR_MODEL})")
+    parser.add_argument("--judge_model", type=str, default=DEFAULT_JUDGE_MODEL,
+                        help=f"Judge/discriminator model (default: {DEFAULT_JUDGE_MODEL})")
+    parser.add_argument("--reasoning_effort", type=str, default=None, choices=["low", "medium", "high"],
+                        help="Reasoning effort for judge model (low/medium/high)")
     args = parser.parse_args()
+
+    # Set global model configuration
+    TRANSLATOR_MODEL = args.translator_model
+    JUDGE_MODEL = args.judge_model
+    REASONING_EFFORT = args.reasoning_effort
 
     kind_filter = set(args.kinds.split(",")) if args.kinds else None
     random.seed(args.seed)
@@ -635,6 +675,9 @@ def main():
     print(f"Samples: {args.n_samples} (→ {args.n_samples * 2} trials)")
     print(f"Translator: {TRANSLATOR_MODEL}")
     print(f"Judge: {JUDGE_MODEL}")
+    if REASONING_EFFORT:
+        print(f"Reasoning effort: {REASONING_EFFORT}")
+    print(f"Concurrency: {args.concurrency}")
 
     # Load prompts
     translator_prompt = load_translator_prompt()
