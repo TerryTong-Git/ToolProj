@@ -32,7 +32,7 @@ from typing import Any, List, Optional, cast
 
 from simple_parsing import parse
 
-from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, Arm5, BaseArm
+from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, BaseArm
 from src.exps_performance.dataset import make_dataset
 from src.exps_performance.llm import llm
 from src.exps_performance.logger import (
@@ -164,8 +164,6 @@ def _stage_complete(stage_name: str, rec: Any) -> bool:
         )
     if stage_name == "Arm1":  # natural language reasoning
         return bool(rec.nl_question) and (bool(rec.nl_answer) or bool(rec.nl_err_msg) or bool(rec.nl_parse_err) or bool(rec.nl_correct))
-    if stage_name == "Arm5":  # NL with code generation (symmetric experiment)
-        return bool(rec.nlcode_question) and (bool(rec.nlcode_answer) or bool(rec.nlcode_err_msg) or bool(rec.nlcode_parse_err) or bool(rec.nlcode_correct))
     return True
 
 
@@ -253,11 +251,8 @@ def run(args: Any) -> None:
     def _done_nl(rec: Any) -> bool:
         return bool(rec.nl_question) or bool(rec.nl_answer) or bool(rec.nl_parse_err) or bool(rec.nl_err_msg)
 
-    def _done_nlcode(rec: Any) -> bool:
-        return bool(rec.nlcode_question) or bool(rec.nlcode_answer) or bool(rec.nlcode_parse_err) or bool(rec.nlcode_err_msg)
-
     def _fully_done(rec: Any) -> bool:
-        return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec) and _done_nlcode(rec)
+        return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
 
     # Populate identifiers and restore from checkpoint using stable per-kind indexing (digit, original_pos)
     data, dropped_by_kind, restored_by_kind, debug_assigned = assign_sequential_indices(
@@ -324,16 +319,6 @@ def run(args: Any) -> None:
     updated_arm1 = run_stage_batch(arm1_pending, Arm1, "Arm1", args, client, checkpoint)
     if updated_arm1:
         updated_map = {q.record.request_id: q for q in updated_arm1}
-        for i, q in enumerate(data):
-            if q.record.request_id in updated_map:
-                data[i] = updated_map[q.record.request_id]
-
-    # Arm5 (nlcode) - NL with code generation enabled (symmetric experiment)
-    arm5_pending = [q for q in data if not _fully_done(q.record) and not _done_nlcode(q.record)]
-    logger.info(f"Arm5 pending {len(arm5_pending)} / total {len(data)}")
-    updated_arm5 = run_stage_batch(arm5_pending, Arm5, "Arm5", args, client, checkpoint)
-    if updated_arm5:
-        updated_map = {q.record.request_id: q for q in updated_arm5}
         for i, q in enumerate(data):
             if q.record.request_id in updated_map:
                 data[i] = updated_map[q.record.request_id]
