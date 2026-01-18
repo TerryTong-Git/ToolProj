@@ -1,0 +1,10 @@
+{
+  "model": "gemini-2.0-flash",
+  "n_samples": 1000,
+  "results": {
+    "x": 0.226,
+    "x_nl_native": 0.348,
+    "x_nl_translated": 0.351
+  },
+  "timestamp": "20260117_184709"
+}
