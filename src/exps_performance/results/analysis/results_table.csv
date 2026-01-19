@@ -1,0 +1,2 @@
+NL_acc,NL_ci,Sim_acc,Sim_ci,Code Exec_acc,Code Exec_ci,Δ₂₋₁,Δ₂₋₁_ci,RER₂₋₁,Δ₃₋₂,Δ₃₋₂_ci,RER₃₋₂,n₀₁ (NL→Sim),n₁₀ (NL→Sim),n₀₁ (Sim→Exec),n₁₀ (Sim→Exec),McNemar p (NL→Sim),McNemar p (Sim→Exec),Cochran's Q,Cochran's p
+23.6%,"[22.6, 24.7]",23.9%,"[22.7, 25.0]",22.1%,"[21.0, 23.2]",+0.28%,"[-0.01, 0.61]",0.4%,-1.78%,"[-2.20, -1.36]",-2.3%,1613,1520,1516,2109,0.1002,1.0000,112.27,0.0000

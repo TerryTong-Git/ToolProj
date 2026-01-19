@@ -51,23 +51,21 @@ run_experiment() {
 }
 
 # Claude models
-run_experiment "anthropic/claude-haiku-4.5" 2
+# run_experiment "anthropic/claude-haiku-4.5" 2
 
-run_experiment "anthropic/claude-opus-4" 1
-run_experiment "anthropic/claude-opus-4" 2
+# run_experiment "anthropic/claude-opus-4" 1
+# run_experiment "anthropic/claude-opus-4" 2
 
-run_experiment "anthropic/claude-sonnet-4" 0
-run_experiment "anthropic/claude-sonnet-4" 1
-run_experiment "anthropic/claude-sonnet-4" 2
+# run_experiment "anthropic/claude-sonnet-4" 0
+# run_experiment "anthropic/claude-sonnet-4" 1
+# run_experiment "anthropic/claude-sonnet-4" 2
 
 # DeepSeek models
-run_experiment "deepseek/deepseek-chat-v3-0324" 0
-run_experiment "deepseek/deepseek-chat-v3-0324" 1
-run_experiment "deepseek/deepseek-chat-v3-0324" 2
 
-run_experiment "deepseek/deepseek-r1" 0
-run_experiment "deepseek/deepseek-r1" 1
-run_experiment "deepseek/deepseek-r1" 2
+
+# run_experiment "deepseek/deepseek-r1" 0
+# run_experiment "deepseek/deepseek-r1" 1
+# run_experiment "deepseek/deepseek-r1" 2
 
 # Google models
 run_experiment "google/gemini-2.0-flash-001" 2
@@ -76,12 +74,15 @@ run_experiment "google/gemini-2.0-flash-001" 2
 run_experiment "openai/gpt-4o-mini" 0
 run_experiment "openai/gpt-4o-mini" 2
 
-# Mistral models
-run_experiment "mistralai/ministral-14b-2512" 1
-run_experiment "mistralai/ministral-14b-2512" 2
+run_experiment "deepseek/deepseek-chat-v3-0324" 0
+run_experiment "deepseek/deepseek-chat-v3-0324" 1
+run_experiment "deepseek/deepseek-chat-v3-0324" 2
+# # Mistral models
+# run_experiment "mistralai/ministral-14b-2512" 1
+# run_experiment "mistralai/ministral-14b-2512" 2
 
-# Qwen models
-run_experiment "qwen/qwen-2.5-coder-32b-instruct" 0
+# # Qwen models
+# run_experiment "qwen/qwen-2.5-coder-32b-instruct" 0
 
 echo "========================================"
 echo "All 17 experiments complete!"

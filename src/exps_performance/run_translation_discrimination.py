@@ -2,16 +2,16 @@
 """
 Code-to-NL Translation Discrimination Experiment
 
-Translator: GPT 5.2 (via OpenRouter)
-Discriminator: Claude Opus 4.5 (via Anthropic)
-
 Tests whether translated NL reasoning is distinguishable from original NL reasoning.
+Supports multiple translator models via command-line arguments.
 """
 
+import argparse
 import json
 import os
 import random
 import time
+from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 import requests
@@ -21,9 +21,24 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-# Model configs (both via OpenRouter)
-TRANSLATOR_MODEL = "openai/gpt-5.2"  # GPT 5.2
-DISCRIMINATOR_MODEL = "anthropic/claude-opus-4.5"  # Claude Opus 4.5
+# Available translator models
+TRANSLATOR_MODELS = {
+    "haiku-4.5": "anthropic/claude-haiku-4.5",
+    "gpt-5": "openai/gpt-5",
+    "deepseek-v3": "deepseek/deepseek-chat-v3-0324",
+    "gemini-2.5-flash": "google/gemini-2.5-flash-preview-05-20",
+    "opus-4.0": "anthropic/claude-opus-4-0",
+    "grok-4.1-fast": "x-ai/grok-4.1-fast",
+    "gemini-2.5-pro": "google/gemini-2.5-pro-preview-06-05",
+}
+
+# Default models
+DEFAULT_TRANSLATOR = "gpt-5"
+DEFAULT_DISCRIMINATOR = "anthropic/claude-opus-4.5"
+
+# Global model settings (set by main)
+TRANSLATOR_MODEL = None
+DISCRIMINATOR_MODEL = None
 
 def load_samples(n_samples: int = 200) -> list[dict]:
     """Load samples with both code and NL reasoning from experiment results."""
@@ -289,14 +304,17 @@ def run_experiment(n_samples: int = 200):
         task_acc = sum(corrects) / len(corrects)
         print(f"  {kind}: {task_acc:.1%} ({len(corrects)} samples)")
 
-    # Save results
-    output_path = Path(__file__).parent / "translation_discrimination_results.json"
+    # Save results with timestamp and model name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    model_short = TRANSLATOR_MODEL.split("/")[-1]
+    output_path = Path(__file__).parent / f"translation_discrimination_{model_short}_{timestamp}.json"
     with open(output_path, "w") as f:
         json.dump({
             "config": {
                 "translator": TRANSLATOR_MODEL,
                 "discriminator": DISCRIMINATOR_MODEL,
                 "n_samples": total,
+                "timestamp": timestamp,
             },
             "summary": {
                 "accuracy": accuracy,
@@ -310,5 +328,55 @@ def run_experiment(n_samples: int = 200):
     return accuracy, consistency
 
 
+def main():
+    global TRANSLATOR_MODEL, DISCRIMINATOR_MODEL
+
+    parser = argparse.ArgumentParser(description="Run translation discrimination experiment")
+    parser.add_argument("--translator", type=str, default=DEFAULT_TRANSLATOR,
+                        choices=list(TRANSLATOR_MODELS.keys()),
+                        help=f"Translator model (default: {DEFAULT_TRANSLATOR})")
+    parser.add_argument("--discriminator", type=str, default=DEFAULT_DISCRIMINATOR,
+                        help=f"Discriminator model (default: {DEFAULT_DISCRIMINATOR})")
+    parser.add_argument("--n_samples", type=int, default=200,
+                        help="Number of samples to evaluate (default: 200)")
+    parser.add_argument("--all", action="store_true",
+                        help="Run all translator models sequentially")
+
+    args = parser.parse_args()
+
+    if args.all:
+        # Run all models
+        all_results = {}
+        for name, model_id in TRANSLATOR_MODELS.items():
+            print(f"\n{'='*60}")
+            print(f"Running with translator: {name} ({model_id})")
+            print(f"{'='*60}")
+            TRANSLATOR_MODEL = model_id
+            DISCRIMINATOR_MODEL = args.discriminator
+            try:
+                acc, cons = run_experiment(args.n_samples)
+                all_results[name] = {"accuracy": acc, "consistency": cons}
+            except Exception as e:
+                print(f"Error with {name}: {e}")
+                all_results[name] = {"error": str(e)}
+
+        # Print summary
+        print("\n" + "="*60)
+        print("SUMMARY: ALL MODELS")
+        print("="*60)
+        for name, result in all_results.items():
+            if "error" in result:
+                print(f"  {name}: ERROR - {result['error']}")
+            else:
+                print(f"  {name}: Acc={result['accuracy']:.1%}, Consistency={result['consistency']:.1%}")
+    else:
+        # Run single model
+        TRANSLATOR_MODEL = TRANSLATOR_MODELS[args.translator]
+        DISCRIMINATOR_MODEL = args.discriminator
+        print(f"Translator: {args.translator} ({TRANSLATOR_MODEL})")
+        print(f"Discriminator: {DISCRIMINATOR_MODEL}")
+        run_experiment(args.n_samples)
+
+
 if __name__ == "__main__":
-    run_experiment(200)
+    main()
