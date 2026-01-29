@@ -306,20 +306,16 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
     tau_std_val = glmm_result['tau_std']
 
     # Extended τ range with log scaling (2 to 64)
-    tau_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64]
-    # Filter to values present in data for empirical overlay
-    tau_in_data = [t for t in tau_values if t in long_df['digit'].unique()]
+    tau_values = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64])
+    max_obs_tau = 20
+    interp_mask = tau_values <= max_obs_tau
+    extrap_mask = tau_values >= max_obs_tau  # overlap at boundary for continuity
 
     arms = ['NL', 'Sim', 'Code']
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
     colors = {'NL': 'steelblue', 'Sim': 'forestgreen', 'Code': 'darkorange'}
-    markers = {'NL': 'o', 'Sim': 's', 'Code': '^'}
-
-    # Get reference levels for marginal predictions
-    ref_family = long_df['task_family'].mode().iloc[0]
-    ref_model = long_df['model_short'].mode().iloc[0]
 
     # Get model parameters for manual prediction
     params = model.params
@@ -330,15 +326,31 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
     arm_sim_tau = params.get("C(arm, Treatment('NL'))[T.Sim]:tau_std", 0)
     arm_code_tau = params.get("C(arm, Treatment('NL'))[T.Code]:tau_std", 0)
 
-    # Get task family and model coefficients for reference levels
-    family_coef = params.get(f"C(task_family)[T.{ref_family}]", 0)
-    model_coef = params.get(f"C(model_short)[T.{ref_model}]", 0)
+    # Find model's actual reference categories (absorbed into intercept, coef=0)
+    all_families = set(long_df['task_family'].unique())
+    modeled_families = {n.split('[T.')[1].rstrip(']')
+                        for n in params.index if 'task_family' in n}
+    ref_family = sorted(all_families - modeled_families)[0]
+
+    all_models = set(long_df['model_short'].unique())
+    modeled_models = {n.split('[T.')[1].rstrip(']')
+                      for n in params.index if 'model_short' in n}
+    ref_model = sorted(all_models - modeled_models)[0]
+
+    family_coef = 0  # reference category: implicit coefficient = 0
+    model_coef = 0
 
     # Get covariance matrix for CIs
     cov = model.cov_params()
 
     def inv_logit(x):
-        return 1 / (1 + np.exp(-x))
+        return 1 / (1 + np.exp(-np.clip(x, -30, 30)))
+
+    # Extrapolation region shading
+    ax.axvspan(max_obs_tau, 80, color='#f0f0f0', zorder=0)
+    ax.axvline(x=max_obs_tau, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+    ax.text(max_obs_tau * 1.08, 0.50, 'extrapolation →', fontsize=10,
+            color='gray', ha='left', va='center', style='italic', rotation=90)
 
     for arm in arms:
         probs = []
@@ -348,16 +360,13 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
         for tau in tau_values:
             tau_std = (tau - tau_mean) / tau_std_val
 
-            # Build linear predictor
             if arm == 'NL':
                 eta = intercept + tau_coef * tau_std + family_coef + model_coef
-                # Variance: var(intercept) + tau_std^2 * var(tau_coef) + 2*tau_std*cov(intercept, tau)
                 var_eta = (cov.loc['Intercept', 'Intercept'] +
                            tau_std**2 * cov.loc['tau_std', 'tau_std'] +
                            2 * tau_std * cov.loc['Intercept', 'tau_std'])
             elif arm == 'Sim':
                 eta = intercept + arm_sim + tau_coef * tau_std + arm_sim_tau * tau_std + family_coef + model_coef
-                # Simplified variance (main terms)
                 var_eta = (cov.loc['Intercept', 'Intercept'] +
                            cov.loc["C(arm, Treatment('NL'))[T.Sim]", "C(arm, Treatment('NL'))[T.Sim]"] +
                            (tau_std**2) * (cov.loc['tau_std', 'tau_std'] +
@@ -372,8 +381,6 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
             se_eta = np.sqrt(max(0, var_eta))
             prob = inv_logit(eta)
             probs.append(prob)
-
-            # Delta method CI on probability scale
             ci_lower.append(inv_logit(eta - 1.96 * se_eta))
             ci_upper.append(inv_logit(eta + 1.96 * se_eta))
 
@@ -381,37 +388,60 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
         ci_lower = np.array(ci_lower)
         ci_upper = np.array(ci_upper)
 
-        ax.plot(tau_values, probs, marker=markers[arm], color=colors[arm],
-                linewidth=2.5, markersize=7, label=arm)
-        ax.fill_between(tau_values, ci_lower, ci_upper, color=colors[arm], alpha=0.2)
+        # Interpolation: solid lines
+        ax.plot(tau_values[interp_mask], probs[interp_mask], color=colors[arm],
+                linewidth=2.5, label=arm, zorder=3)
+        ax.fill_between(tau_values[interp_mask], ci_lower[interp_mask],
+                        ci_upper[interp_mask], color=colors[arm], alpha=0.2)
 
-    # Add odds ratios (not log-odds) in text box
+        # Extrapolation: dashed lines, lighter CI
+        ax.plot(tau_values[extrap_mask], probs[extrap_mask], color=colors[arm],
+                linewidth=2.5, linestyle='--', zorder=3)
+        ax.fill_between(tau_values[extrap_mask], ci_lower[extrap_mask],
+                        ci_upper[extrap_mask], color=colors[arm], alpha=0.08)
+
+        # Observed empirical means at reference task family (calibration)
+        obs_df = long_df[(long_df['arm'] == arm) &
+                         (long_df['task_family'] == ref_family)]
+        obs = obs_df.groupby('digit')['correct'].mean()
+        ax.scatter(obs.index, obs.values, color=colors[arm],
+                   marker='x', s=60, zorder=5, linewidths=2)
+
+    # GOF and odds ratios
     or_sim = np.exp(arm_sim)
     or_code = np.exp(arm_code)
     or_tau = np.exp(tau_coef)
     or_sim_tau = np.exp(arm_sim_tau)
     or_code_tau = np.exp(arm_code_tau)
+    pseudo_r2 = 1 - (model.llf / model.llnull)
 
     coef_text = (
-        f"GLMM Odds Ratios:\n"
+        f"Logistic GLMM — Odds Ratios:\n"
         f"  Sim vs NL: {or_sim:.2f}\n"
         f"  Code vs NL: {or_code:.2f}\n"
         f"  τ (per SD): {or_tau:.2f}\n"
         f"  Sim × τ: {or_sim_tau:.2f}\n"
-        f"  Code × τ: {or_code_tau:.2f}"
+        f"  Code × τ: {or_code_tau:.2f}\n"
+        f"  McFadden R²: {pseudo_r2:.3f}"
     )
     ax.text(0.02, 0.02, coef_text, transform=ax.transAxes, fontsize=10,
             verticalalignment='bottom', fontfamily='monospace',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9))
+
+    # Observed marker annotation
+    ax.text(0.98, 0.02, f'× observed ({ref_family})', fontsize=9, color='gray',
+            transform=ax.transAxes, ha='right', va='bottom')
 
     # Log scale for τ
     ax.set_xscale('log', base=2)
     ax.set_xticks([2, 4, 8, 16, 32, 64])
     ax.set_xticklabels(['2', '4', '8', '16', '32', '64'])
 
-    ax.set_xlabel('τ (Digit Length / Difficulty, log2 scale)', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Predicted Probability of Correct', fontsize=14, fontweight='bold')
-    ax.set_title('GLMM Marginal Predictions vs Difficulty by Arm\n(95% CIs from model, cluster-robust SEs)', fontsize=15, fontweight='bold')
+    ax.set_xlabel('τ (Digit Length / Difficulty, log₂ scale)', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Predicted P(Correct)', fontsize=14, fontweight='bold')
+    ax.set_title('Logistic GLMM: Marginal Predictions vs Difficulty\n'
+                 'logit P(correct) = arm + τ + arm×τ + task_family + model  (cluster-robust SEs)',
+                 fontsize=14, fontweight='bold')
     ax.legend(title='Arm', fontsize=12, title_fontsize=13, loc='upper right')
     ax.set_ylim([0, 1])
     ax.set_xlim([1.5, 80])
@@ -724,8 +754,13 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
         model = glmm_result['model']
         tau_mean = glmm_result['tau_mean']
         tau_std_val = glmm_result['tau_std']
+        long_df = glmm_result['data']
 
-        tau_values = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64]
+        tau_values = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64])
+        max_obs_tau = 20
+        interp_mask = tau_values <= max_obs_tau
+        extrap_mask = tau_values >= max_obs_tau  # overlap at boundary for line continuity
+
         glmm_arms = ['NL', 'Sim', 'Code']
         glmm_colors = {'NL': 'tab:blue', 'Sim': 'tab:orange', 'Code': 'tab:red'}
 
@@ -737,17 +772,28 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
         arm_sim_tau = params.get("C(arm, Treatment('NL'))[T.Sim]:tau_std", 0)
         arm_code_tau = params.get("C(arm, Treatment('NL'))[T.Code]:tau_std", 0)
 
-        # Get reference levels
-        long_df = glmm_result['data']
-        ref_family = long_df['task_family'].mode().iloc[0]
-        ref_model = long_df['model_short'].mode().iloc[0]
-        family_coef = params.get(f"C(task_family)[T.{ref_family}]", 0)
-        model_coef = params.get(f"C(model_short)[T.{ref_model}]", 0)
+        # Find model's actual reference categories (coef absorbed into intercept)
+        all_families = set(long_df['task_family'].unique())
+        modeled_families = {n.split('[T.')[1].rstrip(']')
+                            for n in params.index if 'task_family' in n}
+        ref_family = sorted(all_families - modeled_families)[0]
+
+        all_models = set(long_df['model_short'].unique())
+        modeled_models = {n.split('[T.')[1].rstrip(']')
+                          for n in params.index if 'model_short' in n}
+        ref_model = sorted(all_models - modeled_models)[0]
+
+        family_coef = 0  # reference category: implicit coef = 0
+        model_coef = 0
 
         cov = model.cov_params()
 
         def inv_logit(x):
             return 1 / (1 + np.exp(-np.clip(x, -30, 30)))
+
+        # Extrapolation region: gray background + vertical demarcation
+        ax_glmm.axvspan(max_obs_tau, 80, color='#f0f0f0', zorder=0)
+        ax_glmm.axvline(x=max_obs_tau, color='gray', linestyle=':', linewidth=0.8, alpha=0.5)
 
         for arm in glmm_arms:
             probs = []
@@ -781,19 +827,41 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
                 ci_lower.append(inv_logit(eta - 1.96 * se_eta))
                 ci_upper.append(inv_logit(eta + 1.96 * se_eta))
 
-            ax_glmm.plot(tau_values, probs, marker='o', markersize=5, linewidth=2,
-                         color=glmm_colors[arm], label=arm)
-            ax_glmm.fill_between(tau_values, ci_lower, ci_upper, color=glmm_colors[arm], alpha=0.2)
+            probs = np.array(probs)
+            ci_lower = np.array(ci_lower)
+            ci_upper = np.array(ci_upper)
 
-        # Add odds ratios text
-        or_sim = np.exp(arm_sim)
+            # Interpolation region: solid lines, full CI shading
+            ax_glmm.plot(tau_values[interp_mask], probs[interp_mask],
+                        linewidth=2, color=glmm_colors[arm], label=arm, zorder=3)
+            ax_glmm.fill_between(tau_values[interp_mask], ci_lower[interp_mask],
+                                ci_upper[interp_mask], color=glmm_colors[arm], alpha=0.2)
+
+            # Extrapolation region: dashed lines, lighter CI shading
+            ax_glmm.plot(tau_values[extrap_mask], probs[extrap_mask],
+                        linewidth=2, linestyle='--', color=glmm_colors[arm], zorder=3)
+            ax_glmm.fill_between(tau_values[extrap_mask], ci_lower[extrap_mask],
+                                ci_upper[extrap_mask], color=glmm_colors[arm], alpha=0.08)
+
+            # Observed empirical means at reference task family (calibration)
+            obs_df = long_df[(long_df['arm'] == arm) &
+                             (long_df['task_family'] == ref_family)]
+            obs = obs_df.groupby('digit')['correct'].mean()
+            ax_glmm.scatter(obs.index, obs.values, color=glmm_colors[arm],
+                           marker='x', s=25, zorder=5, linewidths=1.5)
+
+        # GOF and odds ratios annotation
         or_code = np.exp(arm_code)
         or_code_tau = np.exp(arm_code_tau)
-        ax_glmm.text(0.02, 0.02, f"OR Code/NL: {or_code:.1f}\nCode×τ: {or_code_tau:.2f}",
-                     transform=ax_glmm.transAxes, fontsize=8, verticalalignment='bottom',
-                     fontfamily='monospace', bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8))
+        pseudo_r2 = 1 - (model.llf / model.llnull)
+        ax_glmm.text(0.02, 0.02,
+                     f"OR Code/NL: {or_code:.1f}\nCode×τ: {or_code_tau:.2f}\nMcF R²={pseudo_r2:.3f}",
+                     transform=ax_glmm.transAxes, fontsize=7, verticalalignment='bottom',
+                     fontfamily='monospace',
+                     bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8))
 
-    ax_glmm.set_title("GLMM Predictions", fontsize=11, fontweight='bold')
+
+    ax_glmm.set_title("Logistic GLMM", fontsize=11, fontweight='bold')
     ax_glmm.set_xlabel("difficulty (τ)", fontsize=10)
     ax_glmm.set_ylabel("P(Correct)", fontsize=10)
     ax_glmm.set_xscale('log', base=2)
@@ -1777,7 +1845,7 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
 
 def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | None = None) -> None:
     """
-    Combined figure: Accuracy across arms (left) + Delta distributions (right).
+    Combined figure: Accuracy across routes (left) + Delta distributions (right).
     Bootstraps on instance level (unique problems).
     """
     from matplotlib import rcParams
@@ -1856,7 +1924,7 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     for i, m in enumerate(open_models):
         palette_map[m] = open_palette[min(i, len(open_palette) - 1)]
 
-    # === LEFT PANEL: Accuracy across arms ===
+    # === LEFT PANEL: Accuracy across routes ===
     melted_df = pd.melt(df1, value_vars=cols, id_vars=["model", "kind"])
     melted_df["model_type"] = melted_df["model"].apply(lambda m: "closed" if _is_closed_model(m) else "open")
 
@@ -1984,22 +2052,17 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
         y_pos = max(closed_means[i], open_means[i]) + max(closed_yerr_upper[i], open_yerr_upper[i]) + 0.02
         ax_acc.annotate(f"{mean_val:.1%}", xy=(x, y_pos), ha="center", va="bottom", fontsize=12, fontweight="bold")
 
-    # Cochran's Q box
-    q_text = f"Cochran's Q = {cochran_result['Q']:.1f}"
-    q_p = "p<.001" if cochran_result['p_value'] < 0.001 else f"p={cochran_result['p_value']:.3f}"
-    ax_acc.text(0.02, 0.98, f"{q_text}, {q_p}", transform=ax_acc.transAxes,
-                fontsize=11, fontweight='bold', verticalalignment='top',
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='wheat', alpha=0.9))
+    # (Cochran's Q removed per request)
 
     ax_acc.set_xticks(x_positions)
     ax_acc.set_xticklabels(arm_labels, fontsize=13, fontweight='bold')
-    ax_acc.set_xlabel("Arm", fontsize=14, fontweight='bold')
+    ax_acc.set_xlabel("Route", fontsize=14, fontweight='bold')
     ax_acc.set_ylabel("Accuracy", fontsize=14, fontweight='bold')
     ax_acc.tick_params(axis='y', labelsize=11)
 
     y_max = p_y_start + len(adjacent_pairs) * p_y_step + 0.07
     ax_acc.set_ylim([0.08, max(0.65, y_max)])
-    ax_acc.set_title("(A) Accuracy Across Arms", fontsize=14, fontweight="bold")
+    ax_acc.set_title("(A) Accuracy Across Routes", fontsize=14, fontweight="bold")
 
     # Build legend for accuracy panel
     handles_custom = []
@@ -2018,8 +2081,8 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     handles_custom.append(Line2D([0], [0], marker="^", color="darkorange", linestyle="-", markersize=7, linewidth=1.5))
     labels_custom.append("Open ± 95% CI")
 
-    ax_acc.legend(handles_custom, labels_custom, loc="upper center", bbox_to_anchor=(0.5, -0.12),
-                  ncol=4, fontsize=8, handlelength=1.5, columnspacing=0.8, framealpha=0.95)
+    ax_acc.legend(handles_custom, labels_custom, loc="upper center", bbox_to_anchor=(0.5, -0.18),
+                  ncol=4, fontsize=7, handlelength=1.5, columnspacing=0.8, framealpha=0.95)
 
     # === RIGHT PANELS: Delta distributions ===
 
@@ -2072,7 +2135,6 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     print(f"[plot_combined] Delta (Code Exec - Sim): {delta_code_sim['delta']*100:+.2f}% [{delta_code_sim['delta_ci_low']*100:.2f}, {delta_code_sim['delta_ci_high']*100:.2f}]")
 
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.18)
     plt.savefig("figures/combined_accuracy_delta.png", bbox_inches="tight", pad_inches=0.05)
     plt.savefig("figures/combined_accuracy_delta.pdf", bbox_inches="tight", pad_inches=0.05)
     print("[plot_combined] Saved figures/combined_accuracy_delta.png and .pdf")
@@ -2276,6 +2338,7 @@ def analysis_all_models(parse_error_threshold: float = 50.0) -> None:
         "mistralai/ministral-14b-2512",
         "qwen/qwen-2.5-coder-32b-instruct",
         "anthropic/claude-opus-4",
+        "deepseek/deepseek-chat-v3-0324",
     }
     df_filtered = df_filtered[~df_filtered["model"].isin(EXCLUDED_MODELS)]
     print(f"[analysis_all_models] Excluded {len(EXCLUDED_MODELS)} specific models: {EXCLUDED_MODELS}")

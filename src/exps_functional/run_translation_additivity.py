@@ -45,8 +45,9 @@ MODEL_MAP = {
     "claude-haiku-4.5": "anthropic/claude-haiku-4.5",
     "gpt-4o": "openai/gpt-4o",
     "gpt-4o-mini": "openai/gpt-4o-mini",
-    "gemini-2.5-flash": "google/gemini-2.5-flash-preview-05-20",
+    "gemini-2.5-flash": "google/gemini-2.5-flash",
     "gemini-2.0-flash": "google/gemini-2.0-flash-001",
+    "mixtral": "mistralai/mixtral-8x22b-instruct",
 }
 
 
@@ -578,15 +579,16 @@ async def main_async(args):
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_model = args.model.replace("/", "_")
 
     # Save trials
-    trials_path = OUTPUT_DIR / f"translation_{args.model}_{timestamp}_trials.jsonl"
+    trials_path = OUTPUT_DIR / f"translation_{safe_model}_{timestamp}_trials.jsonl"
     with trials_path.open("w") as f:
         for t in trials:
             f.write(json.dumps(asdict(t)) + "\n")
 
     # Save summary
-    summary_path = OUTPUT_DIR / f"translation_{args.model}_{timestamp}.json"
+    summary_path = OUTPUT_DIR / f"translation_{safe_model}_{timestamp}.json"
     with summary_path.open("w") as f:
         json.dump({
             "model": args.model,
