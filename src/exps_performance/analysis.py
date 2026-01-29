@@ -2266,7 +2266,7 @@ models = [
 
 
 def analysis() -> None:
-    results_root = Path("/nlpgpu/data/terry/ToolProj/src/exps_performance/results")
+    results_root = Path(__file__).parent / "results"
     jsonl_files = sorted(results_root.rglob("*.jsonl"))
     if not jsonl_files:
         raise FileNotFoundError(f"No JSONL files found under {results_root}")
