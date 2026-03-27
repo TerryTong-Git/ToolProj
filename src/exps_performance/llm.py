@@ -10,9 +10,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
+from dotenv import load_dotenv
 from tqdm import tqdm
 from tqdm.asyncio import tqdm as async_tqdm
 from transformers import AutoTokenizer
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

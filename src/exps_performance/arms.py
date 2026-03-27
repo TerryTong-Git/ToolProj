@@ -1,10 +1,13 @@
+import asyncio
 import copy
+import json
 import logging
 from typing import Any, List, Tuple
 
 from tqdm import tqdm
 
 from src.exps_performance.core.executor import ProgramChatInterface
+from src.exps_performance.core.rlm_executor import RecursiveLMExecutor
 from src.exps_performance.llm import run_batch
 from src.exps_performance.problems import Question
 from src.exps_performance.problems.clrs import ClrsCheckAndFormat
@@ -29,9 +32,10 @@ from src.exps_performance.problems.nphard.msp import MspCheckAndFormat
 from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
 from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
+from src.exps_performance.rich_ui import setup_rich_logging
 from src.exps_performance.utils import cast_float_to_int, clean_code_llm, remove_python_triple_quote
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+setup_rich_logging()
 logger = logging.getLogger(__name__)  # Using __name__ is a common practice
 
 FG_PROBS = {
@@ -123,8 +127,9 @@ class BaseArm:
             all_parsed.append((parsed_output, str(err)))
 
         reparsed = self.rerun(parse_failed)
-        for i, reparsed_output, err in reparsed:
+        for i, reparsed_output, err, rerun_answer in reparsed:
             all_parsed[i] = copy.deepcopy((reparsed_output, str(err)))
+            answers[i] = rerun_answer
         self.parsed_fail_ind = [p[0] for p in parse_failed]
         self.reparse_ind = [p[0] for p in reparsed]
         assert self.parsed_fail_ind == self.reparse_ind, "parse fail and reparse_inds not the same"
@@ -150,32 +155,40 @@ class BaseArm:
         self.edited_problems = edited_problems
         return edited_problems
 
-    def rerun(self, to_reparse: List[Tuple[int, Question, Any, Any, Any]]) -> List[Tuple[int, Any, Any]]:
+    def rerun(self, to_reparse: List[Tuple[int, Question, Any, Any, Any]]) -> List[Tuple[int, Any, Any, str]]:
         if to_reparse == []:
             return []
-        outs = []
+
+        outs: List[Tuple[int, Any, Any, str]] = []
         to_run = []
         for reparse in to_reparse:
-            i, problem, parsed, pUtil, default = reparse
+            _i, problem, _parsed, pUtil, _default = reparse
             to_run += [[{"role": "user", "content": pUtil.format_one(problem)}] for _ in range(RERUN)]
             # assert list of lists of dict
         llm_out = run_batch(to_run, self.default_args, self.client)
-        i = 0
         logger.info(f"Rerunning parsing for {self.set_name}")
-        while i < len(llm_out):
-            llm_o = llm_out[i]
-            prob_index = i // RERUN  # i w.r.t. to given list
-            rerun_index = i % RERUN  # 443 -> 3
-            og_ind, problem, _prev_parsed, pUtil, default = to_reparse[prob_index]
-            llm_o = remove_python_triple_quote(llm_o)  # not accepted by langchain
-            parsed_output, err = pUtil.parse_output(llm_o)
-            if not self._is_default_model(parsed_output, default) or rerun_index == (RERUN - 1):
-                outs.append((og_ind, parsed_output, err))
-                i += RERUN - rerun_index
-            else:
-                i += 1
-        if len(to_reparse) != len(outs):
-            outs.append((og_ind, parsed_output, err))
+
+        for prob_index, reparse in enumerate(to_reparse):
+            og_ind, _problem, _prev_parsed, pUtil, default = reparse
+            last_raw = ""
+            last_parsed = default
+            last_err: Any = "parse_failed"
+
+            for rerun_index in range(RERUN):
+                llm_index = prob_index * RERUN + rerun_index
+                if llm_index >= len(llm_out):
+                    break
+                raw_output = llm_out[llm_index]
+                llm_o = remove_python_triple_quote(raw_output)  # not accepted by langchain
+                parsed_output, err = pUtil.parse_output(llm_o)
+                last_raw = raw_output
+                last_parsed = parsed_output
+                last_err = err
+                if not self._is_default_model(parsed_output, default):
+                    break
+
+            outs.append((og_ind, last_parsed, last_err, last_raw))
+
         return outs
 
 
@@ -279,3 +292,144 @@ class Arm1(BaseArm):
     set_name: str = "nl"
 
 
+class _BaseRLMArm(BaseArm):
+    def _rlm_workers(self) -> int:
+        return max(1, int(getattr(self.default_args, "exec_workers", 4)))
+
+    async def _run_prompts_async(self, prompts: List[str]) -> Tuple[List[str], List[str], List[float], List[str]]:
+        if hasattr(self.executor, "arun_many"):
+            results = await self.executor.arun_many(
+                prompts,
+                max_concurrent=self._rlm_workers(),
+                progress_desc=self.set_name,
+                parent_task_id=getattr(self.default_args, "_rich_stage_task_id", None),
+            )
+        elif hasattr(self.executor, "arun"):
+            semaphore = asyncio.Semaphore(self._rlm_workers())
+            ordered_results: list[Any | None] = [None] * len(prompts)
+
+            async def _one(index: int, prompt: str) -> None:
+                async with semaphore:
+                    ordered_results[index] = await self.executor.arun(prompt)
+
+            await asyncio.gather(*[asyncio.create_task(_one(idx, prompt)) for idx, prompt in enumerate(prompts)])
+            results = [r for r in ordered_results if r is not None]
+        else:
+            results = [self.executor.run(prompt) for prompt in prompts]
+
+        answers: List[str] = []
+        exec_errors: List[str] = []
+        exec_times: List[float] = []
+        metadata_jsons: List[str] = []
+        for result in results:
+            answers.append(result.response)
+            exec_errors.append(result.err)
+            exec_times.append(float(getattr(result, "execution_time", 0.0) or 0.0))
+            metadata = getattr(result, "metadata", None)
+            metadata_jsons.append(json.dumps(metadata, ensure_ascii=False, sort_keys=True) if metadata else "")
+        return answers, exec_errors, exec_times, metadata_jsons
+
+    def run(self) -> Tuple[float, List[Question]]:
+        logger.info(f"Running RLM batches for {self.set_name}")
+        self.executor = RecursiveLMExecutor(self.default_args)
+        prompts = [q.util_pointer(self.run_type).format_one(q) for q in self.problems]
+        examples: List[str] = list(prompts)
+        answers, self.exec_errors, self.exec_times, self.exec_metadata_json = asyncio.run(
+            self._run_prompts_async(prompts)
+        )
+
+        logger.info(f"Running parsing for {self.set_name}")
+        parsed_answer = self._parse(answers)
+        actual_parsed = [p[0] for p in parsed_answer]
+        acc, sequence_parity = self._count_correct(actual_parsed)
+        logger.info(f"Setting Results for {self.set_name}")
+        edited_problems = self.set_record(answers, parsed_answer, examples, sequence_parity)
+        self.parsed_answer = actual_parsed
+        return acc, edited_problems
+
+    def rerun(self, to_reparse: List[Tuple[int, Question, Any, Any, Any]]) -> List[Tuple[int, Any, Any, str]]:
+        if to_reparse == []:
+            return []
+
+        logger.info(f"Rerunning parsing for {self.set_name}")
+        prompts = [pUtil.format_one(problem) for _og_ind, problem, _prev_parsed, pUtil, _default in to_reparse]
+        raw_answers, raw_exec_errors, _raw_exec_times, _raw_metadata_jsons = asyncio.run(
+            self._run_prompts_async(prompts)
+        )
+
+        outs: List[Tuple[int, Any, Any, str]] = []
+        for (og_ind, problem, _prev_parsed, pUtil, default), raw_response, exec_err in zip(
+            to_reparse, raw_answers, raw_exec_errors
+        ):
+            last_parsed = default
+            last_err: Any = "parse_failed"
+            last_raw_response = raw_response
+            last_exec_err = exec_err
+
+            llm_o = remove_python_triple_quote(raw_response)
+            parsed_output, err = pUtil.parse_output(llm_o)
+            last_parsed = parsed_output
+            last_err = err
+
+            if self._is_default_model(parsed_output, default):
+                retry_prompt = pUtil.format_one(problem)
+                for _attempt in range(RERUN - 1):
+                    retry_answers, retry_exec_errors, _retry_exec_times, _retry_metadata_jsons = asyncio.run(
+                        self._run_prompts_async([retry_prompt])
+                    )
+                    retry_result = retry_answers[0]
+                    last_raw_response = retry_result
+                    last_exec_err = retry_exec_errors[0]
+                    llm_o = remove_python_triple_quote(retry_result)
+                    parsed_output, err = pUtil.parse_output(llm_o)
+                    last_parsed = parsed_output
+                    last_err = err
+                    if not self._is_default_model(parsed_output, default):
+                        break
+
+            merged_err = str(last_err) if last_exec_err == "ok" else f"{last_err},{last_exec_err}"
+            outs.append((og_ind, last_parsed, merged_err, last_raw_response))
+
+        return outs
+
+    def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
+        q.record.question = str(q.question)
+        q.record.answer = str(q.answer)
+        q.record.kind = q.kind
+        q.record.digit = q.digits
+        q.record.model = self.default_args.model
+        q.record.seed = self.default_args.seed
+        return super().each_record(q, a, p, e, s)
+
+    def set_record(self, answers: List[Any], parsed: List[Tuple[Any, str]], examples: List[str], sequence_parity: List[bool]) -> List[Question]:
+        merged_parsed: List[Tuple[Any, str]] = []
+        for idx, parsed_tuple in enumerate(parsed):
+            parse_err = parsed_tuple[1]
+            exec_err = self.exec_errors[idx] if idx < len(self.exec_errors) else "ok"
+            if exec_err == "ok":
+                merged_parsed.append(parsed_tuple)
+            elif parse_err:
+                merged_parsed.append((parsed_tuple[0], f"{parse_err},{exec_err}"))
+            else:
+                merged_parsed.append((parsed_tuple[0], exec_err))
+        edited = super().set_record(answers, merged_parsed, examples, sequence_parity)
+        for idx, q in enumerate(edited):
+            setattr(q.record, f"{self.set_name}_execution_time", self.exec_times[idx])
+            setattr(q.record, f"{self.set_name}_metadata_json", self.exec_metadata_json[idx])
+        return edited
+
+
+class ArmRLMNL(_BaseRLMArm):
+    run_type: str = "nl"
+    set_name: str = "rlmnl"
+
+
+class ArmRLMCode(_BaseRLMArm):
+    run_type: str = "code"
+    set_name: str = "rlmcode"
+
+    def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
+        q = super().each_record(q, a, p, e, s)
+        q.record.rlmcode_reasoning = getattr(p[0], "simulation", "")
+        q.record.rlmcode_code = getattr(p[0], "code", "")
+        return q

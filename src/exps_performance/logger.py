@@ -65,6 +65,68 @@ class Record(BaseModel):
     controlsim_parse_err: bool = False
     controlsim_err_msg: str = ""
 
+    rlmnl_question: str = ""
+    rlmnl_answer: str = ""
+    rlmnl_reasoning: str = ""
+    rlmnl_execution_time: float = -1.0
+    rlmnl_metadata_json: str = ""
+    rlmnl_correct: bool = False
+    rlmnl_parse_err: bool = False
+    rlmnl_err_msg: str = ""
+
+    rlmcode_question: str = ""
+    rlmcode_answer: str = ""
+    rlmcode_reasoning: str = ""
+    rlmcode_code: str = ""
+    rlmcode_execution_time: float = -1.0
+    rlmcode_metadata_json: str = ""
+    rlmcode_correct: bool = False
+    rlmcode_parse_err: bool = False
+    rlmcode_err_msg: str = ""
+
+
+BASE_RESULT_FIELDS = (
+    "request_id",
+    "unique_tag",
+    "index_in_kind",
+    "model",
+    "seed",
+    "exp_id",
+    "digit",
+    "kind",
+    "question",
+    "answer",
+)
+
+RLM_RESULT_FIELDS = (
+    "rlmnl_question",
+    "rlmnl_answer",
+    "rlmnl_reasoning",
+    "rlmnl_execution_time",
+    "rlmnl_metadata_json",
+    "rlmnl_correct",
+    "rlmnl_parse_err",
+    "rlmnl_err_msg",
+    "rlmcode_question",
+    "rlmcode_answer",
+    "rlmcode_reasoning",
+    "rlmcode_code",
+    "rlmcode_execution_time",
+    "rlmcode_metadata_json",
+    "rlmcode_correct",
+    "rlmcode_parse_err",
+    "rlmcode_err_msg",
+)
+
+RLM_ONLY_RESULT_FIELDS = BASE_RESULT_FIELDS + RLM_RESULT_FIELDS
+
+
+def serialize_record(record: Record, only_rlm: bool = False) -> Dict[str, Any]:
+    payload = record.model_dump()
+    if not only_rlm:
+        return payload
+    return {field: payload[field] for field in RLM_ONLY_RESULT_FIELDS}
+
 
 def _as_jsonl_path(path: Union[str, Path]) -> Path:
     """Normalize any provided log path to a `.jsonl` destination."""
@@ -206,14 +268,14 @@ def write_text_to_tensorboard(records: List[Record], tb: SummaryWriter, args: An
     tb.close()
 
 
-def write_to_csv(logdir: str, records: List[Record]) -> None:
+def write_to_csv(logdir: str, records: List[Record], only_rlm: bool = False) -> None:
     """
     Write checkpoints to JSONL (legacy name retained for compatibility).
     If called with a `.csv` path, also emit a CSV mirror for legacy tools/tests.
     """
     target = Path(logdir)
     path = _as_jsonl_path(target)
-    payload = [r.model_dump() for r in records]
+    payload = [serialize_record(r, only_rlm=only_rlm) for r in records]
     _write_jsonl(path, payload)
     if target.suffix.lower() == ".csv":
         pd.DataFrame(payload).to_csv(target, index=False)
@@ -343,11 +405,12 @@ class CheckpointManager:
     Handles incremental logging of records to JSONL so runs can resume.
     """
 
-    def __init__(self, csv_path: str):
+    def __init__(self, csv_path: str, only_rlm: bool = False):
         self.input_path = Path(csv_path)
         self.jsonl_path = _as_jsonl_path(self.input_path)
         self._mirror_csv = self.input_path.suffix.lower() == ".csv"
         self.csv_path = str(self.jsonl_path)
+        self.only_rlm = only_rlm
         self._records: Dict[str, Record] = {}
         self._defaults = Record().model_dump()
         self._pending: List[Record] = []
@@ -424,7 +487,7 @@ class CheckpointManager:
     def flush(self) -> None:
         if not self._records:
             return
-        payload = [r.model_dump() for r in self._records.values()]
+        payload = [serialize_record(r, only_rlm=self.only_rlm) for r in self._records.values()]
         _write_jsonl(self.jsonl_path, payload)
         if self._mirror_csv:
             df = pd.DataFrame(payload)
