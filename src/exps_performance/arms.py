@@ -4,8 +4,6 @@ import json
 import logging
 from typing import Any, List, Tuple
 
-from tqdm import tqdm
-
 from src.exps_performance.core.executor import ProgramChatInterface
 from src.exps_performance.core.rlm_executor import RecursiveLMExecutor
 from src.exps_performance.llm import run_batch
@@ -116,7 +114,7 @@ class BaseArm:
         all_parsed = []
         parse_failed = []
 
-        for i, (q, a) in enumerate(tqdm(zip(self.problems, answers), desc="parsing")):
+        for i, (q, a) in enumerate(zip(self.problems, answers)):
             pUtil = q.util_pointer(self.run_type)
             a = remove_python_triple_quote(a)
             parsed_output, err = pUtil.parse_output(a)

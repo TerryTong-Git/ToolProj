@@ -5,7 +5,11 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-from src.exps_performance.core.rlm_executor import RecursiveLMExecutor
+from src.exps_performance.core.rlm_executor import (
+    RecursiveLMExecutor,
+    WorkerProgressReporter,
+    set_active_progress_reporter,
+)
 
 
 def main() -> int:
@@ -19,7 +23,11 @@ def main() -> int:
     args = SimpleNamespace(**payload["args"])
     prompt = str(payload["prompt"])
 
-    result = RecursiveLMExecutor(args).run(prompt)
+    set_active_progress_reporter(WorkerProgressReporter(sys.stdout))
+    try:
+        result = RecursiveLMExecutor(args).run(prompt)
+    finally:
+        set_active_progress_reporter(None)
     output = {
         "response": result.response,
         "err": result.err,

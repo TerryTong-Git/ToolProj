@@ -44,6 +44,7 @@ class RichProgressManager:
             TextColumn("{task.description}"),
             BarColumn(),
             TaskProgressColumn(),
+            TextColumn("{task.fields[stats]}"),
             TimeElapsedColumn(),
             TimeRemainingColumn(compact=True),
             console=console,
@@ -58,16 +59,16 @@ class RichProgressManager:
             self._progress.start()
             self._started = True
 
-    def add_task(self, description: str, total: int) -> TaskID:
+    def add_task(self, description: str, total: int, *, stats: str = "") -> TaskID:
         with self._lock:
             self._start_if_needed()
             self._live_tasks += 1
-            return self._progress.add_task(description, total=total)
+            return self._progress.add_task(description, total=total, stats=stats)
 
-    def update(self, task_id: TaskID, advance: int = 0, completed: float | None = None) -> None:
+    def update(self, task_id: TaskID, advance: int = 0, completed: float | None = None, **kwargs: object) -> None:
         with self._lock:
             if self._started:
-                self._progress.update(task_id, advance=advance, completed=completed)
+                self._progress.update(task_id, advance=advance, completed=completed, **kwargs)
 
     def remove_task(self, task_id: TaskID) -> None:
         with self._lock:
