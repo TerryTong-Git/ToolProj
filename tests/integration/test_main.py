@@ -86,3 +86,33 @@ def test_e2e_rlm_only_mode(tmp_path_factory: Any, monkeypatch: pytest.MonkeyPatc
         assert "sim_question" not in row
         assert "code_question" not in row
         assert "controlsim_question" not in row
+
+
+def test_e2e_skips_code_and_control_when_disabled(tmp_path_factory: Any) -> None:
+    base = tmp_path_factory.mktemp("no_exec")
+    args = Args(
+        root=str(base),
+        n=2,
+        digits_list=[2],
+        kinds=["add"],
+        seed=0,
+        backend="dummy",
+        model="openai/gpt-4o-mini",
+        batch_size=2,
+        checkpoint_every=2,
+        exec_code=False,
+        controlled_sim=False,
+    )
+
+    run(args)
+
+    files = walk_results_folder(str(base))
+    assert len(files) == 1
+    path = Path(files[0])
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(rows) == 2
+    for row in rows:
+        assert row["sim_question"] != ""
+        assert row["nl_question"] != ""
+        assert row["code_question"] == ""
+        assert row["controlsim_question"] == ""

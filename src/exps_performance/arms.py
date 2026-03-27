@@ -6,6 +6,7 @@ from typing import Any, List, Tuple
 
 from src.exps_performance.core.executor import ProgramChatInterface
 from src.exps_performance.core.rlm_executor import RecursiveLMExecutor
+from src.exps_performance.logger import CheckpointManager
 from src.exps_performance.llm import run_batch
 from src.exps_performance.problems import Question
 from src.exps_performance.problems.clrs import ClrsCheckAndFormat
@@ -30,7 +31,7 @@ from src.exps_performance.problems.nphard.msp import MspCheckAndFormat
 from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
 from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
-from src.exps_performance.rich_ui import setup_rich_logging
+from src.exps_performance.rich_ui import progress_manager, setup_rich_logging
 from src.exps_performance.utils import cast_float_to_int, clean_code_llm, remove_python_triple_quote
 
 setup_rich_logging()
@@ -78,7 +79,7 @@ class BaseArm:
         examples = [d.util_pointer(self.run_type).format_one(d) for d in self.problems]
         messages = [[{"role": "user", "content": e}] for e in examples]
         logger.info(f"Running batches for {self.set_name}")
-        answers = run_batch(messages, self.default_args, self.client)
+        answers = run_batch(messages, self.default_args, self.client, advance_stage=True)
         logger.info(f"Running parsing for {self.set_name}")
         parsed_answer = self._parse(answers)
         actual_parsed = [p[0] for p in parsed_answer]
@@ -163,7 +164,7 @@ class BaseArm:
             _i, problem, _parsed, pUtil, _default = reparse
             to_run += [[{"role": "user", "content": pUtil.format_one(problem)}] for _ in range(RERUN)]
             # assert list of lists of dict
-        llm_out = run_batch(to_run, self.default_args, self.client)
+        llm_out = run_batch(to_run, self.default_args, self.client, advance_stage=False)
         logger.info(f"Rerunning parsing for {self.set_name}")
 
         for prob_index, reparse in enumerate(to_reparse):
@@ -219,6 +220,9 @@ class Arm3(BaseArm):
         parsed_answer: List[Tuple[Any, str]] = [("", "")] * len(self.problems)
         answers: List[str] = [""] * len(self.problems)
         examples: List[str] = [""] * len(self.problems)
+        stage_task_id = getattr(self.default_args, "_rich_stage_task_id", None)
+        if stage_task_id is not None:
+            progress_manager.update(stage_task_id, stats="done=0 cost=$0.0000")
 
         def _run_one(idx: int, p: Question) -> Tuple[int, str, str, Tuple[Any, str], bool, str | None]:
             pUtil = p.util_pointer(self.run_type)
@@ -257,6 +261,8 @@ class Arm3(BaseArm):
                 sequence_parity[idx] = bool(is_correct)
                 if parse_err_flag:
                     self.parse_fail += 1
+                if stage_task_id is not None:
+                    progress_manager.update(stage_task_id, advance=1, stats="cost=$0.0000")
 
         total_correct = sum(sequence_parity)
         actual_parsed = [p[0] for p in parsed_answer if p is not None]  # type: ignore[index]
@@ -326,6 +332,65 @@ class _BaseRLMArm(BaseArm):
             metadata = getattr(result, "metadata", None)
             metadata_jsons.append(json.dumps(metadata, ensure_ascii=False, sort_keys=True) if metadata else "")
         return answers, exec_errors, exec_times, metadata_jsons
+
+    async def _rerun_single_prompt_async(self, prompt: str) -> tuple[str, str, float, str]:
+        if hasattr(self.executor, "arun"):
+            result = await self.executor.arun(prompt)
+        else:
+            result = self.executor.run(prompt)
+        metadata = getattr(result, "metadata", None)
+        metadata_json = json.dumps(metadata, ensure_ascii=False, sort_keys=True) if metadata else ""
+        return (
+            str(getattr(result, "response", "") or ""),
+            str(getattr(result, "err", "ok") or "ok"),
+            float(getattr(result, "execution_time", 0.0) or 0.0),
+            metadata_json,
+        )
+
+    async def _process_single_result_async(
+        self,
+        index: int,
+        raw_answer: str,
+        exec_err: str,
+        exec_time: float,
+        metadata_json: str,
+        *,
+        prompt_override: str | None = None,
+    ) -> tuple[Question, Any, bool]:
+        q = self.problems[index]
+        pUtil = q.util_pointer(self.run_type)
+        prompt_text = prompt_override or pUtil.format_one(q)
+        response_text = raw_answer
+        last_exec_err = exec_err
+        last_exec_time = exec_time
+        last_metadata_json = metadata_json
+
+        llm_o = remove_python_triple_quote(response_text)
+        parsed_output, err = pUtil.parse_output(llm_o)
+        default = pUtil.PROB_TYPES[self.run_type]()
+
+        parse_failed = self._is_default_model(parsed_output, default)
+        if parse_failed:
+            self.parse_fail += 1
+
+        if parse_failed:
+            for _attempt in range(RERUN - 1):
+                retry_answer, retry_exec_err, retry_exec_time, retry_metadata_json = await self._rerun_single_prompt_async(prompt_text)
+                response_text = retry_answer
+                last_exec_err = retry_exec_err
+                last_exec_time = retry_exec_time
+                last_metadata_json = retry_metadata_json
+                llm_o = remove_python_triple_quote(retry_answer)
+                parsed_output, err = pUtil.parse_output(llm_o)
+                if not self._is_default_model(parsed_output, default):
+                    break
+
+        merged_err = str(err) if last_exec_err == "ok" else f"{err},{last_exec_err}"
+        correct, _reason = pUtil.decision_check(q, parsed_output)
+        updated_q = self.each_record(q, response_text, (parsed_output, merged_err), prompt_text, bool(correct))
+        setattr(updated_q.record, f"{self.set_name}_execution_time", float(last_exec_time))
+        setattr(updated_q.record, f"{self.set_name}_metadata_json", last_metadata_json)
+        return copy.deepcopy(updated_q), parsed_output, bool(correct)
 
     def run(self) -> Tuple[float, List[Question]]:
         logger.info(f"Running RLM batches for {self.set_name}")
@@ -415,6 +480,75 @@ class _BaseRLMArm(BaseArm):
             setattr(q.record, f"{self.set_name}_execution_time", self.exec_times[idx])
             setattr(q.record, f"{self.set_name}_metadata_json", self.exec_metadata_json[idx])
         return edited
+
+    def run_checkpointed(self, checkpoint: CheckpointManager, flush_every: int = 1) -> Tuple[float, List[Question]]:
+        logger.info(f"Running eager checkpointed RLM batches for {self.set_name}")
+        self.executor = RecursiveLMExecutor(self.default_args)
+        prompts = [q.util_pointer(self.run_type).format_one(q) for q in self.problems]
+        total = len(prompts)
+        if total == 0:
+            self.parsed_answer = []
+            self.edited_problems = []
+            return 0.0, []
+
+        self.parse_fail = 0
+        parsed_outputs: List[Any | None] = [None] * total
+        correctness: List[bool] = [False] * total
+        edited: List[Question | None] = [None] * total
+        completed = 0
+        flush_every = max(1, int(flush_every))
+
+        async def _on_completed(index: int, result: Any) -> None:
+            nonlocal completed
+            edited_q, parsed_output, is_correct = await self._process_single_result_async(
+                index,
+                str(getattr(result, "response", "") or ""),
+                str(getattr(result, "err", "ok") or "ok"),
+                float(getattr(result, "execution_time", 0.0) or 0.0),
+                json.dumps(getattr(result, "metadata", None), ensure_ascii=False, sort_keys=True)
+                if getattr(result, "metadata", None)
+                else "",
+                prompt_override=prompts[index],
+            )
+            edited[index] = edited_q
+            parsed_outputs[index] = parsed_output
+            correctness[index] = is_correct
+            completed += 1
+            checkpoint.upsert(edited_q.record, flush=(completed % flush_every == 0 or completed == total))
+
+        async def _run_all() -> None:
+            if hasattr(self.executor, "arun_many"):
+                await self.executor.arun_many(
+                    prompts,
+                    max_concurrent=self._rlm_workers(),
+                    progress_desc=self.set_name,
+                    parent_task_id=getattr(self.default_args, "_rich_stage_task_id", None),
+                    on_completed=_on_completed,
+                )
+                return
+
+            if hasattr(self.executor, "arun"):
+                semaphore = asyncio.Semaphore(self._rlm_workers())
+
+                async def _one(index: int, prompt: str) -> None:
+                    async with semaphore:
+                        result = await self.executor.arun(prompt)
+                        await _on_completed(index, result)
+
+                await asyncio.gather(*[asyncio.create_task(_one(index, prompt)) for index, prompt in enumerate(prompts)])
+                return
+
+            for index, prompt in enumerate(prompts):
+                result = self.executor.run(prompt)
+                await _on_completed(index, result)
+
+        asyncio.run(_run_all())
+
+        finalized = [q for q in edited if q is not None]
+        self.parsed_answer = [p for p in parsed_outputs if p is not None]
+        self.edited_problems = finalized
+        accuracy = (sum(1 for flag in correctness if flag) / total) if total else 0.0
+        return accuracy, finalized
 
 
 class ArmRLMNL(_BaseRLMArm):

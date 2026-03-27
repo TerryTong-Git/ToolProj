@@ -32,6 +32,7 @@ def main() -> int:
         "response": result.response,
         "err": result.err,
         "execution_time": result.execution_time,
+        "cost_usd": result.cost_usd,
         "metadata": result.metadata,
     }
     output_path.write_text(json.dumps(output, ensure_ascii=False))

@@ -34,7 +34,7 @@ from simple_parsing import parse
 
 from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, ArmRLMCode, ArmRLMNL, BaseArm
 from src.exps_performance.dataset import make_dataset
-from src.exps_performance.llm import llm
+from src.exps_performance.llm import StageUsageMeter, llm
 from src.exps_performance.logger import (
     CheckpointManager,
     create_dir,
@@ -188,24 +188,49 @@ def run_stage_batch(
     if not pending:
         return pending
     logger.info(f"Running {stage_name} for {len(pending)} questions")
-    chunk_size = max(1, args.checkpoint_every)
+    use_eager_pipeline = bool(getattr(args, "rlm_eager_pipeline", True)) and stage_name in {"ArmRLMNL", "ArmRLMCode"}
+    chunk_size = len(pending) if use_eager_pipeline else max(1, args.checkpoint_every)
     updated_all: List[Question] = []
-    stage_task_id = progress_manager.add_task(f"[main] {stage_name}", total=len(pending))
+    stage_meter = StageUsageMeter(total_examples=len(pending))
+    stage_task_id = progress_manager.add_task(f"[main] {stage_name}", total=len(pending), stats=stage_meter.stats_text())
     setattr(args, "_rich_stage_task_id", stage_task_id)
+    setattr(args, "_stage_usage_meter", stage_meter)
+    setattr(args, "_progress_label", stage_name)
     try:
         for start in range(0, len(pending), chunk_size):
             batch = pending[start : start + chunk_size]
+            if use_eager_pipeline:
+                logger.info(
+                    f"{stage_name} eager pipeline enabled: scheduling all {len(batch)} pending questions "
+                    f"with exec_workers={getattr(args, 'exec_workers', 4)}"
+                )
             arm = ArmCls(batch, args, client)
-            _, updated = arm.run()
-            batch_complete = all(_stage_complete(stage_name, q.record) for q in updated)
-            if batch_complete:
-                checkpoint.save_batch([q.record for q in updated], flush=True)
-                updated_all.extend(updated)
+            if use_eager_pipeline and hasattr(arm, "run_checkpointed"):
+                _, updated = arm.run_checkpointed(checkpoint, flush_every=max(1, args.checkpoint_every))
+                batch_complete = all(_stage_complete(stage_name, q.record) for q in updated)
+                if batch_complete:
+                    updated_all.extend(updated)
+                else:
+                    logger.warning(
+                        f"[checkpoint guard] Eager {stage_name} batch starting at {start} returned incomplete items after incremental checkpointing"
+                    )
             else:
-                logger.warning(f"[checkpoint guard] Skipping checkpoint for {stage_name} batch starting at {start}: {len(batch)} items incomplete")
+                _, updated = arm.run()
+                batch_complete = all(_stage_complete(stage_name, q.record) for q in updated)
+                if batch_complete:
+                    checkpoint.save_batch([q.record for q in updated], flush=True)
+                    updated_all.extend(updated)
+                else:
+                    logger.warning(
+                        f"[checkpoint guard] Skipping checkpoint for {stage_name} batch starting at {start}: {len(batch)} items incomplete"
+                    )
     finally:
         if hasattr(args, "_rich_stage_task_id"):
             delattr(args, "_rich_stage_task_id")
+        if hasattr(args, "_stage_usage_meter"):
+            delattr(args, "_stage_usage_meter")
+        if hasattr(args, "_progress_label"):
+            delattr(args, "_progress_label")
         progress_manager.remove_task(stage_task_id)
     return updated_all
 
@@ -269,7 +294,12 @@ def run(args: Any) -> None:
         return bool(rec.nl_question) or bool(rec.nl_answer) or bool(rec.nl_parse_err) or bool(rec.nl_err_msg)
 
     def _fully_done(rec: Any) -> bool:
-        return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
+        done = _done_sim(rec) and _done_nl(rec)
+        if getattr(args, "exec_code", False):
+            done = done and _done_code(rec)
+        if getattr(args, "controlled_sim", False):
+            done = done and _done_control(rec)
+        return done
 
     def _done_rlmnl(rec: Any) -> bool:
         return bool(rec.rlmnl_question) or bool(rec.rlmnl_answer) or bool(rec.rlmnl_parse_err) or bool(rec.rlmnl_err_msg)
@@ -317,25 +347,27 @@ def run(args: Any) -> None:
                     data[i] = updated_map[q.record.request_id]
                     data[i].code = data[i].record.sim_code or data[i].code
 
-        # Arm3 (code execution)
-        arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
-        logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
-        updated_arm3 = run_stage_batch(arm3_pending, Arm3, "Arm3", args, client, checkpoint)
-        if updated_arm3:
-            updated_map = {q.record.request_id: q for q in updated_arm3}
-            for i, q in enumerate(data):
-                if q.record.request_id in updated_map:
-                    data[i] = updated_map[q.record.request_id]
+        if getattr(args, "exec_code", False):
+            # Arm3 (code execution)
+            arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
+            logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
+            updated_arm3 = run_stage_batch(arm3_pending, Arm3, "Arm3", args, client, checkpoint)
+            if updated_arm3:
+                updated_map = {q.record.request_id: q for q in updated_arm3}
+                for i, q in enumerate(data):
+                    if q.record.request_id in updated_map:
+                        data[i] = updated_map[q.record.request_id]
 
-        # Arm4 (control simulation)
-        arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
-        logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
-        updated_arm4 = run_stage_batch(arm4_pending, Arm4, "Arm4", args, client, checkpoint)
-        if updated_arm4:
-            updated_map = {q.record.request_id: q for q in updated_arm4}
-            for i, q in enumerate(data):
-                if q.record.request_id in updated_map:
-                    data[i] = updated_map[q.record.request_id]
+        if getattr(args, "controlled_sim", False):
+            # Arm4 (control simulation)
+            arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
+            logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
+            updated_arm4 = run_stage_batch(arm4_pending, Arm4, "Arm4", args, client, checkpoint)
+            if updated_arm4:
+                updated_map = {q.record.request_id: q for q in updated_arm4}
+                for i, q in enumerate(data):
+                    if q.record.request_id in updated_map:
+                        data[i] = updated_map[q.record.request_id]
 
     if getattr(args, "rlm_code", False):
         rlmcode_pending = [q for q in data if not _done_rlmcode(q.record)]
@@ -458,6 +490,11 @@ class Args:
     hf_trust_remote_code: bool = False
     openrouter_api_key: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_reasoning_enabled: bool = False
+    openrouter_reasoning_effort: Optional[str] = field(default=None, metadata={"choices": ["low", "medium", "high", "xhigh"]})
+    openrouter_reasoning_max_tokens: Optional[int] = None
+    openrouter_reasoning_exclude: bool = False
+    openrouter_verbosity: Optional[str] = field(default=None, metadata={"choices": ["low", "medium", "high", "max"]})
     max_tokens: int = 4192
     temperature: float = 0.1
     top_p: float = 0.90
@@ -490,6 +527,7 @@ class Args:
     rlm_max_iterations: int = 8
     rlm_max_timeout: Optional[float] = None
     rlm_verbose: bool = False
+    rlm_eager_pipeline: bool = True
 
 
 def parse_args() -> Args:

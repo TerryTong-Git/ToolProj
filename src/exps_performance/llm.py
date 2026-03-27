@@ -6,13 +6,13 @@ import json
 import logging
 import os
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import torch
 from dotenv import load_dotenv
 from tqdm import tqdm
-from tqdm.asyncio import tqdm as async_tqdm
 from transformers import AutoTokenizer
 
 load_dotenv()
@@ -42,8 +42,51 @@ class LLMClient:
         temperature: float,
         top_p: float,
         stop: Optional[List[str]] = None,
-    ) -> str:
+        ) -> str:
         raise NotImplementedError
+
+
+@dataclass
+class UsageStats:
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    reasoning_tokens: int = 0
+    cached_tokens: int = 0
+    cost: float = 0.0
+
+    def add(self, other: "UsageStats") -> None:
+        self.prompt_tokens += other.prompt_tokens
+        self.completion_tokens += other.completion_tokens
+        self.reasoning_tokens += other.reasoning_tokens
+        self.cached_tokens += other.cached_tokens
+        self.cost += other.cost
+
+
+@dataclass
+class ChatResult:
+    text: str
+    usage: UsageStats
+
+
+@dataclass
+class StageUsageMeter:
+    total_examples: int = 0
+    completed_examples: int = 0
+    total_requests: int = 0
+    usage: UsageStats = field(default_factory=UsageStats)
+
+    def record(self, usage: UsageStats, *, advance_example: bool) -> None:
+        self.total_requests += 1
+        self.usage.add(usage)
+        if advance_example:
+            self.completed_examples += 1
+
+    def stats_text(self) -> str:
+        done = f"{self.completed_examples}/{self.total_examples}" if self.total_examples > 0 else str(self.completed_examples)
+        return (
+            f"done={done} req={self.total_requests} cost=${self.usage.cost:.4f} "
+            f"in={self.usage.prompt_tokens} out={self.usage.completion_tokens}"
+        )
 
 
 class DummyClient(LLMClient):
@@ -122,7 +165,17 @@ class OpenAIChatClient(LLMClient):
 class OpenRouterChatClient(LLMClient):
     """Simple OpenRouter client using the OpenAI SDK."""
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, seed: int = 0):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        seed: int = 0,
+        reasoning_enabled: bool = False,
+        reasoning_effort: Optional[str] = None,
+        reasoning_max_tokens: Optional[int] = None,
+        reasoning_exclude: bool = False,
+        verbosity: Optional[str] = None,
+    ):
         try:
             from openai import OpenAI  # type: ignore
         except Exception as e:
@@ -133,7 +186,94 @@ class OpenRouterChatClient(LLMClient):
         self._base_url = base_url or openrouter_api_base
         self.client = OpenAI(api_key=self._api_key, base_url=self._base_url)
         self.seed = seed
+        self._extra_body = self._build_extra_body(
+            reasoning_enabled=reasoning_enabled,
+            reasoning_effort=reasoning_effort,
+            reasoning_max_tokens=reasoning_max_tokens,
+            reasoning_exclude=reasoning_exclude,
+            verbosity=verbosity,
+        )
         print("Instantiated OpenRouter client!")
+
+    @staticmethod
+    def _safe_int(value: Any) -> int:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    @staticmethod
+    def _safe_float(value: Any) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    @staticmethod
+    def _maybe_value(obj: Any, key: str) -> Any:
+        if obj is None:
+            return None
+        if isinstance(obj, dict):
+            return obj.get(key)
+        return getattr(obj, key, None)
+
+    @classmethod
+    def _build_extra_body(
+        cls,
+        *,
+        reasoning_enabled: bool,
+        reasoning_effort: Optional[str],
+        reasoning_max_tokens: Optional[int],
+        reasoning_exclude: bool,
+        verbosity: Optional[str],
+    ) -> Optional[Dict[str, Any]]:
+        extra_body: Dict[str, Any] = {}
+        reasoning: Dict[str, Any] = {}
+        if reasoning_enabled or reasoning_effort or reasoning_max_tokens is not None or reasoning_exclude:
+            if reasoning_enabled:
+                reasoning["enabled"] = True
+            if reasoning_effort:
+                reasoning["effort"] = reasoning_effort
+            if reasoning_max_tokens is not None:
+                reasoning["max_tokens"] = int(reasoning_max_tokens)
+            if reasoning_exclude:
+                reasoning["exclude"] = True
+        if reasoning:
+            extra_body["reasoning"] = reasoning
+        if verbosity:
+            extra_body["verbosity"] = verbosity
+        return extra_body or None
+
+    @classmethod
+    def _extract_usage(cls, resp: Any) -> UsageStats:
+        usage = cls._maybe_value(resp, "usage")
+        prompt_tokens = cls._safe_int(cls._maybe_value(usage, "prompt_tokens"))
+        completion_tokens = cls._safe_int(cls._maybe_value(usage, "completion_tokens"))
+
+        completion_details = cls._maybe_value(usage, "completion_tokens_details")
+        prompt_details = cls._maybe_value(usage, "prompt_tokens_details")
+        reasoning_tokens = cls._safe_int(cls._maybe_value(completion_details, "reasoning_tokens"))
+        cached_tokens = cls._safe_int(cls._maybe_value(prompt_details, "cached_tokens"))
+
+        cost = cls._safe_float(cls._maybe_value(resp, "cost"))
+        if cost == 0.0:
+            cost = cls._safe_float(cls._maybe_value(usage, "cost"))
+        if cost == 0.0:
+            cost_details = cls._maybe_value(resp, "cost_details") or cls._maybe_value(usage, "cost_details")
+            if cost_details is not None:
+                cost = cls._safe_float(
+                    cls._maybe_value(cost_details, "total_cost")
+                    or cls._maybe_value(cost_details, "completion_cost")
+                    or cls._maybe_value(cost_details, "upstream_inference_cost")
+                )
+
+        return UsageStats(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            reasoning_tokens=reasoning_tokens,
+            cached_tokens=cached_tokens,
+            cost=cost,
+        )
 
     @staticmethod
     def _extract_text(resp: Any) -> str:
@@ -155,15 +295,27 @@ class OpenRouterChatClient(LLMClient):
         top_p: float,
         stop: Optional[List[str]] = None,
     ) -> str:
+        return self.chat_result(model, messages, max_tokens, temperature, top_p, stop).text
+
+    def chat_result(
+        self,
+        model: str,
+        messages: List[Dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        stop: Optional[List[str]] = None,
+    ) -> ChatResult:
         resp = self.client.chat.completions.create(
             model=model,
             messages=messages,
             top_p=top_p,
             max_completion_tokens=max_tokens,
             stop=stop,
+            extra_body=self._extra_body,
             # seed=self.seed,  # OpenRouter may ignore seed; kept for symmetry
         )
-        return self._extract_text(resp)
+        return ChatResult(text=self._extract_text(resp), usage=self._extract_usage(resp))
 
     def chat_many(
         self,
@@ -175,10 +327,34 @@ class OpenRouterChatClient(LLMClient):
         stop: Optional[List[str]] = None,
         request_timeout: float = 120.0,
     ) -> List[str]:
+        return [
+            result.text
+            for result in self.chat_many_results(
+                model,
+                messages_list,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                stop=stop,
+                request_timeout=request_timeout,
+            )
+        ]
+
+    def chat_many_results(
+        self,
+        model: str,
+        messages_list: List[List[Dict[str, str]]],
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        stop: Optional[List[str]] = None,
+        request_timeout: float = 120.0,
+        on_result: Optional[Callable[[ChatResult], None]] = None,
+    ) -> List[ChatResult]:
         # Create a fresh async client per batch to avoid event-loop reuse issues.
         from openai import AsyncOpenAI  # type: ignore
 
-        async def _one(idx: int, msgs: List[Dict[str, str]]) -> tuple[int, str]:
+        async def _one(idx: int, msgs: List[Dict[str, str]]) -> tuple[int, ChatResult]:
             async with AsyncOpenAI(api_key=self._api_key, base_url=self._base_url) as async_client:
                 try:
                     resp = await asyncio.wait_for(
@@ -188,25 +364,28 @@ class OpenRouterChatClient(LLMClient):
                             top_p=top_p,
                             max_completion_tokens=max_tokens,
                             stop=stop,
+                            extra_body=self._extra_body,
                             timeout=request_timeout,
                         ),
                         timeout=request_timeout + 5,
                     )
-                    return idx, self._extract_text(resp)
+                    return idx, ChatResult(text=self._extract_text(resp), usage=self._extract_usage(resp))
                 except asyncio.TimeoutError:
                     logger.warning(f"OpenRouter chat_many timed out for idx={idx}")
-                    return idx, ""
+                    return idx, ChatResult(text="", usage=UsageStats())
                 except (ConnectionError, OSError, ValueError) as exc:
                     logger.warning(f"OpenRouter chat_many failed for idx={idx}: {exc}")
-                    return idx, ""
+                    return idx, ChatResult(text="", usage=UsageStats())
 
-        async def _run() -> List[str]:
+        async def _run() -> List[ChatResult]:
             tasks = [asyncio.create_task(_one(i, m)) for i, m in enumerate(messages_list)]
-            results: List[Optional[str]] = [None] * len(messages_list)
+            results: List[Optional[ChatResult]] = [None] * len(messages_list)
             try:
-                async for task in async_tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Chatting (openrouter)"):
-                    idx, text = await task
-                    results[idx] = text
+                for task in asyncio.as_completed(tasks):
+                    idx, result = await task
+                    results[idx] = result
+                    if on_result is not None:
+                        on_result(result)
             finally:
                 for t in tasks:
                     if not t.done():
@@ -214,7 +393,7 @@ class OpenRouterChatClient(LLMClient):
                 for t in tasks:
                     with contextlib.suppress(asyncio.CancelledError):
                         await t
-            return [r if r is not None else "" for r in results]  # All slots should be filled
+            return [r if r is not None else ChatResult(text="", usage=UsageStats()) for r in results]
 
         return asyncio.run(_run())
 
@@ -403,35 +582,96 @@ def llm(args: Any) -> Any:
     elif args.backend == "openrouter":
         api_key = getattr(args, "openrouter_api_key", None) or os.getenv("OPENROUTER_API_KEY")
         base_url = getattr(args, "openrouter_base_url", None) or openrouter_api_base
-        return OpenRouterChatClient(api_key=api_key, base_url=base_url, seed=args.seed)
+        return OpenRouterChatClient(
+            api_key=api_key,
+            base_url=base_url,
+            seed=args.seed,
+            reasoning_enabled=bool(getattr(args, "openrouter_reasoning_enabled", False)),
+            reasoning_effort=getattr(args, "openrouter_reasoning_effort", None),
+            reasoning_max_tokens=getattr(args, "openrouter_reasoning_max_tokens", None),
+            reasoning_exclude=bool(getattr(args, "openrouter_reasoning_exclude", False)),
+            verbosity=getattr(args, "openrouter_verbosity", None),
+        )
 
 
-def run_batch(messages_list: List[List[Dict[str, str]]], args: Any, client: Any) -> List[str]:
+def run_batch(messages_list: List[List[Dict[str, str]]], args: Any, client: Any, *, advance_stage: bool = True) -> List[str]:
     total = len(messages_list)
+    stage_label = getattr(args, "_progress_label", "Chatting")
+    stage_task_id = getattr(args, "_rich_stage_task_id", None)
+    stage_meter = getattr(args, "_stage_usage_meter", None)
+
+    def _sync_stage_stats() -> dict[str, str]:
+        if stage_meter is None:
+            return {}
+        stats = stage_meter.stats_text()
+        if stage_task_id is not None:
+            from src.exps_performance.rich_ui import progress_manager
+
+            progress_manager.update(stage_task_id, stats=stats)
+        return {"stats": stats}
+
+    def _record_result(result: ChatResult, overall_bar: Any, batch_bar: Any | None = None) -> None:
+        if stage_meter is not None:
+            stage_meter.record(result.usage, advance_example=advance_stage)
+        overall_bar.update(1)
+        overall_bar.set_postfix(_sync_stage_stats())
+        if batch_bar is not None:
+            batch_bar.update(1)
+            batch_bar.set_postfix(_sync_stage_stats())
+        if stage_task_id is not None and advance_stage:
+            from src.exps_performance.rich_ui import progress_manager
+
+            progress_manager.update(stage_task_id, advance=1, stats=stage_meter.stats_text() if stage_meter is not None else "")
+
     if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
         outs = []
-        with tqdm(total=total, desc="Chatting (overall)", unit="req") as overall:
+        with tqdm(total=total, desc=f"{stage_label} (overall)", unit="req") as overall:
             for start in range(0, total, args.batch_size):
                 chunk = messages_list[start : start + args.batch_size]
-                with tqdm(total=len(chunk), desc="Batch", unit="req", leave=False) as batchbar:
-                    chunk_outs = client.chat_many(
+                with tqdm(total=len(chunk), desc=f"{stage_label} (batch)", unit="req", leave=False) as batchbar:
+                    if hasattr(client, "chat_many_results") and callable(getattr(client, "chat_many_results")):
+                        chunk_results = client.chat_many_results(
+                            args.model,
+                            chunk,
+                            max_tokens=args.max_tokens,
+                            temperature=args.temperature,
+                            top_p=args.top_p,
+                            stop=None,
+                            request_timeout=getattr(args, "request_timeout", 120),
+                            on_result=lambda result: _record_result(result, overall, batchbar),
+                        )
+                        outs.extend([result.text for result in chunk_results])
+                    else:
+                        chunk_outs = client.chat_many(
+                            args.model,
+                            chunk,
+                            max_tokens=args.max_tokens,
+                            temperature=args.temperature,
+                            top_p=args.top_p,
+                            stop=None,
+                            request_timeout=getattr(args, "request_timeout", 120),
+                        )
+                        outs.extend(chunk_outs)
+                        batchbar.update(len(chunk))
+                        overall.update(len(chunk))
+        return outs
+    else:
+        outs = []
+        with tqdm(total=total, desc=f"{stage_label} (overall)", unit="req") as pbar:
+            for m in messages_list:
+                if hasattr(client, "chat_result") and callable(getattr(client, "chat_result")):
+                    result = client.chat_result(
                         args.model,
-                        chunk,
+                        m,
                         max_tokens=args.max_tokens,
                         temperature=args.temperature,
                         top_p=args.top_p,
                         stop=None,
-                        request_timeout=getattr(args, "request_timeout", 120),
                     )
-                    outs.extend(chunk_outs)
-                    batchbar.update(len(chunk))
-                overall.update(len(chunk))
-        return outs
-    else:
-        outs = []
-        with tqdm(total=total, desc="Chatting (overall)", unit="req") as pbar:
-            for m in messages_list:
-                out = client.chat(args.model, m, max_tokens=args.max_tokens, temperature=args.temperature, top_p=args.top_p, stop=None)
-                outs.append(out)
-                pbar.update(1)
+                    outs.append(result.text)
+                    _record_result(result, pbar)
+                else:
+                    out = client.chat(args.model, m, max_tokens=args.max_tokens, temperature=args.temperature, top_p=args.top_p, stop=None)
+                    outs.append(out)
+                    pbar.update(1)
         return outs

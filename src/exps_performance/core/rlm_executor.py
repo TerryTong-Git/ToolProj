@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import inspect
 import json
 import os
 import sys
@@ -27,6 +28,7 @@ class RLMExecutionResult:
     response: str
     err: str
     execution_time: float = 0.0
+    cost_usd: float = 0.0
     metadata: Optional[dict[str, Any]] = None
 
 
@@ -166,6 +168,14 @@ def _consume_live_event(state: LiveRLMTaskState, event: dict[str, Any]) -> None:
         state.last_phase = f"started@d{depth}"
 
 
+def _format_aggregate_stats(done: int, total: int, active: int, max_concurrent: int, total_cost_usd: float) -> str:
+    return (
+        f"batch={done}/{total} "
+        f"active={active}/{max_concurrent} "
+        f"cost=${total_cost_usd:,.4f}"
+    )
+
+
 class RecursiveLMExecutor:
     """
     Thin wrapper around the external `rlm` package so the benchmark can treat
@@ -286,19 +296,28 @@ class RecursiveLMExecutor:
         raw_args = dict(vars(self.args))
         serialized: dict[str, Any] = {}
         for key, value in raw_args.items():
+            if key.startswith("_"):
+                continue
             if isinstance(value, Path):
                 serialized[key] = str(value)
-            else:
+                continue
+            try:
+                json.dumps(value)
                 serialized[key] = value
+            except TypeError:
+                continue
         return serialized
 
     def run(self, prompt: str) -> RLMExecutionResult:
         try:
             completion = self._get_rlm().completion(prompt)
+            usage_summary = getattr(completion, "usage_summary", None)
+            total_cost = float(getattr(usage_summary, "total_cost", 0.0) or 0.0)
             return RLMExecutionResult(
                 response=str(getattr(completion, "response", "") or ""),
                 err="ok",
                 execution_time=float(getattr(completion, "execution_time", 0.0) or 0.0),
+                cost_usd=total_cost,
                 metadata=getattr(completion, "metadata", None),
             )
         except Exception as exc:  # noqa: BLE001
@@ -369,6 +388,7 @@ class RecursiveLMExecutor:
                         response=str(result_payload.get("response", "") or ""),
                         err=str(result_payload.get("err", "ok") or "ok"),
                         execution_time=float(result_payload.get("execution_time", 0.0) or 0.0),
+                        cost_usd=float(result_payload.get("cost_usd", 0.0) or 0.0),
                         metadata=result_payload.get("metadata"),
                     )
                 except Exception as exc:  # noqa: BLE001
@@ -396,13 +416,32 @@ class RecursiveLMExecutor:
         max_concurrent: int = 4,
         progress_desc: str | None = None,
         parent_task_id: int | None = None,
+        on_completed: Callable[[int, RLMExecutionResult], Any] | None = None,
     ) -> list[RLMExecutionResult]:
-        semaphore = asyncio.Semaphore(max(1, int(max_concurrent)))
+        max_concurrent = max(1, int(max_concurrent))
+        semaphore = asyncio.Semaphore(max_concurrent)
         results: list[Optional[RLMExecutionResult]] = [None] * len(prompts)
         max_depth = max(1, int(getattr(self.args, "rlm_max_depth", 2)))
+        total_tasks = len(prompts)
+        aggregate = {
+            "done": 0,
+            "active": 0,
+            "cost_usd": 0.0,
+        }
 
         async def _one(index: int, prompt: str) -> tuple[int, RLMExecutionResult]:
             async with semaphore:
+                aggregate["active"] += 1
+                current_stats = _format_aggregate_stats(
+                    aggregate["done"],
+                    total_tasks,
+                    aggregate["active"],
+                    max_concurrent,
+                    aggregate["cost_usd"],
+                )
+                progress_manager.update(subtask_id, stats=current_stats)
+                if parent_task_id is not None:
+                    progress_manager.update(parent_task_id, stats=current_stats)
                 state = LiveRLMTaskState()
                 task_id = progress_manager.add_task(
                     f"    [rlm] {(progress_desc or 'rlm')} #{index + 1:03d}",
@@ -428,18 +467,51 @@ class RecursiveLMExecutor:
                     )
                     return index, result
                 finally:
+                    aggregate["active"] = max(0, aggregate["active"] - 1)
+                    current_stats = _format_aggregate_stats(
+                        aggregate["done"],
+                        total_tasks,
+                        aggregate["active"],
+                        max_concurrent,
+                        aggregate["cost_usd"],
+                    )
+                    progress_manager.update(subtask_id, stats=current_stats)
+                    if parent_task_id is not None:
+                        progress_manager.update(parent_task_id, stats=current_stats)
                     progress_manager.remove_task(task_id)
 
         tasks = [asyncio.create_task(_one(i, prompt)) for i, prompt in enumerate(prompts)]
         subtask_desc = progress_desc or "rlm"
-        subtask_id = progress_manager.add_task(f"  [sub] {subtask_desc}", total=len(tasks), stats="")
+        subtask_id = progress_manager.add_task(
+            f"  [sub] {subtask_desc}",
+            total=len(tasks),
+            stats=_format_aggregate_stats(0, total_tasks, 0, max_concurrent, 0.0),
+        )
+        if parent_task_id is not None:
+            progress_manager.update(
+                parent_task_id,
+                stats=_format_aggregate_stats(0, total_tasks, 0, max_concurrent, 0.0),
+            )
         try:
             for fut in asyncio.as_completed(tasks):
                 index, result = await fut
                 results[index] = result
-                progress_manager.update(subtask_id, advance=1)
+                aggregate["done"] += 1
+                aggregate["cost_usd"] += float(getattr(result, "cost_usd", 0.0) or 0.0)
+                if on_completed is not None:
+                    maybe_awaitable = on_completed(index, result)
+                    if inspect.isawaitable(maybe_awaitable):
+                        await maybe_awaitable
+                stats = _format_aggregate_stats(
+                    aggregate["done"],
+                    total_tasks,
+                    aggregate["active"],
+                    max_concurrent,
+                    aggregate["cost_usd"],
+                )
+                progress_manager.update(subtask_id, advance=1, stats=stats)
                 if parent_task_id is not None:
-                    progress_manager.update(parent_task_id, advance=1)
+                    progress_manager.update(parent_task_id, advance=1, stats=stats)
         finally:
             progress_manager.remove_task(subtask_id)
             for task in tasks:

@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import inspect
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -9,7 +10,8 @@ from pydantic import BaseModel, Field
 
 import src.exps_performance.arms as arms
 from src.exps_performance.arms import ArmRLMCode, ArmRLMNL
-from src.exps_performance.logger import Record
+from src.exps_performance.logger import CheckpointManager, Record
+from src.exps_performance.main import run_stage_batch
 from src.exps_performance.problems import CheckAndFormat, Question
 from tests.unit.test_probs import ToyCheckAndFormat
 
@@ -200,3 +202,62 @@ def test_rlm_examples_run_concurrently(default_args: Any, toy_rlm_questions: lis
 
     assert accuracy == 1.0
     assert max_active >= 2
+
+
+def test_rlm_stage_checkpoints_each_completed_item(
+    default_args: Any,
+    toy_rlm_questions: list[ToyRLMQuestion],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
+) -> None:
+    upsert_calls: list[tuple[str, bool]] = []
+    original_upsert = CheckpointManager.upsert
+
+    def _spy_upsert(self: CheckpointManager, record: Record, flush: bool = True) -> None:
+        upsert_calls.append((record.question, flush))
+        original_upsert(self, record, flush=flush)
+
+    class _Result:
+        def __init__(self, response: str, err: str = "ok") -> None:
+            self.response = response
+            self.err = err
+            self.execution_time = 0.01
+            self.metadata = None
+
+    class _DummyExecutor:
+        def __init__(self, args: Any) -> None:
+            self.args = args
+
+        async def arun_many(
+            self,
+            prompts: list[str],
+            max_concurrent: int = 4,
+            progress_desc: str | None = None,
+            parent_task_id: int | None = None,
+            on_completed: Any = None,
+        ) -> list[_Result]:
+            results: list[_Result] = []
+            for idx, prompt in enumerate(prompts):
+                match = re.search(r"target=(-?\d+)", prompt)
+                answer = match.group(1) if match else "0"
+                result = _Result(answer)
+                results.append(result)
+                if on_completed is not None:
+                    maybe_awaitable = on_completed(idx, result)
+                    if inspect.isawaitable(maybe_awaitable):
+                        await maybe_awaitable
+            return results
+
+    monkeypatch.setattr(arms, "RecursiveLMExecutor", _DummyExecutor)
+    monkeypatch.setattr(CheckpointManager, "upsert", _spy_upsert)
+
+    args = copy.deepcopy(default_args)
+    args.checkpoint_every = 1
+    args.exec_workers = 2
+    ckpt = CheckpointManager(str(tmp_path / "res.jsonl"), only_rlm=True)
+
+    updated = run_stage_batch(list(toy_rlm_questions), ArmRLMNL, "ArmRLMNL", args, client=None, checkpoint=ckpt)
+
+    assert len(updated) == 2
+    assert len(upsert_calls) == 2
+    assert all(flush is True for _question, flush in upsert_calls)

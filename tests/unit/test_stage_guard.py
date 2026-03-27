@@ -44,6 +44,10 @@ class FakeArmComplete:
         return 1.0, self.problems
 
 
+class FakeArmRLMComplete(FakeArmComplete):
+    pass
+
+
 def test_incomplete_batch_not_checkpointed(tmp_path) -> None:  # type: ignore[no-untyped-def]
     args = DummyArgs(checkpoint_every=2)
     ckpt = CheckpointManager(str(tmp_path / "res.jsonl"))
@@ -68,3 +72,30 @@ def test_complete_batch_checkpointed(tmp_path) -> None:  # type: ignore[no-untyp
     assert stored is not None
     assert stored.code_question == "q"
     assert stored.code_answer == "a"
+
+
+def test_rlm_stage_ignores_checkpoint_chunking(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    args = DummyArgs(checkpoint_every=1)
+    ckpt = CheckpointManager(str(tmp_path / "res.jsonl"))
+    seen_batch_sizes: list[int] = []
+
+    class _Arm(FakeArmRLMComplete):
+        def __init__(self, data_subset: List[DummyQuestion], default_args: Any, client: Any) -> None:
+            seen_batch_sizes.append(len(data_subset))
+            super().__init__(data_subset, default_args, client)
+
+        def run(self) -> tuple[float, List[DummyQuestion]]:
+            for q in self.problems:
+                q.record.rlmcode_question = "q"
+                q.record.rlmcode_answer = "a"
+            return 1.0, self.problems
+
+    questions = [
+        DummyQuestion(record=Record(unique_tag=f"t{i}", request_id=f"r{i}", kind="add", digit=2))
+        for i in range(3)
+    ]
+
+    updated = run_stage_batch(questions, _Arm, "ArmRLMCode", args, client=None, checkpoint=ckpt)
+
+    assert len(updated) == 3
+    assert seen_batch_sizes == [3]
