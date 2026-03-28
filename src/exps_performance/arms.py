@@ -135,13 +135,43 @@ class BaseArm:
         return all_parsed
 
     def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
-        setattr(q.record, self.set_name + "_question", e)
+        question_field = self.set_name + "_question"
+        reasoning_field = self.set_name + "_reasoning"
+        answer_field = self.set_name + "_answer"
+        parse_err_field = self.set_name + "_parse_err"
+        err_msg_field = self.set_name + "_err_msg"
+        correct_field = self.set_name + "_correct"
+
+        prev_question = getattr(q.record, question_field, "")
+        prev_reasoning = getattr(q.record, reasoning_field, "")
+        prev_answer = getattr(q.record, answer_field, "")
+        prev_parse_err = bool(getattr(q.record, parse_err_field, False))
+        prev_err_msg = getattr(q.record, err_msg_field, "")
+        prev_correct = bool(getattr(q.record, correct_field, False))
+
+        new_parse_err = p[1] != "ok"
+        new_reasoning = getattr(p[0], "simulation", "") if self.run_type != "code" else ""
+        retry_mode = bool(getattr(self.default_args, "retry_failed_records", False))
+
+        # In retry mode, do not let a failed retry erase a previously good result.
+        preserve_existing_success = retry_mode and bool(prev_answer) and not prev_parse_err and new_parse_err
+
+        setattr(q.record, question_field, e or prev_question)
         if self.run_type != "code":
-            setattr(q.record, self.set_name + "_reasoning", p[0].simulation)
-        setattr(q.record, self.set_name + "_answer", a)
-        setattr(q.record, self.set_name + "_parse_err", p[1] != "ok")
-        setattr(q.record, self.set_name + "_err_msg", p[1])
-        setattr(q.record, self.set_name + "_correct", s)
+            if preserve_existing_success:
+                setattr(q.record, reasoning_field, prev_reasoning or new_reasoning)
+            else:
+                setattr(q.record, reasoning_field, new_reasoning or prev_reasoning)
+        if preserve_existing_success:
+            setattr(q.record, answer_field, prev_answer)
+            setattr(q.record, parse_err_field, prev_parse_err)
+            setattr(q.record, err_msg_field, prev_err_msg or p[1])
+            setattr(q.record, correct_field, prev_correct)
+        else:
+            setattr(q.record, answer_field, a or prev_answer)
+            setattr(q.record, parse_err_field, new_parse_err)
+            setattr(q.record, err_msg_field, p[1])
+            setattr(q.record, correct_field, s)
         return q
 
     def set_record(self, answers: List[Any], parsed: List[Tuple[Any, str]], examples: List[str], sequence_parity: List[bool]) -> List[Question]:
@@ -198,9 +228,9 @@ class Arm2(BaseArm):
     def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
         q.record.question = str(q.question)
         q.record.answer = str(q.answer)
-        q.code = p[0].code
-        q.record.sim_code = q.code
-        q.record.sim_reasoning = getattr(p[0], "simulation", "")
+        q.code = getattr(p[0], "code", "") or q.code
+        q.record.sim_code = q.code or q.record.sim_code
+        q.record.sim_reasoning = getattr(p[0], "simulation", "") or q.record.sim_reasoning
         q.record.kind = q.kind
         q.record.digit = q.digits
         q.record.model = self.default_args.model
@@ -562,6 +592,6 @@ class ArmRLMCode(_BaseRLMArm):
 
     def each_record(self, q: Question, a: Any, p: Any, e: str, s: bool) -> Question:
         q = super().each_record(q, a, p, e, s)
-        q.record.rlmcode_reasoning = getattr(p[0], "simulation", "")
-        q.record.rlmcode_code = getattr(p[0], "code", "")
+        q.record.rlmcode_reasoning = getattr(p[0], "simulation", "") or q.record.rlmcode_reasoning
+        q.record.rlmcode_code = getattr(p[0], "code", "") or q.record.rlmcode_code
         return q
