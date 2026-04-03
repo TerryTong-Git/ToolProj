@@ -1,6 +1,7 @@
 import copy
 import logging
-from typing import Any, List, Tuple
+from types import SimpleNamespace
+from typing import Any, Dict, List, Optional, Tuple
 
 from tqdm import tqdm
 
@@ -29,6 +30,7 @@ from src.exps_performance.problems.nphard.msp import MspCheckAndFormat
 from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
 from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
 from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat
+from src.exps_performance.structured_outputs import STAGE_SYSTEM_INSTRUCTION, structured_output_request, validate_nonempty_fields
 from src.exps_performance.utils import cast_float_to_int, clean_code_llm, remove_python_triple_quote
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -71,12 +73,82 @@ class BaseArm:
         self.problems: List[Question] = data_subset
         self.default_args = default_args
         self.client = client
+        self.llm_responses: List[Any] = []
+
+    def _run_batch_responses(
+        self,
+        messages: List[List[Dict[str, str]]],
+        request_options_list: List[Optional[Dict[str, Any]]],
+    ) -> List[Any]:
+        try:
+            responses = run_batch(
+                messages,
+                self.default_args,
+                self.client,
+                request_options_list=request_options_list,
+                return_responses=True,
+            )
+            return list(responses)
+        except TypeError as exc:
+            err_text = str(exc)
+            if "request_options_list" not in err_text and "return_responses" not in err_text:
+                raise
+            answers = run_batch(messages, self.default_args, self.client)
+            return [SimpleNamespace(text=str(answer or "")) for answer in answers]
+
+    def _structured_outputs_enabled(self) -> bool:
+        return bool(getattr(self.default_args, "openrouter_structured_outputs", False) and getattr(self.default_args, "backend", "") == "openrouter")
+
+    def _reasoning_extra_body(self) -> Dict[str, Any]:
+        if not getattr(self.default_args, "openrouter_reasoning_enabled", False):
+            return {}
+        reasoning: Dict[str, Any] = {"enabled": True}
+        effort = getattr(self.default_args, "openrouter_reasoning_effort", None)
+        max_tokens = getattr(self.default_args, "openrouter_reasoning_max_tokens", None)
+        if effort:
+            reasoning["effort"] = effort
+        if max_tokens:
+            reasoning["max_tokens"] = int(max_tokens)
+        reasoning["exclude"] = bool(getattr(self.default_args, "openrouter_reasoning_exclude", False))
+        return {"reasoning": reasoning}
+
+    def _message_bundle(self, q: Question, prompt: str) -> tuple[List[Dict[str, str]], Optional[Dict[str, Any]]]:
+        if not self._structured_outputs_enabled():
+            return [{"role": "user", "content": prompt}], None
+
+        parser = q.util_pointer(self.run_type)
+        model_cls = parser.PROB_TYPES[self.run_type]
+        extra_body = self._reasoning_extra_body()
+        verbosity = getattr(self.default_args, "openrouter_verbosity", None)
+        if verbosity:
+            extra_body["verbosity"] = verbosity
+        request_options: Dict[str, Any] = {
+            "response_format": structured_output_request(model_cls, strict=bool(getattr(self.default_args, "openrouter_structured_strict", True))),
+            "retry_attempts": int(getattr(self.default_args, "openrouter_retry_attempts", 3)),
+            "enable_response_healing": bool(getattr(self.default_args, "openrouter_response_healing", True)),
+            "timeout": float(getattr(self.default_args, "request_timeout", 120.0)),
+        }
+        max_concurrency = getattr(self.default_args, "openrouter_max_concurrency", None)
+        if max_concurrency:
+            request_options["max_concurrency"] = int(max_concurrency)
+        if extra_body:
+            request_options["extra_body"] = extra_body
+        messages: List[Dict[str, str]] = []
+        system_instruction = STAGE_SYSTEM_INSTRUCTION.get(self.set_name)
+        if system_instruction:
+            messages.append({"role": "system", "content": system_instruction})
+        messages.append({"role": "user", "content": prompt})
+        return messages, request_options
 
     def run(self) -> Tuple[float, List[Question]]:
         examples = [d.util_pointer(self.run_type).format_one(d) for d in self.problems]
-        messages = [[{"role": "user", "content": e}] for e in examples]
+        bundled = [self._message_bundle(d, e) for d, e in zip(self.problems, examples)]
+        messages = [bundle[0] for bundle in bundled]
+        request_options = [bundle[1] for bundle in bundled]
         logger.info(f"Running batches for {self.set_name}")
-        answers = run_batch(messages, self.default_args, self.client)
+        responses = self._run_batch_responses(messages, request_options)
+        self.llm_responses = list(responses)
+        answers = [response.text for response in responses]
         logger.info(f"Running parsing for {self.set_name}")
         parsed_answer = self._parse(answers)
         actual_parsed = [p[0] for p in parsed_answer]
@@ -116,16 +188,22 @@ class BaseArm:
             pUtil = q.util_pointer(self.run_type)
             a = remove_python_triple_quote(a)
             parsed_output, err = pUtil.parse_output(a)
+            if err == "ok" and self._structured_outputs_enabled():
+                err = validate_nonempty_fields(parsed_output)
             default = pUtil.PROB_TYPES[self.run_type]()
             if self._is_default_model(parsed_output, default):
                 self.parse_fail += 1
                 parse_failed.append((i, q, parsed_output, pUtil, default))
             all_parsed.append((parsed_output, str(err)))
 
+        self.parsed_fail_ind = [p[0] for p in parse_failed]
+        if self._structured_outputs_enabled():
+            self.reparse_ind = []
+            return all_parsed
+
         reparsed = self.rerun(parse_failed)
         for i, reparsed_output, err in reparsed:
             all_parsed[i] = copy.deepcopy((reparsed_output, str(err)))
-        self.parsed_fail_ind = [p[0] for p in parse_failed]
         self.reparse_ind = [p[0] for p in reparsed]
         assert self.parsed_fail_ind == self.reparse_ind, "parse fail and reparse_inds not the same"
         return all_parsed
@@ -155,11 +233,17 @@ class BaseArm:
             return []
         outs = []
         to_run = []
+        request_options_list: List[Optional[Dict[str, Any]]] = []
         for reparse in to_reparse:
             i, problem, parsed, pUtil, default = reparse
-            to_run += [[{"role": "user", "content": pUtil.format_one(problem)}] for _ in range(RERUN)]
+            for _ in range(RERUN):
+                messages, request_options = self._message_bundle(problem, pUtil.format_one(problem))
+                to_run.append(messages)
+                request_options_list.append(request_options)
             # assert list of lists of dict
-        llm_out = run_batch(to_run, self.default_args, self.client)
+        rerun_responses = self._run_batch_responses(to_run, request_options_list)
+        self.llm_responses.extend(rerun_responses)
+        llm_out = [response.text for response in rerun_responses]
         i = 0
         logger.info(f"Rerunning parsing for {self.set_name}")
         while i < len(llm_out):
@@ -169,6 +253,8 @@ class BaseArm:
             og_ind, problem, _prev_parsed, pUtil, default = to_reparse[prob_index]
             llm_o = remove_python_triple_quote(llm_o)  # not accepted by langchain
             parsed_output, err = pUtil.parse_output(llm_o)
+            if err == "ok" and self._structured_outputs_enabled():
+                err = validate_nonempty_fields(parsed_output)
             if not self._is_default_model(parsed_output, default) or rerun_index == (RERUN - 1):
                 outs.append((og_ind, parsed_output, err))
                 i += RERUN - rerun_index
@@ -177,6 +263,22 @@ class BaseArm:
         if len(to_reparse) != len(outs):
             outs.append((og_ind, parsed_output, err))
         return outs
+
+    def response_summary(self) -> Dict[str, Any]:
+        if not self.llm_responses:
+            return {}
+        total = len(self.llm_responses)
+        return {
+            "llm_requests": total,
+            "llm_total_attempts": sum(int(getattr(resp, "attempts", 1) or 1) for resp in self.llm_responses),
+            "llm_errors": sum(1 for resp in self.llm_responses if getattr(resp, "error", "")),
+            "structured_requested": sum(1 for resp in self.llm_responses if getattr(resp, "structured_requested", False)),
+            "reasoning_requested": sum(1 for resp in self.llm_responses if getattr(resp, "reasoning_requested", False)),
+            "reasoning_visible": sum(1 for resp in self.llm_responses if bool(getattr(resp, "reasoning", ""))),
+            "reasoning_details_visible": sum(1 for resp in self.llm_responses if int(getattr(resp, "reasoning_details_count", 0) or 0) > 0),
+            "reasoning_tokens_visible": sum(1 for resp in self.llm_responses if int(getattr(resp, "reasoning_tokens", 0) or 0) > 0),
+            "empty_text_responses": sum(1 for resp in self.llm_responses if not str(getattr(resp, "text", "") or "").strip()),
+        }
 
 
 class Arm2(BaseArm):
@@ -277,5 +379,3 @@ class Arm4(BaseArm):
 class Arm1(BaseArm):
     run_type: str = "nl"
     set_name: str = "nl"
-
-
