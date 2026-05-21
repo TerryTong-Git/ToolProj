@@ -144,6 +144,29 @@ def test_python_reproduction_cli_figures_hint_uses_recovery_flag() -> None:
     assert "RUN_RECOVERY_NOTEBOOK=1" not in result.stdout
 
 
+def test_python_reproduction_cli_dry_run_figures_does_not_require_paper_dir(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "missing paper"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "--dry-run",
+            "--paper-dir",
+            str(paper_dir),
+            "figures",
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "skip copy: missing" not in result.stdout
+    expected_copy = paper_dir / "images" / "combined_accuracy_delta.png"
+    assert f"copy figures/combined_accuracy_delta.png -> {expected_copy}" in result.stdout
+
+
 def test_paper_reproduction_readme_names_source_of_truth() -> None:
     text = (ROOT / "PAPER_REPRODUCTION.md").read_text()
 
