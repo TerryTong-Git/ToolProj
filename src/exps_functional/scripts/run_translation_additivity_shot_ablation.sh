@@ -13,8 +13,6 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${REPO_ROOT}/src/models/}"
 SHOT_COUNTS=(0 1 2 3 4 5)
 MODEL_SPECS=(
 "claude-haiku-4.5|anthropic/claude-haiku-4.5"
-"gemini-2.5-flash|google/gemini-2.5-flash"
-"mixtral-8x22b-instruct|mistralai/mixtral-8x22b-instruct"
 )
 
 SUBSET_FRACTION="${SUBSET_FRACTION:-0.25}"

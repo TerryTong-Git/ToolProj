@@ -1,6 +1,6 @@
 # Functional Shot Ablation Summary
 
-This compact rebuttal summary reports the verified Claude Haiku 4.5 translation-additivity shot ablation recovered from the `ec1b99c` local artifact commit.
+This compact rebuttal summary reports the verified translation-additivity shot ablation.
 
 Metric definitions:
 - `x`: question only
@@ -9,24 +9,6 @@ Metric definitions:
 - `Delta native`: `(x + native NL) - x`
 - `Delta translated`: `(x + translated NL) - x`
 - `Gap`: `(x + translated NL) - (x + native NL)`
-
-## Reproduction Command
-
-Run the full 0-5 shot sweep:
-
-```bash
-rtk uv run --no-sync python src/exps_functional/run_translation_additivity.py \
-  --model anthropic/claude-haiku-4.5 \
-  --source_model claude-haiku-4.5 \
-  --subset_fraction 0.25 \
-  --n_shots <0|1|2|3|4|5> \
-  --n_samples 1000000 \
-  --max_per_kind 1000000 \
-  --concurrency 32 \
-  --seed 42
-```
-
-The helper script `src/exps_functional/scripts/run_translation_additivity_shot_ablation.sh` loops this command over shots `0` through `5` and the configured model set.
 
 ## Claude Haiku 4.5
 
