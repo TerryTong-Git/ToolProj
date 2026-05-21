@@ -21,7 +21,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
-
 DEFAULT_MODELS: dict[str, str] = {
     "Haiku": "claude-haiku-4.5",
     "Codestral": "codestral-2508",
@@ -84,7 +83,8 @@ def split_error_message(err_msg: str) -> tuple[str, str]:
     if err_msg == "no_code":
         return "type_check_failed", "no_code"
     if "," in err_msg:
-        return err_msg.split(",", 1)
+        parse_err, gen_err = err_msg.split(",", 1)
+        return parse_err, gen_err
     return "", err_msg
 
 
@@ -108,33 +108,53 @@ def classify_failure(row: dict, *, exclude_parse_only: bool) -> str:
     return "runtime_error"
 
 
+def make_record(
+    label: str,
+    model_dir: str,
+    total: int,
+    counts: Counter[str],
+    *,
+    exclude_parse_only: bool,
+) -> dict[str, object]:
+    failures = total - counts["success"]
+    if exclude_parse_only:
+        failures -= counts["excluded_parse_only"]
+
+    record: dict[str, object] = {
+        "model": label,
+        "model_dir": model_dir,
+        "total": total,
+        "success": counts["success"],
+        "failures": failures,
+    }
+    if exclude_parse_only:
+        record["excluded_parse_only"] = counts["excluded_parse_only"]
+
+    for category in ("wrong_answer", "syntax_error", "runtime_error", "time_limit"):
+        count = counts[category]
+        pct = (100.0 * count / failures) if failures else 0.0
+        record[f"{category}_count"] = count
+        record[f"{category}_pct"] = round(pct, 2)
+    return record
+
+
 def build_rows(results_dir: Path, *, exclude_parse_only: bool) -> list[dict[str, object]]:
     out: list[dict[str, object]] = []
+    total_counts: Counter[str] = Counter()
+    total_rows = 0
+
     for label, model_name in DEFAULT_MODELS.items():
         counts: Counter[str] = Counter()
-        total = 0
+        row_count = 0
         for row in iter_rows(results_dir, model_name):
-            total += 1
+            row_count += 1
             counts[classify_failure(row, exclude_parse_only=exclude_parse_only)] += 1
 
-        failures = total - counts["success"]
-        if exclude_parse_only:
-            failures -= counts["excluded_parse_only"]
-        record: dict[str, object] = {
-            "model": label,
-            "model_dir": model_name,
-            "total": total,
-            "success": counts["success"],
-            "failures": failures,
-        }
-        if exclude_parse_only:
-            record["excluded_parse_only"] = counts["excluded_parse_only"]
-        for category in ("wrong_answer", "syntax_error", "runtime_error", "time_limit"):
-            count = counts[category]
-            pct = (100.0 * count / failures) if failures else 0.0
-            record[f"{category}_count"] = count
-            record[f"{category}_pct"] = round(pct, 2)
-        out.append(record)
+        out.append(make_record(label, model_name, row_count, counts, exclude_parse_only=exclude_parse_only))
+        total_rows += row_count
+        total_counts.update(counts)
+
+    out.append(make_record("Total", "all", total_rows, total_counts, exclude_parse_only=exclude_parse_only))
     return out
 
 
