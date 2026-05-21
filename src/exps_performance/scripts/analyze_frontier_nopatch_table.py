@@ -6,7 +6,6 @@ import csv
 from collections import defaultdict
 from pathlib import Path
 
-
 DEFAULT_INPUT = Path("src/exps_performance/results/analysis/frontier_nopatch_outcomes.csv")
 DEFAULT_OUTPUT = Path("results/frontier_nopatch_table.md")
 
@@ -94,9 +93,7 @@ def build_tables(input_csv: Path) -> tuple[list[str], list[dict[str, str]], list
         "|---|---:|---:|---:|",
     ]
     for model in ["GPT-5.4", "Claude Opus 4.6"]:
-        lines.append(
-            f"| {model} | {rebuttal[model]['Route 1']} | {rebuttal[model]['Route 2']} | {rebuttal[model]['Route 3']} |"
-        )
+        lines.append(f"| {model} | {rebuttal[model]['Route 1']} | {rebuttal[model]['Route 2']} | {rebuttal[model]['Route 3']} |")
 
     lines.extend(
         [
@@ -120,9 +117,7 @@ def build_tables(input_csv: Path) -> tuple[list[str], list[dict[str, str]], list
         ]
     )
     for row in single_run_rows:
-        lines.append(
-            f"| `{row['Run']}` | {row['Model']} | {row['Rows']} | {row['Route 1']} | {row['Route 2']} | {row['Route 3']} |"
-        )
+        lines.append(f"| `{row['Run']}` | {row['Model']} | {row['Rows']} | {row['Route 1']} | {row['Route 2']} | {row['Route 3']} |")
 
     return lines, [], single_run_rows
 
