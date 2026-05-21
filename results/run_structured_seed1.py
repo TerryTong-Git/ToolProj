@@ -145,8 +145,7 @@ def validate_profile(profile: DatasetProfile) -> None:
     actual_rows = len(best_effort_jsonl(profile.subset_reference_jsonl))
     if actual_rows != profile.expected_rows:
         raise SystemExit(
-            f"profile size mismatch for {profile.name}: expected {profile.expected_rows}, "
-            f"got {actual_rows} from {profile.subset_reference_jsonl}"
+            f"profile size mismatch for {profile.name}: expected {profile.expected_rows}, got {actual_rows} from {profile.subset_reference_jsonl}"
         )
 
 

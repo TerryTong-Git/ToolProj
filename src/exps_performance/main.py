@@ -236,9 +236,7 @@ def run_stage_batch(
     logger.info(f"Running {stage_name} for {len(pending)} questions")
     chunk_size = max(1, int(getattr(args, "checkpoint_every", 1)), int(getattr(args, "batch_size", 1)))
     batch_retry_attempts = max(1, int(getattr(args, "stage_batch_retry_attempts", 3)))
-    require_parse_success = bool(
-        getattr(args, "openrouter_structured_outputs", False) and stage_name in {"Arm1", "Arm2", "Arm4"}
-    )
+    require_parse_success = bool(getattr(args, "openrouter_structured_outputs", False) and stage_name in {"Arm1", "Arm2", "Arm4"})
     updated_all: List[Question] = []
     for start in range(0, len(pending), chunk_size):
         batch = pending[start : start + chunk_size]

@@ -70,7 +70,7 @@ class FakeStructuredOpenRouterClient:
 
     @staticmethod
     def _payload_for_schema(request_options: dict[str, Any], answer: int) -> dict[str, str]:
-        schema_name = (((request_options.get("response_format") or {}).get("json_schema") or {}).get("name") or "")
+        schema_name = ((request_options.get("response_format") or {}).get("json_schema") or {}).get("name") or ""
         payload = {"Answer": str(answer), "simulation": f"The answer is {answer}."}
         if schema_name == "CodeReasoning":
             payload["code"] = f"def solution():\n    return {answer}"

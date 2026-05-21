@@ -9,7 +9,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
 import torch
 from tqdm import tqdm
@@ -42,7 +42,7 @@ class LLMClient:
         top_p: float,
         stop: Optional[List[str]] = None,
         request_options: Optional[Dict[str, Any]] = None,
-    ) -> str:
+    ) -> Any:
         raise NotImplementedError
 
 
@@ -127,7 +127,7 @@ class OpenAIChatClient(LLMClient):
     ) -> str:
         resp = self.client.chat.completions.create(
             model=model,
-            messages=messages,
+            messages=cast(Any, messages),
             top_p=top_p,
             max_completion_tokens=max_tokens,
             stop=stop,
@@ -252,7 +252,7 @@ class OpenRouterChatClient(LLMClient):
     def _retry_delay_seconds(attempt: int) -> float:
         # Short bounded backoff helps when OpenRouter returns transient malformed
         # responses under high concurrency.
-        return min(8.0, 1.5 * (2 ** max(0, attempt - 1)))
+        return float(min(8.0, 1.5 * (2 ** max(0, attempt - 1))))
 
     def chat(
         self,
@@ -450,7 +450,7 @@ class VLLMClient(LLMClient):
         self.seed = seed
         self.llm = VLLMEngine(
             model=model_name,
-            dtype=dtype,  # "auto" | "float16"
+            dtype=cast(Any, dtype),  # "auto" | "float16"
             tensor_parallel_size=int(tensor_parallel_size),
             gpu_memory_utilization=float(gpu_memory_utilization),
             max_model_len=int(max_model_len) if max_model_len else None,
@@ -675,9 +675,11 @@ def run_batch(
                     if completed == 0:
                         batchbar.update(len(chunk))
                         overall.update(len(chunk))
-        return outs if return_responses else [out.text for out in outs]
+        if return_responses:
+            return list(outs)
+        return [response.text for response in outs]
     else:
-        outs: List[ChatResponse] = []
+        sequential_outs: List[ChatResponse] = []
         with tqdm(total=total, desc="Chatting (overall)", unit="req") as pbar:
             for idx, m in enumerate(messages_list):
                 request_options = None if request_options_list is None else request_options_list[idx]
@@ -691,8 +693,10 @@ def run_batch(
                     request_options=request_options,
                 )
                 normalized = _normalize_batch_outputs([raw_out])
-                outs.extend(normalized)
+                sequential_outs.extend(normalized)
                 if on_response is not None:
                     on_response(idx, normalized[0])
                 pbar.update(1)
-        return outs if return_responses else [out.text for out in outs]
+        if return_responses:
+            return list(sequential_outs)
+        return [response.text for response in sequential_outs]

@@ -195,6 +195,7 @@ def get_prompt_classes(SpecificModel: BaseModel, func_typing: str) -> Tuple[Type
     Returns:
         Tuple of (CodeReasoning, NLReasoning, ControlledCodeSim)
     """
+
     class CodeReasoning(SpecificModel):
         code: str = Field(
             description=DEFAULT_CODE_INSTR + f"Here are the required types: def solution() -> {func_typing}",
