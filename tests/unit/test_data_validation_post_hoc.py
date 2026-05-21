@@ -41,8 +41,8 @@ EXPECTED_SAMPLE_COUNT = 1580
 
 
 def get_all_result_files() -> list[Path]:
-    """Get all res.jsonl files from the results directory."""
-    return sorted(RESULTS_DIR.rglob("res.jsonl"))
+    """Get active res.jsonl files from the results directory."""
+    return sorted(path for path in RESULTS_DIR.rglob("res.jsonl") if "unused" not in path.relative_to(RESULTS_DIR).parts)
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
