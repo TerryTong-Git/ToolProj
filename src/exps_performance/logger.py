@@ -368,6 +368,8 @@ def walk_results_folder(csv_folder: str) -> List[str]:
     jsonl_files: List[str] = []
     for dirpath, dirnames, filenames in os.walk(csv_folder):
         for filename in filenames:
+            if filename != "res.jsonl" and filename != "res.csv":
+                continue
             if filename.endswith(".jsonl"):
                 jsonl_files.append(os.path.join(dirpath, filename))
             elif filename.endswith(".csv"):
