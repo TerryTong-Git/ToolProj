@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shlex
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -45,9 +46,9 @@ class CommandStep:
     env: dict[str, str] | None = None
 
     def display(self) -> str:
-        rendered = " ".join(self.command)
+        rendered = shlex.join(self.command)
         if self.cwd != ROOT_DIR:
-            rendered = f"cd {self.cwd} && {rendered}"
+            rendered = f"cd {shlex.quote(str(self.cwd))} && {rendered}"
         return rendered
 
     def run(self, *, dry_run: bool) -> None:
@@ -226,10 +227,11 @@ def run_figures(config: ReproductionConfig) -> None:
 
 
 def run_paper(config: ReproductionConfig) -> None:
-    if not config.paper_dir.is_dir():
-        raise SystemExit(f"missing paper source directory: {config.paper_dir}")
-    if shutil.which("latexmk") is None:
-        raise SystemExit("missing latexmk; install a TeX distribution before building the paper")
+    if not config.dry_run:
+        if not config.paper_dir.is_dir():
+            raise SystemExit(f"missing paper source directory: {config.paper_dir}")
+        if shutil.which("latexmk") is None:
+            raise SystemExit("missing latexmk; install a TeX distribution before building the paper")
     paper_step(config).run(dry_run=config.dry_run)
 
 

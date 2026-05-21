@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
+from shlex import quote
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -53,6 +55,23 @@ def test_python_reproduction_cli_dry_run_tables_uses_dedicated_output_dir() -> N
     assert "results/paper_reproduction/route_accuracy_tables.md" in result.stdout
     assert "results/paper_reproduction/code_failure_distribution.csv" in result.stdout
     assert "results/route_accuracy_tables.md" not in result.stdout
+
+
+def test_python_reproduction_cli_dry_run_paper_does_not_need_local_latex(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "paper source"
+    env = os.environ.copy()
+    env["PAPER_DIR"] = str(paper_dir)
+
+    result = subprocess.run(
+        [sys.executable, "scripts/reproduce_paper.py", "--dry-run", "paper"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert f"cd {quote(str(paper_dir))} && latexmk -pdf" in result.stdout
 
 
 def test_paper_reproduction_readme_names_source_of_truth() -> None:
