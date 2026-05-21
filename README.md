@@ -59,7 +59,8 @@ OPENROUTER_API_KEY=your_openrouter_key  # For accessing various LLMs
 ## Quick Start
 
 For paper table, figure, and PDF reproduction commands, run
-`uv run python scripts/reproduce_paper.py --list` or see
+`uv run python scripts/reproduce_paper.py --paper-dir ../Bayesian_Tool_Use_source_20260521 --list`
+or see
 [`PAPER_REPRODUCTION.md`](PAPER_REPRODUCTION.md).
 
 ### Run Performance Experiments

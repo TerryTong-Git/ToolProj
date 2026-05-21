@@ -13,7 +13,7 @@ The older sibling `../Bayesian_Tool_Use` is not used for result matching.
 ## One Command
 
 ```bash
-PAPER_DIR=../Bayesian_Tool_Use_source_20260521 uv run python scripts/reproduce_paper.py all
+uv run python scripts/reproduce_paper.py --paper-dir ../Bayesian_Tool_Use_source_20260521 all
 ```
 
 This regenerates the compact table outputs, regenerates the scripted figures, copies generated figures into the paper source, and builds `example_paper.pdf`.
@@ -24,6 +24,10 @@ The older shell entry point still works:
 PAPER_DIR=../Bayesian_Tool_Use_source_20260521 bash scripts/reproduce_paper_results.sh all
 ```
 
+The Python entry point also accepts `--output-dir` for regenerated table outputs.
+The old `PAPER_DIR`, `REPRO_OUT_DIR`, and `RUN_RECOVERY_NOTEBOOK` environment
+variables remain supported as defaults.
+
 Use `--dry-run` to inspect the commands for any target without running them:
 
 ```bash
@@ -33,7 +37,7 @@ uv run python scripts/reproduce_paper.py --dry-run tables
 ## Tables
 
 ```bash
-uv run python scripts/reproduce_paper.py tables
+uv run python scripts/reproduce_paper.py --output-dir results/paper_reproduction tables
 ```
 
 The table source is `../Bayesian_Tool_Use_source_20260521/Appendix/part_1.tex`.
@@ -69,14 +73,14 @@ The figure references are in `../Bayesian_Tool_Use_source_20260521/sections/*.te
 | Judge discrimination barplot | `uv run python src/exps_control_again/scripts/plot_judge_discrimination.py` | `src/exps_control_again/results/judge_discrimination_barplot.png` |
 | Native vs translated scatter | `uv run python src/exps_control_again/scripts/native_vs_translated_scatter.py` | `src/exps_control_again/results/native_vs_translated_scatter.png` |
 | Translation additivity | `uv run python src/exps_functional/scripts/plot_translation_additivity.py` | `src/exps_functional/results/translation_additivity.png` |
-| Recovery vs digits | `RUN_RECOVERY_NOTEBOOK=1 uv run jupyter nbconvert --to notebook --execute src/exps_performance/notebooks/recovery_vs_digits.ipynb --output /tmp/recovery_vs_digits.executed.ipynb` | `src/exps_performance/figures/recovery_vs_digits_overall.png` |
+| Recovery vs digits | `uv run python scripts/reproduce_paper.py --run-recovery-notebook figures` | `src/exps_performance/figures/recovery_vs_digits_overall.png` |
 
-The recovery figure is notebook-backed. The default figure command does not run the notebook unless `RUN_RECOVERY_NOTEBOOK=1` is set.
+The recovery figure is notebook-backed. The default figure command does not run the notebook unless `--run-recovery-notebook` is set.
 
 ## Paper Build
 
 ```bash
-PAPER_DIR=../Bayesian_Tool_Use_source_20260521 uv run python scripts/reproduce_paper.py paper
+uv run python scripts/reproduce_paper.py --paper-dir ../Bayesian_Tool_Use_source_20260521 paper
 ```
 
 This runs:
@@ -95,6 +99,7 @@ bash -n scripts/reproduce_paper_results.sh
 uv run python scripts/reproduce_paper.py --list
 bash scripts/reproduce_paper_results.sh --list
 uv run python scripts/reproduce_paper.py --dry-run tables
+uv run python scripts/reproduce_paper.py --dry-run --paper-dir ../Bayesian_Tool_Use_source_20260521 paper
 uv run pytest tests/integration/test_route_accuracy_tables_e2e.py -q
 uv run pytest tests/integration/test_translation_shot_ablation_e2e.py -q
 uv run pytest tests/integration/test_rlm_subset_results_e2e.py -q
