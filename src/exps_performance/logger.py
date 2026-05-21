@@ -122,7 +122,7 @@ RLM_ONLY_RESULT_FIELDS = BASE_RESULT_FIELDS + RLM_RESULT_FIELDS
 
 
 def serialize_record(record: Record, only_rlm: bool = False) -> Dict[str, Any]:
-    payload = record.model_dump()
+    payload = cast(Dict[str, Any], record.model_dump())
     if not only_rlm:
         return payload
     return {field: payload[field] for field in RLM_ONLY_RESULT_FIELDS}
@@ -307,6 +307,8 @@ def read_from_csv(logdir: str) -> List[Record]:
                     val = False
                 elif field.annotation is int:
                     val = -1
+                elif field.annotation is float:
+                    val = -1.0
                 else:
                     val = None
             if field.annotation is str and not isinstance(val, str):

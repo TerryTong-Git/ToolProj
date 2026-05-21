@@ -41,8 +41,8 @@ EXPECTED_SAMPLE_COUNT = 1580
 
 
 def get_all_result_files() -> list[Path]:
-    """Get all res.jsonl files from the results directory."""
-    return sorted(RESULTS_DIR.rglob("res.jsonl"))
+    """Get active res.jsonl files from the results directory."""
+    return sorted(path for path in RESULTS_DIR.rglob("res.jsonl") if "unused" not in path.relative_to(RESULTS_DIR).parts)
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -89,9 +89,7 @@ class TestResultFilesExist:
 
     def test_minimum_result_files(self, all_result_files: list[Path]) -> None:
         """Verify we have a reasonable number of result files (at least 10 model-seed combos)."""
-        assert len(all_result_files) >= 10, (
-            f"Expected at least 10 result files, found {len(all_result_files)}"
-        )
+        assert len(all_result_files) >= 10, f"Expected at least 10 result files, found {len(all_result_files)}"
 
 
 class TestSampleCounts:
@@ -106,18 +104,15 @@ class TestSampleCounts:
         """Verify all result files have exactly the expected sample count."""
         for path, records in result_file_data.items():
             count = len(records)
-            assert count == EXPECTED_SAMPLE_COUNT, (
-                f"File {path.relative_to(RESULTS_DIR)} has {count} samples, "
-                f"expected exactly {EXPECTED_SAMPLE_COUNT}"
-            )
+            assert (
+                count == EXPECTED_SAMPLE_COUNT
+            ), f"File {path.relative_to(RESULTS_DIR)} has {count} samples, expected exactly {EXPECTED_SAMPLE_COUNT}"
 
     def test_consistent_sample_counts(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify all result files have identical sample counts."""
         counts = {path: len(records) for path, records in result_file_data.items()}
         unique_counts = set(counts.values())
-        assert len(unique_counts) == 1, (
-            f"Inconsistent sample counts: {unique_counts}. All files must have the same count."
-        )
+        assert len(unique_counts) == 1, f"Inconsistent sample counts: {unique_counts}. All files must have the same count."
 
 
 class TestRequiredFields:
@@ -128,10 +123,7 @@ class TestRequiredFields:
         for path, records in result_file_data.items():
             for i, record in enumerate(records):
                 missing = REQUIRED_FIELDS - set(record.keys())
-                assert not missing, (
-                    f"Missing required fields in {path.relative_to(RESULTS_DIR)} "
-                    f"record {i}: {missing}"
-                )
+                assert not missing, f"Missing required fields in {path.relative_to(RESULTS_DIR)} record {i}: {missing}"
 
     def test_arm_fields_present(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify arm-specific fields are present for all arms."""
@@ -140,10 +132,7 @@ class TestRequiredFields:
                 for arm in ARM_NAMES:
                     for field in ARM_FIELDS:
                         full_field = f"{arm}_{field}"
-                        assert full_field in record, (
-                            f"Missing field '{full_field}' in "
-                            f"{path.relative_to(RESULTS_DIR)} record {i}"
-                        )
+                        assert full_field in record, f"Missing field '{full_field}' in {path.relative_to(RESULTS_DIR)} record {i}"
 
 
 class TestNoBlankResults:
@@ -154,26 +143,20 @@ class TestNoBlankResults:
         for path, records in result_file_data.items():
             for i, record in enumerate(records):
                 model = record.get("model", "")
-                assert model and str(model).strip(), (
-                    f"Blank model field in {path.relative_to(RESULTS_DIR)} record {i}"
-                )
+                assert model and str(model).strip(), f"Blank model field in {path.relative_to(RESULTS_DIR)} record {i}"
 
     def test_no_blank_kind_field(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify kind field is never blank."""
         for path, records in result_file_data.items():
             for i, record in enumerate(records):
                 kind = record.get("kind", "")
-                assert kind and str(kind).strip(), (
-                    f"Blank kind field in {path.relative_to(RESULTS_DIR)} record {i}"
-                )
+                assert kind and str(kind).strip(), f"Blank kind field in {path.relative_to(RESULTS_DIR)} record {i}"
 
     # NP-hard kinds that have blank answers at digit=0 by design
     # (graph/combinatorial problems with 0 nodes have no meaningful answers)
     NP_HARD_KINDS = {"spp", "tsp", "tsp_d", "msp", "ksp", "gcp", "gcp_d", "bsp", "edp"}
 
-    def test_no_blank_ground_truth_answers(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
+    def test_no_blank_ground_truth_answers(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify no blank ground truth answers - all must be populated.
 
         Note: NP-hard kinds at digit=0 are intentionally blank by design
@@ -191,9 +174,7 @@ class TestNoBlankResults:
                     f"record {i} (kind={record.get('kind')}, digit={record.get('digit')})"
                 )
 
-    def test_all_questions_populated(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
+    def test_all_questions_populated(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify arm questions have acceptable population rates.
 
         - nl_question and sim_question: 100% population required
@@ -219,19 +200,13 @@ class TestNoBlankResults:
             # Check tolerant arms (max blank rate)
             for arm in tolerant_arms:
                 question_field = f"{arm}_question"
-                blank_count = sum(
-                    1 for r in records
-                    if not r.get(question_field) or str(r.get(question_field)).strip() == ""
-                )
+                blank_count = sum(1 for r in records if not r.get(question_field) or str(r.get(question_field)).strip() == "")
                 blank_rate = blank_count / len(records)
-                assert blank_rate <= max_blank_rate, (
-                    f"{question_field} in {path.relative_to(RESULTS_DIR)} "
-                    f"has {blank_rate:.1%} blank rate (max allowed: {max_blank_rate:.0%})"
-                )
+                assert (
+                    blank_rate <= max_blank_rate
+                ), f"{question_field} in {path.relative_to(RESULTS_DIR)} has {blank_rate:.1%} blank rate (max allowed: {max_blank_rate:.0%})"
 
-    def test_all_answers_populated(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
+    def test_all_answers_populated(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify all arm answers are populated (may be empty string for parse errors, but field must exist)."""
         for path, records in result_file_data.items():
             for i, record in enumerate(records):
@@ -251,20 +226,14 @@ class TestDataTypes:
         for path, records in result_file_data.items():
             for i, record in enumerate(records):
                 digit = record.get("digit")
-                assert isinstance(digit, int), (
-                    f"digit field is not int in {path.relative_to(RESULTS_DIR)} "
-                    f"record {i}: {type(digit)}"
-                )
+                assert isinstance(digit, int), f"digit field is not int in {path.relative_to(RESULTS_DIR)} record {i}: {type(digit)}"
 
     def test_seed_is_integer(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify seed field is an integer."""
         for path, records in result_file_data.items():
             for i, record in enumerate(records):
                 seed = record.get("seed")
-                assert isinstance(seed, int), (
-                    f"seed field is not int in {path.relative_to(RESULTS_DIR)} "
-                    f"record {i}: {type(seed)}"
-                )
+                assert isinstance(seed, int), f"seed field is not int in {path.relative_to(RESULTS_DIR)} record {i}: {type(seed)}"
 
     def test_correct_fields_are_boolean(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify *_correct fields are boolean."""
@@ -273,10 +242,9 @@ class TestDataTypes:
                 for arm in ARM_NAMES:
                     correct_field = f"{arm}_correct"
                     value = record.get(correct_field)
-                    assert isinstance(value, bool), (
-                        f"{correct_field} is not bool in {path.relative_to(RESULTS_DIR)} "
-                        f"record {i}: {type(value)} = {value}"
-                    )
+                    assert isinstance(
+                        value, bool
+                    ), f"{correct_field} is not bool in {path.relative_to(RESULTS_DIR)} record {i}: {type(value)} = {value}"
 
     def test_parse_err_fields_are_boolean(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify *_parse_err fields are boolean."""
@@ -285,10 +253,9 @@ class TestDataTypes:
                 for arm in ARM_NAMES:
                     parse_err_field = f"{arm}_parse_err"
                     value = record.get(parse_err_field)
-                    assert isinstance(value, bool), (
-                        f"{parse_err_field} is not bool in {path.relative_to(RESULTS_DIR)} "
-                        f"record {i}: {type(value)} = {value}"
-                    )
+                    assert isinstance(
+                        value, bool
+                    ), f"{parse_err_field} is not bool in {path.relative_to(RESULTS_DIR)} record {i}: {type(value)} = {value}"
 
 
 class TestDataConsistency:
@@ -305,10 +272,9 @@ class TestDataConsistency:
                 model = record.get("model", "")
                 # Model in record might have provider prefix like "google/gemini-2.0-flash-001"
                 model_suffix = model.split("/")[-1] if "/" in model else model
-                assert model_suffix == expected_model_prefix or expected_model_prefix in model, (
-                    f"Model mismatch in {path.relative_to(RESULTS_DIR)} record {i}: "
-                    f"directory says '{expected_model_prefix}', record says '{model}'"
-                )
+                assert (
+                    model_suffix == expected_model_prefix or expected_model_prefix in model
+                ), f"Model mismatch in {path.relative_to(RESULTS_DIR)} record {i}: directory says '{expected_model_prefix}', record says '{model}'"
 
     def test_seed_matches_directory(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify seed field matches the directory name."""
@@ -319,30 +285,24 @@ class TestDataConsistency:
 
             for i, record in enumerate(records):
                 seed = record.get("seed")
-                assert seed == expected_seed, (
-                    f"Seed mismatch in {path.relative_to(RESULTS_DIR)} record {i}: "
-                    f"directory says {expected_seed}, record says {seed}"
-                )
+                assert (
+                    seed == expected_seed
+                ), f"Seed mismatch in {path.relative_to(RESULTS_DIR)} record {i}: directory says {expected_seed}, record says {seed}"
 
-    def test_unique_tags_are_unique_within_file(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
+    def test_unique_tags_are_unique_within_file(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify unique_tag field is actually unique within each file."""
         for path, records in result_file_data.items():
             tags = [r.get("unique_tag") for r in records]
             unique_tags = set(tags)
-            assert len(tags) == len(unique_tags), (
-                f"Duplicate unique_tags in {path.relative_to(RESULTS_DIR)}: "
-                f"{len(tags)} records but only {len(unique_tags)} unique tags"
-            )
+            assert len(tags) == len(
+                unique_tags
+            ), f"Duplicate unique_tags in {path.relative_to(RESULTS_DIR)}: {len(tags)} records but only {len(unique_tags)} unique tags"
 
 
 class TestParseErrorRates:
     """Tests for parse error rates being within acceptable bounds."""
 
-    def test_aggregate_parse_error_rate(
-        self, result_file_data: dict[Path, list[dict]]
-    ) -> None:
+    def test_aggregate_parse_error_rate(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify aggregate parse error rate across all files is reasonable."""
         total_records = 0
         total_errors_by_arm = {arm: 0 for arm in ARM_NAMES}
@@ -351,9 +311,7 @@ class TestParseErrorRates:
             total_records += len(records)
             for arm in ARM_NAMES:
                 parse_err_field = f"{arm}_parse_err"
-                total_errors_by_arm[arm] += sum(
-                    1 for r in records if r.get(parse_err_field, False)
-                )
+                total_errors_by_arm[arm] += sum(1 for r in records if r.get(parse_err_field, False))
 
         # Report error rates (informational)
         print("\nAggregate parse error rates:")
@@ -363,13 +321,8 @@ class TestParseErrorRates:
 
         # At least one arm should have reasonable parse success
         min_success_rate = 0.3  # At least 30% success for best arm
-        best_success = max(
-            1 - (errors / total_records) if total_records > 0 else 0
-            for errors in total_errors_by_arm.values()
-        )
-        assert best_success >= min_success_rate, (
-            f"All arms have very high parse error rates. Best success rate: {best_success:.1%}"
-        )
+        best_success = max(1 - (errors / total_records) if total_records > 0 else 0 for errors in total_errors_by_arm.values())
+        assert best_success >= min_success_rate, f"All arms have very high parse error rates. Best success rate: {best_success:.1%}"
 
 
 class TestKindCoverage:
@@ -378,24 +331,59 @@ class TestKindCoverage:
     # All valid kinds that can appear in results (current experiment config only)
     VALID_KINDS = {
         # Fine-grained arithmetic
-        "add", "sub", "mul",
+        "add",
+        "sub",
+        "mul",
         # Fine-grained DP
-        "lcs", "knap", "rod",
+        "lcs",
+        "knap",
+        "rod",
         # ILP
-        "ilp_assign", "ilp_prod", "ilp_partition",
+        "ilp_assign",
+        "ilp_prod",
+        "ilp_partition",
         # CLRS algorithms
-        "activity_selector", "articulation_points", "bellman_ford", "bfs",
-        "binary_search", "bridges", "bubble_sort", "dag_shortest_paths",
-        "dfs", "dijkstra", "find_maximum_subarray_kadane", "floyd_warshall",
-        "graham_scan", "heapsort", "insertion_sort", "jarvis_march",
-        "kmp_matcher", "lcs_length", "matrix_chain_order", "minimum",
-        "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
-        "quickselect", "quicksort", "segments_intersect",
-        "strongly_connected_components", "task_scheduling", "topological_sort",
+        "activity_selector",
+        "articulation_points",
+        "bellman_ford",
+        "bfs",
+        "binary_search",
+        "bridges",
+        "bubble_sort",
+        "dag_shortest_paths",
+        "dfs",
+        "dijkstra",
+        "find_maximum_subarray_kadane",
+        "floyd_warshall",
+        "graham_scan",
+        "heapsort",
+        "insertion_sort",
+        "jarvis_march",
+        "kmp_matcher",
+        "lcs_length",
+        "matrix_chain_order",
+        "minimum",
+        "mst_kruskal",
+        "mst_prim",
+        "naive_string_matcher",
+        "optimal_bst",
+        "quickselect",
+        "quicksort",
+        "segments_intersect",
+        "strongly_connected_components",
+        "task_scheduling",
+        "topological_sort",
         # NP-hard (base and decision variants)
-        "edp", "gcp", "gcp_d", "ksp", "spp", "tsp", "tsp_d",
+        "edp",
+        "gcp",
+        "gcp_d",
+        "ksp",
+        "spp",
+        "tsp",
+        "tsp_d",
         # NP-hard additional variants
-        "msp", "bsp",
+        "msp",
+        "bsp",
     }
 
     def test_all_kinds_are_valid(self, result_file_data: dict[Path, list[dict]]) -> None:
@@ -403,19 +391,16 @@ class TestKindCoverage:
         for path, records in result_file_data.items():
             kinds_in_file = {r.get("kind") for r in records}
             invalid_kinds = kinds_in_file - self.VALID_KINDS
-            assert not invalid_kinds, (
-                f"Invalid kinds in {path.relative_to(RESULTS_DIR)}: {invalid_kinds}"
-            )
+            assert not invalid_kinds, f"Invalid kinds in {path.relative_to(RESULTS_DIR)}: {invalid_kinds}"
 
     def test_minimum_kinds_per_file(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify each file has at least some problem variety."""
         min_kinds = 3  # Each file should have at least 3 different problem kinds
         for path, records in result_file_data.items():
             kinds_in_file = {r.get("kind") for r in records}
-            assert len(kinds_in_file) >= min_kinds, (
-                f"Too few kinds in {path.relative_to(RESULTS_DIR)}: "
-                f"found {len(kinds_in_file)}, expected at least {min_kinds}"
-            )
+            assert (
+                len(kinds_in_file) >= min_kinds
+            ), f"Too few kinds in {path.relative_to(RESULTS_DIR)}: found {len(kinds_in_file)}, expected at least {min_kinds}"
 
     def test_digit_range_coverage(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify digit range is reasonable (0-100 to accommodate various experiments)."""
@@ -425,9 +410,5 @@ class TestKindCoverage:
                 continue
             min_digit, max_digit = min(digits), max(digits)
             # CLRS can have digit=0, some experiments go up to 64+
-            assert min_digit >= 0, (
-                f"Unexpected negative digit {min_digit} in {path.relative_to(RESULTS_DIR)}"
-            )
-            assert max_digit <= 100, (
-                f"Unexpected max digit {max_digit} in {path.relative_to(RESULTS_DIR)}"
-            )
+            assert min_digit >= 0, f"Unexpected negative digit {min_digit} in {path.relative_to(RESULTS_DIR)}"
+            assert max_digit <= 100, f"Unexpected max digit {max_digit} in {path.relative_to(RESULTS_DIR)}"

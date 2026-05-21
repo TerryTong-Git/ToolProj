@@ -10,7 +10,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 from dotenv import load_dotenv
 
@@ -90,7 +90,7 @@ def _install_instrumented_rlm_class() -> Any:
         _INSTRUMENTED_RLM_CLASS = base_cls
         return base_cls
 
-    class InstrumentedRLM(base_cls):
+    class InstrumentedRLM(base_cls):  # type: ignore[misc, valid-type]
         def completion(self, prompt: str | dict[str, Any], root_prompt: str | None = None) -> Any:
             _emit_progress_event("task_start", depth=getattr(self, "depth", 0), max_depth=getattr(self, "max_depth", 0))
             result = super().completion(prompt, root_prompt=root_prompt)
@@ -112,19 +112,21 @@ def _install_instrumented_rlm_class() -> Any:
             _emit_progress_event("lm_call_start", depth=getattr(self, "depth", 0), phase="default_answer")
             result = super()._default_answer(message_history, lm_handler)
             _emit_progress_event("lm_call_complete", depth=getattr(self, "depth", 0), phase="default_answer")
-            return result
+            return cast(str, result)
 
         def _fallback_answer(self, message: str | dict[str, Any]) -> str:
             _emit_progress_event("lm_call_start", depth=getattr(self, "depth", 0), phase="fallback")
             result = super()._fallback_answer(message)
             _emit_progress_event("lm_call_complete", depth=getattr(self, "depth", 0), phase="fallback")
-            return result
+            return cast(str, result)
 
-        def _compact_history(self, lm_handler: Any, environment: Any, message_history: list[dict[str, Any]], compaction_count: int = 1) -> list[dict[str, Any]]:
+        def _compact_history(
+            self, lm_handler: Any, environment: Any, message_history: list[dict[str, Any]], compaction_count: int = 1
+        ) -> list[dict[str, Any]]:
             _emit_progress_event("lm_call_start", depth=getattr(self, "depth", 0), phase="compaction")
             result = super()._compact_history(lm_handler, environment, message_history, compaction_count)
             _emit_progress_event("lm_call_complete", depth=getattr(self, "depth", 0), phase="compaction")
-            return result
+            return cast(list[dict[str, Any]], result)
 
     _INSTRUMENTED_RLM_CLASS = InstrumentedRLM
     rlm_core.RLM = InstrumentedRLM
@@ -169,11 +171,7 @@ def _consume_live_event(state: LiveRLMTaskState, event: dict[str, Any]) -> None:
 
 
 def _format_aggregate_stats(done: int, total: int, active: int, max_concurrent: int, total_cost_usd: float) -> str:
-    return (
-        f"batch={done}/{total} "
-        f"active={active}/{max_concurrent} "
-        f"cost=${total_cost_usd:,.4f}"
-    )
+    return f"batch={done}/{total} " f"active={active}/{max_concurrent} " f"cost=${total_cost_usd:,.4f}"
 
 
 class RecursiveLMExecutor:
@@ -204,8 +202,7 @@ class RecursiveLMExecutor:
             from rlm import RLM
         except Exception as exc:  # noqa: BLE001
             raise RuntimeError(
-                "Could not import `rlm`. Install the `rlms` package or point "
-                "--rlm_repo_path at a checkout of https://github.com/alexzhang13/rlm."
+                "Could not import `rlm`. Install the `rlms` package or point " "--rlm_repo_path at a checkout of https://github.com/alexzhang13/rlm."
             ) from exc
         return RLM
 
@@ -214,13 +211,11 @@ class RecursiveLMExecutor:
         try:
             from rlm.logger import RLMLogger
         except Exception as exc:  # noqa: BLE001
-            raise RuntimeError(
-                "Could not import `RLMLogger` from the external rlm package."
-            ) from exc
+            raise RuntimeError("Could not import `RLMLogger` from the external rlm package.") from exc
         return RLMLogger
 
     def _resolve_backend(self) -> str:
-        backend = getattr(self.args, "rlm_backend", None) or getattr(self.args, "backend", "openrouter")
+        backend = str(getattr(self.args, "rlm_backend", None) or getattr(self.args, "backend", "openrouter"))
         if backend == "running":
             return "openai"
         if backend == "dummy":
@@ -245,9 +240,7 @@ class RecursiveLMExecutor:
             return kwargs
 
         if backend == "openrouter":
-            kwargs["base_url"] = getattr(self.args, "openrouter_base_url", None) or os.getenv(
-                "OPENROUTER_API_BASE", "https://openrouter.ai/api/v1"
-            )
+            kwargs["base_url"] = getattr(self.args, "openrouter_base_url", None) or os.getenv("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
             api_key = getattr(self.args, "openrouter_api_key", None) or os.getenv("OPENROUTER_API_KEY")
             if api_key and "api_key" not in kwargs:
                 kwargs["api_key"] = api_key
@@ -393,9 +386,7 @@ class RecursiveLMExecutor:
                     )
                 except Exception as exc:  # noqa: BLE001
                     err_msg = (
-                        f"worker_output_parse_failed: {exc}; "
-                        f"stdout={' '.join(stdout_lines)[:500]}; "
-                        f"stderr={' '.join(stderr_lines)[:500]}"
+                        f"worker_output_parse_failed: {exc}; " f"stdout={' '.join(stdout_lines)[:500]}; " f"stderr={' '.join(stderr_lines)[:500]}"
                     )
                     return RLMExecutionResult(response="", err=err_msg)
             err_text = "\n".join(stderr_lines).strip() or "\n".join(stdout_lines).strip()
@@ -429,16 +420,19 @@ class RecursiveLMExecutor:
             "cost_usd": 0.0,
         }
 
+        def _aggregate_stats() -> str:
+            return _format_aggregate_stats(
+                int(aggregate["done"]),
+                total_tasks,
+                int(aggregate["active"]),
+                max_concurrent,
+                float(aggregate["cost_usd"]),
+            )
+
         async def _one(index: int, prompt: str) -> tuple[int, RLMExecutionResult]:
             async with semaphore:
                 aggregate["active"] += 1
-                current_stats = _format_aggregate_stats(
-                    aggregate["done"],
-                    total_tasks,
-                    aggregate["active"],
-                    max_concurrent,
-                    aggregate["cost_usd"],
-                )
+                current_stats = _aggregate_stats()
                 progress_manager.update(subtask_id, stats=current_stats)
                 if parent_task_id is not None:
                     progress_manager.update(parent_task_id, stats=current_stats)
@@ -468,13 +462,7 @@ class RecursiveLMExecutor:
                     return index, result
                 finally:
                     aggregate["active"] = max(0, aggregate["active"] - 1)
-                    current_stats = _format_aggregate_stats(
-                        aggregate["done"],
-                        total_tasks,
-                        aggregate["active"],
-                        max_concurrent,
-                        aggregate["cost_usd"],
-                    )
+                    current_stats = _aggregate_stats()
                     progress_manager.update(subtask_id, stats=current_stats)
                     if parent_task_id is not None:
                         progress_manager.update(parent_task_id, stats=current_stats)
@@ -502,13 +490,7 @@ class RecursiveLMExecutor:
                     maybe_awaitable = on_completed(index, result)
                     if inspect.isawaitable(maybe_awaitable):
                         await maybe_awaitable
-                stats = _format_aggregate_stats(
-                    aggregate["done"],
-                    total_tasks,
-                    aggregate["active"],
-                    max_concurrent,
-                    aggregate["cost_usd"],
-                )
+                stats = _aggregate_stats()
                 progress_manager.update(subtask_id, advance=1, stats=stats)
                 if parent_task_id is not None:
                     progress_manager.update(parent_task_id, advance=1, stats=stats)

@@ -1,6 +1,6 @@
+import json
 import os
 import re
-import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence, Union
@@ -9,8 +9,8 @@ from tbparse import SummaryReader
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 from src.exps_performance.logger import (
-    CheckpointManager,
     RLM_ONLY_RESULT_FIELDS,
+    CheckpointManager,
     create_big_df,
     create_dir,
     init_tensorboard,

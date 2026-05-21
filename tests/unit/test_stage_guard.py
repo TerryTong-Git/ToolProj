@@ -90,10 +90,7 @@ def test_rlm_stage_ignores_checkpoint_chunking(tmp_path) -> None:  # type: ignor
                 q.record.rlmcode_answer = "a"
             return 1.0, self.problems
 
-    questions = [
-        DummyQuestion(record=Record(unique_tag=f"t{i}", request_id=f"r{i}", kind="add", digit=2))
-        for i in range(3)
-    ]
+    questions = [DummyQuestion(record=Record(unique_tag=f"t{i}", request_id=f"r{i}", kind="add", digit=2)) for i in range(3)]
 
     updated = run_stage_batch(questions, _Arm, "ArmRLMCode", args, client=None, checkpoint=ckpt)
 

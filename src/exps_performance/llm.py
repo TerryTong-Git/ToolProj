@@ -42,7 +42,7 @@ class LLMClient:
         temperature: float,
         top_p: float,
         stop: Optional[List[str]] = None,
-        ) -> str:
+    ) -> str:
         raise NotImplementedError
 
 
@@ -84,8 +84,7 @@ class StageUsageMeter:
     def stats_text(self) -> str:
         done = f"{self.completed_examples}/{self.total_examples}" if self.total_examples > 0 else str(self.completed_examples)
         return (
-            f"done={done} req={self.total_requests} cost=${self.usage.cost:.4f} "
-            f"in={self.usage.prompt_tokens} out={self.usage.completion_tokens}"
+            f"done={done} req={self.total_requests} cost=${self.usage.cost:.4f} " f"in={self.usage.prompt_tokens} out={self.usage.completion_tokens}"
         )
 
 

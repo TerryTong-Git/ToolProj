@@ -166,7 +166,9 @@ def _stage_complete(stage_name: str, rec: Any) -> bool:
     if stage_name == "Arm1":  # natural language reasoning
         return bool(rec.nl_question) and (bool(rec.nl_answer) or bool(rec.nl_err_msg) or bool(rec.nl_parse_err) or bool(rec.nl_correct))
     if stage_name == "ArmRLMNL":
-        return bool(rec.rlmnl_question) and (bool(rec.rlmnl_answer) or bool(rec.rlmnl_err_msg) or bool(rec.rlmnl_parse_err) or bool(rec.rlmnl_correct))
+        return bool(rec.rlmnl_question) and (
+            bool(rec.rlmnl_answer) or bool(rec.rlmnl_err_msg) or bool(rec.rlmnl_parse_err) or bool(rec.rlmnl_correct)
+        )
     if stage_name == "ArmRLMCode":
         return bool(rec.rlmcode_question) and (
             bool(rec.rlmcode_answer) or bool(rec.rlmcode_err_msg) or bool(rec.rlmcode_parse_err) or bool(rec.rlmcode_correct)

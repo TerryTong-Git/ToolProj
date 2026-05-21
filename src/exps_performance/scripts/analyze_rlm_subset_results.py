@@ -8,7 +8,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Sequence
 
-
 DEFAULT_OUTCOMES = Path("src/exps_performance/results/analysis/rlm_subset25_outcomes.csv")
 DEFAULT_REPORT = Path("results/rlm_results.md")
 
@@ -46,7 +45,7 @@ def write_outcomes(path: Path, rows: Sequence[dict[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = ["model", "kind", "digit", "index_in_kind", "request_id", "rlm_code_correct", "rlm_nl_correct"]
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fields)
+        writer = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

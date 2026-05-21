@@ -6,8 +6,8 @@ from typing import Any, List, Tuple
 
 from src.exps_performance.core.executor import ProgramChatInterface
 from src.exps_performance.core.rlm_executor import RecursiveLMExecutor
-from src.exps_performance.logger import CheckpointManager
 from src.exps_performance.llm import run_batch
+from src.exps_performance.logger import CheckpointManager
 from src.exps_performance.problems import Question
 from src.exps_performance.problems.clrs import ClrsCheckAndFormat
 from src.exps_performance.problems.finegrained import (
@@ -427,9 +427,7 @@ class _BaseRLMArm(BaseArm):
         self.executor = RecursiveLMExecutor(self.default_args)
         prompts = [q.util_pointer(self.run_type).format_one(q) for q in self.problems]
         examples: List[str] = list(prompts)
-        answers, self.exec_errors, self.exec_times, self.exec_metadata_json = asyncio.run(
-            self._run_prompts_async(prompts)
-        )
+        answers, self.exec_errors, self.exec_times, self.exec_metadata_json = asyncio.run(self._run_prompts_async(prompts))
 
         logger.info(f"Running parsing for {self.set_name}")
         parsed_answer = self._parse(answers)
@@ -446,14 +444,10 @@ class _BaseRLMArm(BaseArm):
 
         logger.info(f"Rerunning parsing for {self.set_name}")
         prompts = [pUtil.format_one(problem) for _og_ind, problem, _prev_parsed, pUtil, _default in to_reparse]
-        raw_answers, raw_exec_errors, _raw_exec_times, _raw_metadata_jsons = asyncio.run(
-            self._run_prompts_async(prompts)
-        )
+        raw_answers, raw_exec_errors, _raw_exec_times, _raw_metadata_jsons = asyncio.run(self._run_prompts_async(prompts))
 
         outs: List[Tuple[int, Any, Any, str]] = []
-        for (og_ind, problem, _prev_parsed, pUtil, default), raw_response, exec_err in zip(
-            to_reparse, raw_answers, raw_exec_errors
-        ):
+        for (og_ind, problem, _prev_parsed, pUtil, default), raw_response, exec_err in zip(to_reparse, raw_answers, raw_exec_errors):
             last_parsed = default
             last_err: Any = "parse_failed"
             last_raw_response = raw_response
@@ -467,9 +461,7 @@ class _BaseRLMArm(BaseArm):
             if self._is_default_model(parsed_output, default):
                 retry_prompt = pUtil.format_one(problem)
                 for _attempt in range(RERUN - 1):
-                    retry_answers, retry_exec_errors, _retry_exec_times, _retry_metadata_jsons = asyncio.run(
-                        self._run_prompts_async([retry_prompt])
-                    )
+                    retry_answers, retry_exec_errors, _retry_exec_times, _retry_metadata_jsons = asyncio.run(self._run_prompts_async([retry_prompt]))
                     retry_result = retry_answers[0]
                     last_raw_response = retry_result
                     last_exec_err = retry_exec_errors[0]
@@ -535,9 +527,7 @@ class _BaseRLMArm(BaseArm):
                 str(getattr(result, "response", "") or ""),
                 str(getattr(result, "err", "ok") or "ok"),
                 float(getattr(result, "execution_time", 0.0) or 0.0),
-                json.dumps(getattr(result, "metadata", None), ensure_ascii=False, sort_keys=True)
-                if getattr(result, "metadata", None)
-                else "",
+                json.dumps(getattr(result, "metadata", None), ensure_ascii=False, sort_keys=True) if getattr(result, "metadata", None) else "",
                 prompt_override=prompts[index],
             )
             edited[index] = edited_q
