@@ -32,7 +32,7 @@ from typing import Any, List, Optional, Sequence, cast
 
 from simple_parsing import parse
 
-from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, BaseArm
+from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, ArmRLMCode, ArmRLMNL, BaseArm
 from src.exps_performance.dataset import make_dataset
 from src.exps_performance.llm import llm
 from src.exps_performance.logger import (
@@ -215,6 +215,14 @@ def _stage_complete(stage_name: str, rec: Any, *, require_parse_success: bool = 
         if require_parse_success:
             return bool(rec.nl_question) and rec.nl_err_msg == "ok" and not bool(rec.nl_parse_err)
         return bool(rec.nl_question) and (bool(rec.nl_answer) or bool(rec.nl_err_msg) or bool(rec.nl_parse_err) or bool(rec.nl_correct))
+    if stage_name == "ArmRLMNL":
+        return bool(rec.rlmnl_question) and (
+            bool(rec.rlmnl_answer) or bool(rec.rlmnl_err_msg) or bool(rec.rlmnl_parse_err) or bool(rec.rlmnl_correct)
+        )
+    if stage_name == "ArmRLMCode":
+        return bool(rec.rlmcode_question) and (
+            bool(rec.rlmcode_answer) or bool(rec.rlmcode_err_msg) or bool(rec.rlmcode_parse_err) or bool(rec.rlmcode_correct)
+        )
     return True
 
 
@@ -234,7 +242,10 @@ def run_stage_batch(
     if not pending:
         return pending
     logger.info(f"Running {stage_name} for {len(pending)} questions")
-    chunk_size = max(1, int(getattr(args, "checkpoint_every", 1)), int(getattr(args, "batch_size", 1)))
+    if stage_name in {"ArmRLMNL", "ArmRLMCode"}:
+        chunk_size = len(pending)
+    else:
+        chunk_size = max(1, int(getattr(args, "checkpoint_every", 1)), int(getattr(args, "batch_size", 1)))
     batch_retry_attempts = max(1, int(getattr(args, "stage_batch_retry_attempts", 3)))
     require_parse_success = bool(getattr(args, "openrouter_structured_outputs", False) and stage_name in {"Arm1", "Arm2", "Arm4"})
     updated_all: List[Question] = []
@@ -307,12 +318,15 @@ def run_stage_batch(
 
 def run(args: Any) -> None:
     seed_all_and_setup(args)
-    client = llm(args)
+    only_rlm = bool(getattr(args, "only_rlm", False))
+    if only_rlm and not (getattr(args, "rlm_nl", False) or getattr(args, "rlm_code", False)):
+        raise ValueError("only_rlm mode requires --rlm_nl and/or --rlm_code.")
+    client = None if only_rlm else llm(args)
     exp_dir = create_dir(args, Path(args.root))
     exp_id = Path(exp_dir).name
     args.exp_dir = exp_dir
     checkpoint_path = os.path.join(exp_dir, "res.jsonl")
-    checkpoint = CheckpointManager(checkpoint_path)
+    checkpoint = CheckpointManager(checkpoint_path, only_rlm=only_rlm)
     dump_args(args, Path(exp_dir) / "args.json")
     logger.info(f"Using exp_dir={exp_dir} (exp_id={exp_id}) for model={args.model} seed={args.seed}")
     logger.info(f"Restored {len(checkpoint._records)} unique records from checkpoint ({checkpoint_path})")
@@ -364,6 +378,12 @@ def run(args: Any) -> None:
     def _fully_done(rec: Any) -> bool:
         return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
 
+    def _done_rlmnl(rec: Any) -> bool:
+        return bool(rec.rlmnl_question) or bool(rec.rlmnl_answer) or bool(rec.rlmnl_parse_err) or bool(rec.rlmnl_err_msg)
+
+    def _done_rlmcode(rec: Any) -> bool:
+        return bool(rec.rlmcode_question) or bool(rec.rlmcode_answer) or bool(rec.rlmcode_parse_err) or bool(rec.rlmcode_err_msg)
+
     # Populate identifiers and restore from checkpoint using stable per-kind indexing (digit, original_pos)
     data, dropped_by_kind, restored_by_kind, debug_assigned = assign_sequential_indices(
         list(data), args.n, args.seed, args.model, exp_id, checkpoint, per_kind_limits=per_kind_limits
@@ -395,55 +415,78 @@ def run(args: Any) -> None:
     if dup_ids:
         logger.warning(f"Duplicate identifiers assigned in dataset build: {set(dup_ids)}")
 
-    # Arm2 (sim/code generation)
-    arm2_pending = [q for q in data if not _fully_done(q.record) and not _done_sim(q.record)]
-    logger.info(f"Arm2 pending {len(arm2_pending)} / total {len(data)}")
-    updated_arm2 = run_stage_batch(arm2_pending, Arm2, "Arm2", args, client, checkpoint)
-    # propagate code back to main list
-    if updated_arm2:
-        updated_map = {q.record.request_id: q for q in updated_arm2}
-        for i, q in enumerate(data):
-            if q.record.request_id in updated_map:
-                data[i] = updated_map[q.record.request_id]
-                data[i].code = data[i].record.sim_code or data[i].code
+    if not only_rlm:
+        # Arm2 (sim/code generation)
+        arm2_pending = [q for q in data if not _fully_done(q.record) and not _done_sim(q.record)]
+        logger.info(f"Arm2 pending {len(arm2_pending)} / total {len(data)}")
+        updated_arm2 = run_stage_batch(arm2_pending, Arm2, "Arm2", args, client, checkpoint)
+        # propagate code back to main list
+        if updated_arm2:
+            updated_map = {q.record.request_id: q for q in updated_arm2}
+            for i, q in enumerate(data):
+                if q.record.request_id in updated_map:
+                    data[i] = updated_map[q.record.request_id]
+                    data[i].code = data[i].record.sim_code or data[i].code
 
-    # Arm3 (code execution)
-    if getattr(args, "exec_code", False):
-        arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
-        logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
-        updated_arm3 = run_stage_batch(arm3_pending, Arm3, "Arm3", args, client, checkpoint)
-        if updated_arm3:
-            updated_map = {q.record.request_id: q for q in updated_arm3}
+        # Arm3 (code execution)
+        if getattr(args, "exec_code", False):
+            arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
+            logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
+            updated_arm3 = run_stage_batch(arm3_pending, Arm3, "Arm3", args, client, checkpoint)
+            if updated_arm3:
+                updated_map = {q.record.request_id: q for q in updated_arm3}
+                for i, q in enumerate(data):
+                    if q.record.request_id in updated_map:
+                        data[i] = updated_map[q.record.request_id]
+
+        # Arm4 (control simulation)
+        if getattr(args, "controlled_sim", False):
+            arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
+            logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
+            updated_arm4 = run_stage_batch(arm4_pending, Arm4, "Arm4", args, client, checkpoint)
+            if updated_arm4:
+                updated_map = {q.record.request_id: q for q in updated_arm4}
+                for i, q in enumerate(data):
+                    if q.record.request_id in updated_map:
+                        data[i] = updated_map[q.record.request_id]
+
+    if getattr(args, "rlm_code", False):
+        rlmcode_pending = [q for q in data if not _done_rlmcode(q.record)]
+        logger.info(f"ArmRLMCode pending {len(rlmcode_pending)} / total {len(data)}")
+        updated_rlmcode = run_stage_batch(rlmcode_pending, ArmRLMCode, "ArmRLMCode", args, client, checkpoint)
+        if updated_rlmcode:
+            updated_map = {q.record.request_id: q for q in updated_rlmcode}
             for i, q in enumerate(data):
                 if q.record.request_id in updated_map:
                     data[i] = updated_map[q.record.request_id]
 
-    # Arm4 (control simulation)
-    if getattr(args, "controlled_sim", False):
-        arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
-        logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
-        updated_arm4 = run_stage_batch(arm4_pending, Arm4, "Arm4", args, client, checkpoint)
-        if updated_arm4:
-            updated_map = {q.record.request_id: q for q in updated_arm4}
+    if not only_rlm:
+        # Arm1 (nl)
+        arm1_pending = [q for q in data if not _fully_done(q.record) and not _done_nl(q.record)]
+        logger.info(f"Arm1 pending {len(arm1_pending)} / total {len(data)}")
+        updated_arm1 = run_stage_batch(arm1_pending, Arm1, "Arm1", args, client, checkpoint)
+        if updated_arm1:
+            updated_map = {q.record.request_id: q for q in updated_arm1}
             for i, q in enumerate(data):
                 if q.record.request_id in updated_map:
                     data[i] = updated_map[q.record.request_id]
 
-    # Arm1 (nl)
-    arm1_pending = [q for q in data if not _fully_done(q.record) and not _done_nl(q.record)]
-    logger.info(f"Arm1 pending {len(arm1_pending)} / total {len(data)}")
-    updated_arm1 = run_stage_batch(arm1_pending, Arm1, "Arm1", args, client, checkpoint)
-    if updated_arm1:
-        updated_map = {q.record.request_id: q for q in updated_arm1}
-        for i, q in enumerate(data):
-            if q.record.request_id in updated_map:
-                data[i] = updated_map[q.record.request_id]
+    if getattr(args, "rlm_nl", False):
+        rlmnl_pending = [q for q in data if not _done_rlmnl(q.record)]
+        logger.info(f"ArmRLMNL pending {len(rlmnl_pending)} / total {len(data)}")
+        updated_rlmnl = run_stage_batch(rlmnl_pending, ArmRLMNL, "ArmRLMNL", args, client, checkpoint)
+        if updated_rlmnl:
+            updated_map = {q.record.request_id: q for q in updated_rlmnl}
+            for i, q in enumerate(data):
+                if q.record.request_id in updated_map:
+                    data[i] = updated_map[q.record.request_id]
 
     completed = data
 
     logger.info("Saving Results")
     records = [d.record for d in completed]
-    _ = accuracy(records)  # Compute accuracy (result logged internally)
+    if not only_rlm:
+        _ = accuracy(records)  # Compute accuracy (result logged internally)
 
     # serialize results
     # writer = init_tensorboard(args, exp_dir)
@@ -560,6 +603,19 @@ class Args:
     vllm_gpu_mem_util: float = 0.90
     vllm_max_model_len: int = 8192
     vllm_download_dir: str = os.getenv("VLLM_DOWNLOAD_DIR", str(Path(__file__).resolve().parent / "models"))
+    only_rlm: bool = False
+    rlm_nl: bool = False
+    rlm_code: bool = False
+    rlm_backend: str = "openrouter"
+    rlm_model: Optional[str] = None
+    rlm_environment: str = "local"
+    rlm_max_depth: int = 2
+    rlm_max_iterations: int = 8
+    rlm_max_timeout: Optional[float] = None
+    rlm_verbose: bool = False
+    rlm_repo_path: Optional[str] = None
+    rlm_api_key: Optional[str] = None
+    rlm_base_url: Optional[str] = None
 
 
 def parse_args() -> Args:
