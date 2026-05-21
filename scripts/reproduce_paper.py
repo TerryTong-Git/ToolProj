@@ -29,15 +29,6 @@ class ReproductionConfig:
     run_recovery_notebook: bool
     dry_run: bool
 
-    @classmethod
-    def from_args(cls, args: argparse.Namespace) -> "ReproductionConfig":
-        return cls(
-            paper_dir=args.paper_dir,
-            output_dir=args.output_dir,
-            run_recovery_notebook=args.run_recovery_notebook,
-            dry_run=args.dry_run,
-        )
-
 
 @dataclass(frozen=True)
 class CommandStep:
@@ -176,13 +167,22 @@ def figure_copies() -> list[FigureCopy]:
     ]
 
 
-def print_command_groups(config: ReproductionConfig) -> None:
+def command_groups(config: ReproductionConfig, target: str) -> tuple[tuple[str, list[CommandStep]], ...]:
+    figure_config = ReproductionConfig(config.paper_dir, config.output_dir, True, config.dry_run)
     groups = (
         ("Tables", table_steps(config)),
-        ("Figures", figure_steps(ReproductionConfig(config.paper_dir, config.output_dir, True, config.dry_run))),
+        ("Figures", figure_steps(figure_config)),
         ("Paper", [paper_step(config)]),
     )
-    for title, steps in groups:
+    if target in {"all", "list"}:
+        return groups
+    names = {"tables": "Tables", "figures": "Figures", "paper": "Paper"}
+    selected = names[target]
+    return tuple(group for group in groups if group[0] == selected)
+
+
+def print_command_groups(config: ReproductionConfig, target: str) -> None:
+    for title, steps in command_groups(config, target):
         print(f"{title}:")
         for step in steps:
             print(f"  {step.display()}")
@@ -263,10 +263,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    config = ReproductionConfig.from_args(args)
+    config = ReproductionConfig(
+        paper_dir=args.paper_dir,
+        output_dir=args.output_dir,
+        run_recovery_notebook=args.run_recovery_notebook,
+        dry_run=args.dry_run,
+    )
 
     if args.show_list or args.target == "list":
-        print_command_groups(config)
+        print_command_groups(config, args.target)
         return 0
     if args.target in {"tables", "all"}:
         run_tables(config)

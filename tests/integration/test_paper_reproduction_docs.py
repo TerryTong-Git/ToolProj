@@ -43,6 +43,20 @@ def test_python_reproduction_cli_lists_same_core_commands() -> None:
     assert "latexmk -pdf" in result.stdout
 
 
+def test_python_reproduction_cli_lists_only_selected_target() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/reproduce_paper.py", "--list", "tables"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "analyze_route_accuracy_tables.py" in result.stdout
+    assert "plot_judge_discrimination.py" not in result.stdout
+    assert "latexmk -pdf" not in result.stdout
+
+
 def test_python_reproduction_cli_dry_run_tables_uses_dedicated_output_dir() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/reproduce_paper.py", "--dry-run", "tables"],
