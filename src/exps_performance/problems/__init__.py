@@ -2,7 +2,7 @@ import ast
 import json
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Sequence, Tuple, Type, Union
 
 from langchain_core.exceptions import OutputParserException
@@ -148,7 +148,7 @@ class Question(ABC):
 
     question: str = ""  # formatted prompt
     answer: str = ""  # gold answer
-    record: Record = Record()  # solution
+    record: Record = field(default_factory=Record)  # solution
 
     @property
     @abstractmethod
@@ -195,6 +195,7 @@ def get_prompt_classes(SpecificModel: BaseModel, func_typing: str) -> Tuple[Type
     Returns:
         Tuple of (CodeReasoning, NLReasoning, ControlledCodeSim)
     """
+
     class CodeReasoning(SpecificModel):
         code: str = Field(
             description=DEFAULT_CODE_INSTR + f"Here are the required types: def solution() -> {func_typing}",

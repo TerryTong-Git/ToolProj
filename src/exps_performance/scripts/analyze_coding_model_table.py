@@ -6,7 +6,6 @@ import csv
 from collections import defaultdict
 from pathlib import Path
 
-
 DEFAULT_INPUT = Path("src/exps_performance/results/analysis/coding_model_outcomes.csv")
 DEFAULT_OUTPUT = Path("results/coding_model_table.md")
 
@@ -88,9 +87,7 @@ def build_table(input_csv: Path) -> tuple[list[str], list[dict[str, str]]]:
         ]
     )
     for row in table_rows:
-        lines.append(
-            f"| {row['Model']} | {row['Rows']} | {row['NL Count']} | {row['Sim Count']} | {row['Code Count']} |"
-        )
+        lines.append(f"| {row['Model']} | {row['Rows']} | {row['NL Count']} | {row['Sim Count']} | {row['Code Count']} |")
 
     lines.extend(["", "## Source Runs", ""])
     for row in table_rows:
