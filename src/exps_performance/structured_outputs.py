@@ -4,7 +4,6 @@ import copy
 import json
 from typing import Any, cast
 
-
 STAGE_SYSTEM_INSTRUCTION = {
     "nl": (
         "Return valid JSON matching the provided schema. "

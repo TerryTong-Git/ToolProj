@@ -104,9 +104,9 @@ class TestSampleCounts:
         """Verify all result files have exactly the expected sample count."""
         for path, records in result_file_data.items():
             count = len(records)
-            assert count == EXPECTED_SAMPLE_COUNT, (
-                f"File {path.relative_to(RESULTS_DIR)} has {count} samples, expected exactly {EXPECTED_SAMPLE_COUNT}"
-            )
+            assert (
+                count == EXPECTED_SAMPLE_COUNT
+            ), f"File {path.relative_to(RESULTS_DIR)} has {count} samples, expected exactly {EXPECTED_SAMPLE_COUNT}"
 
     def test_consistent_sample_counts(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify all result files have identical sample counts."""
@@ -202,9 +202,9 @@ class TestNoBlankResults:
                 question_field = f"{arm}_question"
                 blank_count = sum(1 for r in records if not r.get(question_field) or str(r.get(question_field)).strip() == "")
                 blank_rate = blank_count / len(records)
-                assert blank_rate <= max_blank_rate, (
-                    f"{question_field} in {path.relative_to(RESULTS_DIR)} has {blank_rate:.1%} blank rate (max allowed: {max_blank_rate:.0%})"
-                )
+                assert (
+                    blank_rate <= max_blank_rate
+                ), f"{question_field} in {path.relative_to(RESULTS_DIR)} has {blank_rate:.1%} blank rate (max allowed: {max_blank_rate:.0%})"
 
     def test_all_answers_populated(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify all arm answers are populated (may be empty string for parse errors, but field must exist)."""
@@ -242,9 +242,9 @@ class TestDataTypes:
                 for arm in ARM_NAMES:
                     correct_field = f"{arm}_correct"
                     value = record.get(correct_field)
-                    assert isinstance(value, bool), (
-                        f"{correct_field} is not bool in {path.relative_to(RESULTS_DIR)} record {i}: {type(value)} = {value}"
-                    )
+                    assert isinstance(
+                        value, bool
+                    ), f"{correct_field} is not bool in {path.relative_to(RESULTS_DIR)} record {i}: {type(value)} = {value}"
 
     def test_parse_err_fields_are_boolean(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify *_parse_err fields are boolean."""
@@ -253,9 +253,9 @@ class TestDataTypes:
                 for arm in ARM_NAMES:
                     parse_err_field = f"{arm}_parse_err"
                     value = record.get(parse_err_field)
-                    assert isinstance(value, bool), (
-                        f"{parse_err_field} is not bool in {path.relative_to(RESULTS_DIR)} record {i}: {type(value)} = {value}"
-                    )
+                    assert isinstance(
+                        value, bool
+                    ), f"{parse_err_field} is not bool in {path.relative_to(RESULTS_DIR)} record {i}: {type(value)} = {value}"
 
 
 class TestDataConsistency:
@@ -272,9 +272,9 @@ class TestDataConsistency:
                 model = record.get("model", "")
                 # Model in record might have provider prefix like "google/gemini-2.0-flash-001"
                 model_suffix = model.split("/")[-1] if "/" in model else model
-                assert model_suffix == expected_model_prefix or expected_model_prefix in model, (
-                    f"Model mismatch in {path.relative_to(RESULTS_DIR)} record {i}: directory says '{expected_model_prefix}', record says '{model}'"
-                )
+                assert (
+                    model_suffix == expected_model_prefix or expected_model_prefix in model
+                ), f"Model mismatch in {path.relative_to(RESULTS_DIR)} record {i}: directory says '{expected_model_prefix}', record says '{model}'"
 
     def test_seed_matches_directory(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify seed field matches the directory name."""
@@ -285,18 +285,18 @@ class TestDataConsistency:
 
             for i, record in enumerate(records):
                 seed = record.get("seed")
-                assert seed == expected_seed, (
-                    f"Seed mismatch in {path.relative_to(RESULTS_DIR)} record {i}: directory says {expected_seed}, record says {seed}"
-                )
+                assert (
+                    seed == expected_seed
+                ), f"Seed mismatch in {path.relative_to(RESULTS_DIR)} record {i}: directory says {expected_seed}, record says {seed}"
 
     def test_unique_tags_are_unique_within_file(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify unique_tag field is actually unique within each file."""
         for path, records in result_file_data.items():
             tags = [r.get("unique_tag") for r in records]
             unique_tags = set(tags)
-            assert len(tags) == len(unique_tags), (
-                f"Duplicate unique_tags in {path.relative_to(RESULTS_DIR)}: {len(tags)} records but only {len(unique_tags)} unique tags"
-            )
+            assert len(tags) == len(
+                unique_tags
+            ), f"Duplicate unique_tags in {path.relative_to(RESULTS_DIR)}: {len(tags)} records but only {len(unique_tags)} unique tags"
 
 
 class TestParseErrorRates:
@@ -398,9 +398,9 @@ class TestKindCoverage:
         min_kinds = 3  # Each file should have at least 3 different problem kinds
         for path, records in result_file_data.items():
             kinds_in_file = {r.get("kind") for r in records}
-            assert len(kinds_in_file) >= min_kinds, (
-                f"Too few kinds in {path.relative_to(RESULTS_DIR)}: found {len(kinds_in_file)}, expected at least {min_kinds}"
-            )
+            assert (
+                len(kinds_in_file) >= min_kinds
+            ), f"Too few kinds in {path.relative_to(RESULTS_DIR)}: found {len(kinds_in_file)}, expected at least {min_kinds}"
 
     def test_digit_range_coverage(self, result_file_data: dict[Path, list[dict]]) -> None:
         """Verify digit range is reasonable (0-100 to accommodate various experiments)."""
