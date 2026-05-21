@@ -1,7 +1,7 @@
 import copy
 import logging
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from tqdm import tqdm
 
@@ -79,6 +79,7 @@ class BaseArm:
         self,
         messages: List[List[Dict[str, str]]],
         request_options_list: List[Optional[Dict[str, Any]]],
+        on_response: Optional[Callable[[int, Any], None]] = None,
     ) -> List[Any]:
         try:
             responses = run_batch(
@@ -87,11 +88,12 @@ class BaseArm:
                 self.client,
                 request_options_list=request_options_list,
                 return_responses=True,
+                on_response=on_response,
             )
             return list(responses)
         except TypeError as exc:
             err_text = str(exc)
-            if "request_options_list" not in err_text and "return_responses" not in err_text:
+            if "request_options_list" not in err_text and "return_responses" not in err_text and "on_response" not in err_text:
                 raise
             answers = run_batch(messages, self.default_args, self.client)
             return [SimpleNamespace(text=str(answer or "")) for answer in answers]
@@ -140,13 +142,41 @@ class BaseArm:
         messages.append({"role": "user", "content": prompt})
         return messages, request_options
 
-    def run(self) -> Tuple[float, List[Question]]:
+    def _parse_one(self, q: Question, answer: str, *, count_fail: bool = True) -> Tuple[Any, str]:
+        pUtil = q.util_pointer(self.run_type)
+        cleaned_answer = remove_python_triple_quote(answer)
+        parsed_output, err = pUtil.parse_output(cleaned_answer)
+        if err == "ok" and self._structured_outputs_enabled():
+            err = validate_nonempty_fields(parsed_output)
+        default = pUtil.PROB_TYPES[self.run_type]()
+        if count_fail and self._is_default_model(parsed_output, default):
+            self.parse_fail += 1
+        return parsed_output, str(err)
+
+    def _build_completed_question(self, idx: int, answer: str, example: str) -> Question:
+        q = copy.deepcopy(self.problems[idx])
+        parsed = self._parse_one(q, answer, count_fail=False)
+        pUtil = q.util_pointer(self.run_type)
+        correct, _ = pUtil.decision_check(q, parsed[0])
+        return self.each_record(q, answer, parsed, example, bool(correct))
+
+    def run(self, on_question_complete: Optional[Callable[[Question], None]] = None) -> Tuple[float, List[Question]]:
         examples = [d.util_pointer(self.run_type).format_one(d) for d in self.problems]
         bundled = [self._message_bundle(d, e) for d, e in zip(self.problems, examples)]
         messages = [bundle[0] for bundle in bundled]
         request_options = [bundle[1] for bundle in bundled]
         logger.info(f"Running batches for {self.set_name}")
-        responses = self._run_batch_responses(messages, request_options)
+
+        def _handle_response(idx: int, response: Any) -> None:
+            if on_question_complete is None:
+                return
+            try:
+                completed_q = self._build_completed_question(idx, str(response.text or ""), examples[idx])
+                on_question_complete(completed_q)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(f"incremental checkpoint failed for {self.set_name} idx={idx}: {exc}")
+
+        responses = self._run_batch_responses(messages, request_options, on_response=_handle_response if on_question_complete else None)
         self.llm_responses = list(responses)
         answers = [response.text for response in responses]
         logger.info(f"Running parsing for {self.set_name}")
@@ -303,7 +333,7 @@ class Arm3(BaseArm):
     run_type: str = "code"
     set_name: str = "code"
 
-    def run(self) -> Tuple[float, List[Question]]:
+    def run(self, on_question_complete: Optional[Callable[[Question], None]] = None) -> Tuple[float, List[Question]]:
         logger.info("Running Code Execution")
         self.parse_fail = 0
         sequence_parity: List[bool] = [False] * len(self.problems)
@@ -348,6 +378,13 @@ class Arm3(BaseArm):
                 sequence_parity[idx] = bool(is_correct)
                 if parse_err_flag:
                     self.parse_fail += 1
+                if on_question_complete is not None:
+                    try:
+                        completed_q = copy.deepcopy(self.problems[idx])
+                        completed_q = self.each_record(completed_q, code, parsed_tuple, cleaned_code, bool(is_correct))
+                        on_question_complete(completed_q)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(f"incremental checkpoint failed for {self.set_name} idx={idx}: {exc}")
 
         total_correct = sum(sequence_parity)
         actual_parsed = [p[0] for p in parsed_answer if p is not None]  # type: ignore[index]

@@ -9,7 +9,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import torch
 from tqdm import tqdm
@@ -325,6 +325,7 @@ class OpenRouterChatClient(LLMClient):
         stop: Optional[List[str]] = None,
         request_timeout: float = 120.0,
         request_options_list: Optional[List[Optional[Dict[str, Any]]]] = None,
+        on_result: Optional[Callable[[int, ChatResponse], None]] = None,
     ) -> List[ChatResponse]:
         # Create a fresh async client per batch to avoid event-loop reuse issues.
         from openai import AsyncOpenAI  # type: ignore
@@ -405,6 +406,8 @@ class OpenRouterChatClient(LLMClient):
                     async for task in async_tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Chatting (openrouter)"):
                         idx, response = await task
                         results[idx] = response
+                        if on_result is not None:
+                            on_result(idx, response)
                 finally:
                     for t in tasks:
                         if not t.done():
@@ -623,6 +626,7 @@ def run_batch(
     client: Any,
     request_options_list: Optional[List[Optional[Dict[str, Any]]]] = None,
     return_responses: bool = False,
+    on_response: Optional[Callable[[int, ChatResponse], None]] = None,
 ) -> List[Any]:
     total = len(messages_list)
     if hasattr(client, "chat_many") and callable(getattr(client, "chat_many")) and args.batch_size > 1:
@@ -632,19 +636,45 @@ def run_batch(
                 chunk = messages_list[start : start + args.batch_size]
                 chunk_request_options = None if request_options_list is None else request_options_list[start : start + args.batch_size]
                 with tqdm(total=len(chunk), desc="Batch", unit="req", leave=False) as batchbar:
-                    raw_chunk_outs = client.chat_many(
-                        args.model,
-                        chunk,
-                        max_tokens=args.max_tokens,
-                        temperature=args.temperature,
-                        top_p=args.top_p,
-                        stop=None,
-                        request_timeout=getattr(args, "request_timeout", 120),
-                        request_options_list=chunk_request_options,
-                    )
+                    completed = 0
+
+                    def _handle_response(local_idx: int, response: ChatResponse) -> None:
+                        nonlocal completed
+                        completed += 1
+                        batchbar.update(1)
+                        overall.update(1)
+                        if on_response is not None:
+                            on_response(start + local_idx, response)
+
+                    try:
+                        raw_chunk_outs = client.chat_many(
+                            args.model,
+                            chunk,
+                            max_tokens=args.max_tokens,
+                            temperature=args.temperature,
+                            top_p=args.top_p,
+                            stop=None,
+                            request_timeout=getattr(args, "request_timeout", 120),
+                            request_options_list=chunk_request_options,
+                            on_result=_handle_response,
+                        )
+                    except TypeError as exc:
+                        if "on_result" not in str(exc):
+                            raise
+                        raw_chunk_outs = client.chat_many(
+                            args.model,
+                            chunk,
+                            max_tokens=args.max_tokens,
+                            temperature=args.temperature,
+                            top_p=args.top_p,
+                            stop=None,
+                            request_timeout=getattr(args, "request_timeout", 120),
+                            request_options_list=chunk_request_options,
+                        )
                     outs.extend(_normalize_batch_outputs(raw_chunk_outs))
-                    batchbar.update(len(chunk))
-                overall.update(len(chunk))
+                    if completed == 0:
+                        batchbar.update(len(chunk))
+                        overall.update(len(chunk))
         return outs if return_responses else [out.text for out in outs]
     else:
         outs: List[ChatResponse] = []
@@ -660,6 +690,9 @@ def run_batch(
                     stop=None,
                     request_options=request_options,
                 )
-                outs.extend(_normalize_batch_outputs([raw_out]))
+                normalized = _normalize_batch_outputs([raw_out])
+                outs.extend(normalized)
+                if on_response is not None:
+                    on_response(idx, normalized[0])
                 pbar.update(1)
         return outs if return_responses else [out.text for out in outs]

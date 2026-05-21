@@ -234,7 +234,7 @@ def run_stage_batch(
     if not pending:
         return pending
     logger.info(f"Running {stage_name} for {len(pending)} questions")
-    chunk_size = max(1, args.checkpoint_every, args.batch_size)
+    chunk_size = max(1, int(getattr(args, "checkpoint_every", 1)), int(getattr(args, "batch_size", 1)))
     batch_retry_attempts = max(1, int(getattr(args, "stage_batch_retry_attempts", 3)))
     require_parse_success = bool(
         getattr(args, "openrouter_structured_outputs", False) and stage_name in {"Arm1", "Arm2", "Arm4"}
@@ -249,7 +249,16 @@ def run_stage_batch(
                 break
 
             arm = ArmCls(remaining, args, client)
-            _, updated = arm.run()
+
+            def _checkpoint_partial(q: Question) -> None:
+                checkpoint.upsert(q.record, flush=True)
+
+            try:
+                _, updated = arm.run(on_question_complete=_checkpoint_partial)
+            except TypeError as exc:
+                if "on_question_complete" not in str(exc):
+                    raise
+                _, updated = arm.run()
 
             completed_now = [q for q in updated if _stage_complete(stage_name, q.record, require_parse_success=require_parse_success)]
             remaining = [q for q in updated if not _stage_complete(stage_name, q.record, require_parse_success=require_parse_success)]
@@ -259,7 +268,8 @@ def run_stage_batch(
                 for q in completed_now:
                     completed_map[q.record.request_id] = q
 
-            summary = arm.response_summary()
+            response_summary = getattr(arm, "response_summary", None)
+            summary = response_summary() if callable(response_summary) else {}
             if summary:
                 summary.update(
                     {
