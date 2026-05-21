@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
-from typing import Any
+from typing import Any, cast
 
 
 STAGE_SYSTEM_INSTRUCTION = {
@@ -58,7 +58,7 @@ def normalize_schema_for_structured_output(schema: dict[str, Any]) -> dict[str, 
 
         return normalized
 
-    return _normalize(schema)
+    return cast(dict[str, Any], _normalize(schema))
 
 
 def structured_output_request(model_cls: Any, *, strict: bool = True) -> dict[str, Any]:
