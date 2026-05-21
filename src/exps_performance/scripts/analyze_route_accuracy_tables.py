@@ -128,8 +128,7 @@ def mcnemar_p(n01: int, n10: int) -> float:
         return 1.0
     tail_k = min(n01, n10)
     log_probs = [
-        math.lgamma(discordant + 1) - math.lgamma(k + 1) - math.lgamma(discordant - k + 1) - discordant * math.log(2)
-        for k in range(tail_k + 1)
+        math.lgamma(discordant + 1) - math.lgamma(k + 1) - math.lgamma(discordant - k + 1) - discordant * math.log(2) for k in range(tail_k + 1)
     ]
     max_log = max(log_probs)
     tail = math.exp(max_log) * sum(math.exp(value - max_log) for value in log_probs)
@@ -206,7 +205,7 @@ def write_csv(path: Path, summaries: Iterable[RouteSummary], *, include_model_ty
     ]
     fieldnames = ["type", *base_fields] if include_model_type else base_fields
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for s in summaries:
             row = {
