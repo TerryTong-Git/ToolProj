@@ -58,7 +58,8 @@ OPENROUTER_API_KEY=your_openrouter_key  # For accessing various LLMs
 
 ## Quick Start
 
-For paper table, figure, and PDF reproduction commands, see
+For paper table, figure, and PDF reproduction commands, run
+`uv run python scripts/reproduce_paper.py --list` or see
 [`PAPER_REPRODUCTION.md`](PAPER_REPRODUCTION.md).
 
 ### Run Performance Experiments
