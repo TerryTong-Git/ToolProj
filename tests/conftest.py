@@ -19,6 +19,7 @@ class CreateArgs:
     hf_dtype: str = "float16"
     sim_code_only: bool = True
     exec_code_only: bool = True
+    exec_code: bool = True
     controlled_sim: bool = True
     model: str = "google/gemma-2-9b-it"
     vllm_dtype: str = "float16"

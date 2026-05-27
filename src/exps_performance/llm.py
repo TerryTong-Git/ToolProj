@@ -139,7 +139,17 @@ class OpenAIChatClient(LLMClient):
 class OpenRouterChatClient(LLMClient):
     """Simple OpenRouter client using the OpenAI SDK."""
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, seed: int = 0):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        seed: int = 0,
+        reasoning_enabled: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
+        reasoning_max_tokens: Optional[int] = None,
+        reasoning_exclude: Optional[bool] = None,
+        verbosity: Optional[str] = None,
+    ):
         try:
             from openai import OpenAI  # type: ignore
         except Exception as e:
@@ -150,6 +160,11 @@ class OpenRouterChatClient(LLMClient):
         self._base_url = base_url or openrouter_api_base
         self.client = OpenAI(api_key=self._api_key, base_url=self._base_url)
         self.seed = seed
+        self.reasoning_enabled = reasoning_enabled
+        self.reasoning_effort = reasoning_effort
+        self.reasoning_max_tokens = reasoning_max_tokens
+        self.reasoning_exclude = reasoning_exclude
+        self.verbosity = verbosity
         print("Instantiated OpenRouter client!")
 
     @staticmethod
@@ -212,6 +227,20 @@ class OpenRouterChatClient(LLMClient):
                 merged[key] = value
         return merged
 
+    def _default_extra_body(self) -> Dict[str, Any]:
+        extra_body: Dict[str, Any] = {}
+        if self.reasoning_enabled:
+            reasoning: Dict[str, Any] = {"enabled": True}
+            if self.reasoning_effort:
+                reasoning["effort"] = self.reasoning_effort
+            if self.reasoning_max_tokens:
+                reasoning["max_tokens"] = int(self.reasoning_max_tokens)
+            reasoning["exclude"] = bool(self.reasoning_exclude)
+            extra_body["reasoning"] = reasoning
+        if self.verbosity:
+            extra_body["verbosity"] = self.verbosity
+        return extra_body
+
     @staticmethod
     def _extract_response(resp: Any, *, request_options: Optional[Dict[str, Any]], attempts: int, error: str = "") -> ChatResponse:
         if resp is None or getattr(resp, "choices", None) in (None, []):
@@ -266,7 +295,7 @@ class OpenRouterChatClient(LLMClient):
     ) -> ChatResponse:
         req_opts = request_options or {}
         retries = max(1, int(req_opts.get("retry_attempts", 1)))
-        base_extra_body = req_opts.get("extra_body", {})
+        base_extra_body = self._merge_extra_body(self._default_extra_body(), req_opts.get("extra_body", {}))
         last_error = ""
         for attempt in range(1, retries + 1):
             extra_body = self._merge_extra_body(
@@ -341,7 +370,11 @@ class OpenRouterChatClient(LLMClient):
             last_error = ""
             for attempt in range(1, retries + 1):
                 extra_body = self._merge_extra_body(
+                    self._default_extra_body(),
                     req_opts.get("extra_body", {}),
+                )
+                extra_body = self._merge_extra_body(
+                    extra_body,
                     {"plugins": [{"id": "response-healing"}]} if req_opts.get("enable_response_healing", False) else None,
                 )
                 kwargs: Dict[str, Any] = {
@@ -607,7 +640,16 @@ def llm(args: Any) -> Any:
     elif args.backend == "openrouter":
         api_key = getattr(args, "openrouter_api_key", None) or os.getenv("OPENROUTER_API_KEY")
         base_url = getattr(args, "openrouter_base_url", None) or openrouter_api_base
-        return OpenRouterChatClient(api_key=api_key, base_url=base_url, seed=args.seed)
+        return OpenRouterChatClient(
+            api_key=api_key,
+            base_url=base_url,
+            seed=args.seed,
+            reasoning_enabled=getattr(args, "openrouter_reasoning_enabled", None),
+            reasoning_effort=getattr(args, "openrouter_reasoning_effort", None),
+            reasoning_max_tokens=getattr(args, "openrouter_reasoning_max_tokens", None),
+            reasoning_exclude=getattr(args, "openrouter_reasoning_exclude", None),
+            verbosity=getattr(args, "openrouter_verbosity", None),
+        )
 
 
 def _normalize_batch_outputs(raw_outputs: List[Any]) -> List[ChatResponse]:
