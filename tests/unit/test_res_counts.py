@@ -3,14 +3,14 @@ from typing import Any
 
 import pandas as pd
 
-from src.exps_performance.logger import (
+from src.reasoning_benchmark.problems import Question
+from src.reasoning_benchmark.records import (
     CheckpointManager,
     Record,
     generate_unique_tag,
     make_request_id,
 )
-from src.exps_performance.main import assign_sequential_indices
-from src.exps_performance.problems import Question
+from src.reasoning_benchmark.runner import assign_sequential_indices
 
 
 def test_res_csv_counts_match_requested_n_with_resume(tmp_path: Any) -> None:

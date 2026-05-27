@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
 from typing import Any, List
 
-from src.exps_performance.logger import (
+from src.reasoning_benchmark.problems import Question
+from src.reasoning_benchmark.records import (
     CheckpointManager,
     Record,
     generate_unique_tag,
     make_request_id,
     write_to_csv,
 )
-from src.exps_performance.main import assign_sequential_indices
-from src.exps_performance.problems import Question
+from src.reasoning_benchmark.runner import assign_sequential_indices
 
 
 @dataclass

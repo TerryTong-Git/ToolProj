@@ -1,4 +1,4 @@
-"""Post-hoc validation tests for src/exps_performance/results data.
+"""Post-hoc validation tests for src/reasoning_benchmark/results data.
 
 These tests validate the integrity of experiment results data:
 - All result files have consistent sample counts
@@ -15,8 +15,10 @@ from typing import Any
 
 import pytest
 
-# Path to results directory
-RESULTS_DIR = Path(__file__).parent.parent.parent / "src" / "exps_performance" / "results"
+from src.reasoning_benchmark.artifact_paths import LEGACY_BENCHMARK_RESULTS_DIR
+
+# Path to recorded benchmark results directory.
+RESULTS_DIR = LEGACY_BENCHMARK_RESULTS_DIR
 
 # Expected fields in each result record
 REQUIRED_FIELDS = {

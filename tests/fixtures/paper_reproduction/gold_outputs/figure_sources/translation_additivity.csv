@@ -1,0 +1,19 @@
+figure,model,row_type,condition_a,condition_b,correct,total,value
+translation_additivity,Haiku 4.5,accuracy,x,,4,10,0.400000
+translation_additivity,Haiku 4.5,accuracy,x_nl_native,,7,10,0.700000
+translation_additivity,Haiku 4.5,accuracy,x_nl_translated,,5,10,0.500000
+translation_additivity,Haiku 4.5,mcnemar_p,x,x_nl_native,,10,0.250000
+translation_additivity,Haiku 4.5,mcnemar_p,x_nl_native,x_nl_translated,,10,0.500000
+translation_additivity,Haiku 4.5,mcnemar_p,x,x_nl_translated,,10,1.000000
+translation_additivity,Gemini 2.5 Flash,accuracy,x,,5,10,0.500000
+translation_additivity,Gemini 2.5 Flash,accuracy,x_nl_native,,8,10,0.800000
+translation_additivity,Gemini 2.5 Flash,accuracy,x_nl_translated,,7,10,0.700000
+translation_additivity,Gemini 2.5 Flash,mcnemar_p,x,x_nl_native,,10,0.250000
+translation_additivity,Gemini 2.5 Flash,mcnemar_p,x_nl_native,x_nl_translated,,10,1.000000
+translation_additivity,Gemini 2.5 Flash,mcnemar_p,x,x_nl_translated,,10,0.500000
+translation_additivity,Mixtral 8x22B,accuracy,x,,3,10,0.300000
+translation_additivity,Mixtral 8x22B,accuracy,x_nl_native,,5,10,0.500000
+translation_additivity,Mixtral 8x22B,accuracy,x_nl_translated,,4,10,0.400000
+translation_additivity,Mixtral 8x22B,mcnemar_p,x,x_nl_native,,10,0.500000
+translation_additivity,Mixtral 8x22B,mcnemar_p,x_nl_native,x_nl_translated,,10,1.000000
+translation_additivity,Mixtral 8x22B,mcnemar_p,x,x_nl_translated,,10,1.000000

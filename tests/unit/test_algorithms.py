@@ -1,6 +1,6 @@
-# from src.exps_performance.algorithms import lcs_len,knap_01_max_value,rod_cut_max,assignment_min_cost,prodplan_max_profit,partition_min_diff
+# from src.reasoning_benchmark.algorithms import lcs_len,knap_01_max_value,rod_cut_max,assignment_min_cost,prodplan_max_profit,partition_min_diff
 # import random
-# from src.exps_performance.utils import rand_string
+# from src.reasoning_benchmark.utils import rand_string
 # # how big can dimensions get before computer blows up?
 
 # def knap_01_max_value(W: List[int], V: List[int], C: int) -> int:

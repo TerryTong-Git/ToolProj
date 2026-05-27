@@ -1,4 +1,4 @@
-# from src.exps_performance.analysis import plot_main_fig
+# from src.reasoning_benchmark.analysis.reports import plot_main_fig
 
 # def test_p_vals(load_results_to_analyze):
 #     df = load_results_to_analyze

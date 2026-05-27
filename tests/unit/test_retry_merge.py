@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any
 
-from src.exps_performance.arms import Arm1, Arm2
-from src.exps_performance.logger import Record
-from src.exps_performance.problems import Question
+from src.reasoning_benchmark.problems import Question
+from src.reasoning_benchmark.reasoning_strategies import Arm1, Arm2
+from src.reasoning_benchmark.records import Record
 
 
 @dataclass

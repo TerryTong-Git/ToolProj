@@ -3,9 +3,9 @@ import re
 from pathlib import Path
 from typing import Any
 
-from src.exps_performance import main as perf_main
-from src.exps_performance.llm import ChatResponse
-from src.exps_performance.logger import CheckpointManager
+from src.reasoning_benchmark import runner as perf_main
+from src.reasoning_benchmark.llm_clients import ChatResponse
+from src.reasoning_benchmark.records import CheckpointManager
 
 
 class FakeStructuredOpenRouterClient:

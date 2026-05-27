@@ -4,8 +4,8 @@ from typing import Any, List, Sequence, Union
 
 import pytest
 
-from src.exps_performance.llm import DummyClient, OpenAIChatClient, VLLMClient
-from src.exps_performance.logger import Record, create_big_df, walk_results_folder
+from src.reasoning_benchmark.llm_clients import DummyClient, OpenAIChatClient, VLLMClient
+from src.reasoning_benchmark.records import Record, create_big_df, walk_results_folder
 
 
 # TODO: Do not test vllm spin up on upstream github, make this a fixed object.

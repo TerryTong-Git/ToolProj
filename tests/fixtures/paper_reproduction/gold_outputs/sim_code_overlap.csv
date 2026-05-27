@@ -1,0 +1,2 @@
+label,rows,raw_nl_acc,raw_sim_acc,raw_code_acc,parse_norm_nl_acc,parse_norm_sim_acc,parse_norm_code_acc,parse_ok_nl_rows,parse_ok_sim_rows,parse_ok_code_rows,eligible_rows
+5% generated shard,18,0.5,0.6666666666666666,0.8333333333333334,0.5,0.6666666666666666,0.8333333333333334,18,18,18,18

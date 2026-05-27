@@ -1,0 +1,8 @@
+model,model_dir,total,success,failures,excluded_parse_only,wrong_answer_count,wrong_answer_pct,syntax_error_count,syntax_error_pct,runtime_error_count,runtime_error_pct,time_limit_count,time_limit_pct
+Haiku,claude-haiku-4.5,237,117,100,20,40,40.0,25,25.0,20,20.0,15,15.0
+Codestral,codestral-2508,237,117,100,20,40,40.0,25,25.0,20,20.0,15,15.0
+Gemini 2.0,gemini-2.0-flash-001,237,117,100,20,40,40.0,25,25.0,20,20.0,15,15.0
+Gemini 2.5,gemini-2.5-flash,237,117,100,20,40,40.0,25,25.0,20,20.0,15,15.0
+GPT-4o mini,gpt-4o-mini,237,117,100,20,40,40.0,25,25.0,20,20.0,15,15.0
+Mixtral,mixtral-8x22b-instruct,237,117,100,20,40,40.0,25,25.0,20,20.0,15,15.0
+Total,all,1422,702,600,120,240,40.0,150,25.0,120,20.0,90,15.0

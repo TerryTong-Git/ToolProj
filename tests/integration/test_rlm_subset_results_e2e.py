@@ -32,7 +32,8 @@ def test_rlm_subset_results_rebuilds_report_from_raw_runs(tmp_path: Path) -> Non
     subprocess.run(
         [
             sys.executable,
-            "src/exps_performance/scripts/analyze_rlm_subset_results.py",
+            "-m",
+            "src.reasoning_benchmark.scripts.analyze_rlm_subset_results",
             "--raw-run",
             f"Toy Model={raw_path}",
             "--outcomes-csv",

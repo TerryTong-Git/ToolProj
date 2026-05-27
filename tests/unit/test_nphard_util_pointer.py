@@ -1,15 +1,15 @@
 import pytest
 
-from src.exps_performance.problems.nphard.bsp import BspCheckAndFormat, BspQuestion
-from src.exps_performance.problems.nphard.edp import EdpCheckAndFormat, EdpQuestion
-from src.exps_performance.problems.nphard.gcp import GcpCheckAndFormat, GcpQuestion
-from src.exps_performance.problems.nphard.gcp_d import GcpdCheckAndFormat, GcpdQuestion
-from src.exps_performance.problems.nphard.ksp import KspCheckAndFormat, KspQuestion
-from src.exps_performance.problems.nphard.msp import MspCheckAndFormat, MspQuestion
-from src.exps_performance.problems.nphard.spp import SppCheckAndFormat, SppQuestion
-from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat, TspQuestion
-from src.exps_performance.problems.nphard.tsp_d import TspdCheckAndFormat, TspdQuestion
-from src.exps_performance.problems.nphardeval import NpCheckAndFormat, NpQuestion
+from src.reasoning_benchmark.problems.nphard.bsp import BspCheckAndFormat, BspQuestion
+from src.reasoning_benchmark.problems.nphard.edp import EdpCheckAndFormat, EdpQuestion
+from src.reasoning_benchmark.problems.nphard.gcp import GcpCheckAndFormat, GcpQuestion
+from src.reasoning_benchmark.problems.nphard.gcp_d import GcpdCheckAndFormat, GcpdQuestion
+from src.reasoning_benchmark.problems.nphard.ksp import KspCheckAndFormat, KspQuestion
+from src.reasoning_benchmark.problems.nphard.msp import MspCheckAndFormat, MspQuestion
+from src.reasoning_benchmark.problems.nphard.spp import SppCheckAndFormat, SppQuestion
+from src.reasoning_benchmark.problems.nphard.tsp import TspCheckAndFormat, TspQuestion
+from src.reasoning_benchmark.problems.nphard.tsp_d import TspdCheckAndFormat, TspdQuestion
+from src.reasoning_benchmark.problems.nphardeval import NpCheckAndFormat, NpQuestion
 
 
 @pytest.mark.parametrize(

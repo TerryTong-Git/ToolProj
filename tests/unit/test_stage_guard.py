@@ -3,9 +3,9 @@ from typing import Any, List
 
 import pytest
 
-from src.exps_performance.logger import CheckpointManager, Record
-from src.exps_performance.main import run_stage_batch
-from src.exps_performance.problems import Question
+from src.reasoning_benchmark.problems import Question
+from src.reasoning_benchmark.records import CheckpointManager, Record
+from src.reasoning_benchmark.runner import run_stage_batch
 
 
 @dataclass

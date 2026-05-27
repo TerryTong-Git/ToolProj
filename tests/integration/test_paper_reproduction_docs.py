@@ -29,16 +29,16 @@ def test_paper_reproduction_script_lists_core_commands() -> None:
         capture_output=True,
     )
 
-    assert "analyze_route_accuracy_tables.py" in result.stdout
-    assert "analyze_translation_shot_ablation.py" in result.stdout
-    assert "analyze_rlm_subset_results.py" in result.stdout
-    assert "analyze_coding_model_table.py" in result.stdout
-    assert "analyze_code_failure_distribution.py" in result.stdout
-    assert "analyze_frontier_nopatch_table.py" in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_route_accuracy_tables" in result.stdout
+    assert "src.translation_additivity.reports.shot_ablation" in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_rlm_subset_results" in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_coding_model_table" in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_code_failure_distribution" in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_frontier_nopatch_table" in result.stdout
     assert "Five percent validation:" in result.stdout
     assert all(test_name in result.stdout for test_name in FIVE_PERCENT_TESTS)
-    assert "plot_judge_discrimination.py" in result.stdout
-    assert "plot_translation_additivity.py" in result.stdout
+    assert "src.translation_discrimination.reports.judge_discrimination" in result.stdout
+    assert "src.translation_additivity.reports.translation_additivity" in result.stdout
     assert "latexmk -pdf" in result.stdout
 
 
@@ -51,10 +51,12 @@ def test_python_reproduction_cli_lists_same_core_commands() -> None:
         capture_output=True,
     )
 
-    assert "analyze_route_accuracy_tables.py" in result.stdout
+    assert "Experiments:" in result.stdout
+    assert "verify-5pct" in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_route_accuracy_tables" in result.stdout
     assert "Five percent validation:" in result.stdout
     assert "test_analyze_sim_code_overlap_e2e.py" in result.stdout
-    assert "plot_judge_discrimination.py" in result.stdout
+    assert "src.translation_discrimination.reports.judge_discrimination" in result.stdout
     assert "latexmk -pdf" in result.stdout
 
 
@@ -67,8 +69,8 @@ def test_python_reproduction_cli_lists_only_selected_target() -> None:
         capture_output=True,
     )
 
-    assert "analyze_route_accuracy_tables.py" in result.stdout
-    assert "plot_judge_discrimination.py" not in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_route_accuracy_tables" in result.stdout
+    assert "src.translation_discrimination.reports.judge_discrimination" not in result.stdout
     assert "latexmk -pdf" not in result.stdout
 
 
@@ -83,7 +85,7 @@ def test_python_reproduction_cli_lists_only_validation_target() -> None:
 
     assert "Five percent validation:" in result.stdout
     assert all(test_name in result.stdout for test_name in FIVE_PERCENT_TESTS)
-    assert "analyze_route_accuracy_tables.py" not in result.stdout
+    assert "src.reasoning_benchmark.scripts.analyze_route_accuracy_tables" not in result.stdout
     assert "latexmk -pdf" not in result.stdout
 
 
@@ -99,6 +101,123 @@ def test_python_reproduction_cli_dry_run_tables_uses_dedicated_output_dir() -> N
     assert "results/paper_reproduction/route_accuracy_tables.md" in result.stdout
     assert "results/paper_reproduction/code_failure_distribution.csv" in result.stdout
     assert "results/route_accuracy_tables.md" not in result.stdout
+
+
+def test_python_reproduction_cli_dry_run_tables_can_use_generated_input(tmp_path: Path) -> None:
+    input_dir = tmp_path / "generated"
+    output_dir = tmp_path / "tables"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "--dry-run",
+            "--input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(output_dir),
+            "tables",
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert str(input_dir / "experiments/route_accuracy/results") in result.stdout
+    assert str(input_dir / "experiments/translation_additivity/results/legacy_trials.jsonl") in result.stdout
+    assert str(input_dir / "experiments/coding_model/coding_model_outcomes.csv") in result.stdout
+    assert str(input_dir / "experiments/sim_code_overlap/res.jsonl") in result.stdout
+    assert str(output_dir / "route_accuracy_tables.md") in result.stdout
+    assert str(output_dir / "sim_code_overlap.md") in result.stdout
+
+
+def test_python_reproduction_cli_dry_run_experiments_lists_generated_artifacts(tmp_path: Path) -> None:
+    output_dir = tmp_path / "paper reproduction"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "experiments",
+            "--dry-run",
+            "--shard",
+            "5pct",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "generate deterministic route-accuracy 5% result shards" in result.stdout
+    assert str(output_dir / "manifest_observed.json") in result.stdout
+    assert "+ uv run" not in result.stdout
+
+
+def test_python_reproduction_cli_generates_and_verifies_five_percent_manifest(tmp_path: Path) -> None:
+    output_dir = tmp_path / "paper reproduction"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "experiments",
+            "--shard",
+            "5pct",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "verify-5pct",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "verified 13 generated 5% artifacts" in result.stdout
+    assert "verified 17 generated 5% output files" in result.stdout
+    assert (output_dir / "manifest_observed.json").is_file()
+    assert not (output_dir / "_verify_5pct_outputs").exists()
+
+
+def test_python_reproduction_cli_dry_run_all_require_generated_results_is_inspect_only(tmp_path: Path) -> None:
+    output_dir = tmp_path / "paper reproduction"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "all",
+            "--dry-run",
+            "--require-generated-results",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "generate deterministic route-accuracy 5% result shards" in result.stdout
+    assert "verify-5pct" in result.stdout
+    assert str(output_dir / "experiments/route_accuracy/results") in result.stdout
+    assert not (output_dir / "manifest_observed.json").exists()
 
 
 def test_python_reproduction_cli_dry_run_validation_lists_five_percent_tests() -> None:

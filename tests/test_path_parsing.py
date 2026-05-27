@@ -1,7 +1,7 @@
 import pytest
 
-from src.exps_performance.problems.nphard.spp import SppCheckAndFormat
-from src.exps_performance.problems.nphard.tsp import TspCheckAndFormat
+from src.reasoning_benchmark.problems.nphard.spp import SppCheckAndFormat
+from src.reasoning_benchmark.problems.nphard.tsp import TspCheckAndFormat
 
 
 @pytest.mark.parametrize(

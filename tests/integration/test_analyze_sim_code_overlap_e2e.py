@@ -26,12 +26,12 @@ def test_analyze_sim_code_overlap_reproduces_five_percent_frontier_table_shard(t
     report_path = tmp_path / "report.md"
     csv_path = tmp_path / "summary.csv"
     repo_root = Path(__file__).resolve().parents[2]
-    script = repo_root / "src" / "exps_performance" / "scripts" / "analyze_sim_code_overlap.py"
 
     subprocess.run(
         [
             sys.executable,
-            str(script),
+            "-m",
+            "src.reasoning_benchmark.scripts.analyze_sim_code_overlap",
             "--results-root",
             str(tmp_path),
             "--report-path",

@@ -8,11 +8,11 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, Field
 
-import src.exps_performance.arms as arms
-from src.exps_performance.arms import ArmRLMCode, ArmRLMNL
-from src.exps_performance.logger import CheckpointManager, Record
-from src.exps_performance.main import run_stage_batch
-from src.exps_performance.problems import CheckAndFormat, Question
+import src.reasoning_benchmark.reasoning_strategies as arms
+from src.reasoning_benchmark.problems import CheckAndFormat, Question
+from src.reasoning_benchmark.reasoning_strategies import ArmRLMCode, ArmRLMNL
+from src.reasoning_benchmark.records import CheckpointManager, Record
+from src.reasoning_benchmark.runner import run_stage_batch
 from tests.unit.test_probs import ToyCheckAndFormat
 
 

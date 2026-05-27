@@ -46,7 +46,8 @@ def test_coding_model_table_rebuilds_from_compact_outcomes(tmp_path: Path) -> No
     subprocess.run(
         [
             sys.executable,
-            "src/exps_performance/scripts/analyze_coding_model_table.py",
+            "-m",
+            "src.reasoning_benchmark.scripts.analyze_coding_model_table",
             "--input-csv",
             str(input_csv),
             "--output-md",
