@@ -14,7 +14,12 @@ def test_parser_reruns_until_valid_json(monkeypatch: pytest.MonkeyPatch, default
     calls: list[int] = []
     question = _fg_question("2")
 
-    def _fake_run_batch(messages_list: list[list[dict[str, str]]], args: Any, client: Any) -> list[str]:
+    def _fake_run_batch(
+        messages_list: list[list[dict[str, str]]],
+        args: Any,
+        client: Any,
+        **_: Any,
+    ) -> list[str]:
         calls.append(len(messages_list))
         if len(messages_list) == 1:
             return ['{"Answer": "2", bad}']  # malformed JSON to force parse failure
@@ -41,7 +46,12 @@ def test_parser_stops_after_rerun_budget(monkeypatch: pytest.MonkeyPatch, defaul
     calls: list[int] = []
     question = _fg_question("4")
 
-    def _always_bad(messages_list: list[list[dict[str, str]]], args: Any, client: Any) -> list[str]:
+    def _always_bad(
+        messages_list: list[list[dict[str, str]]],
+        args: Any,
+        client: Any,
+        **_: Any,
+    ) -> list[str]:
         calls.append(len(messages_list))
         if len(messages_list) == 1:
             return ["Answer: oops"]  # clearly not JSON
@@ -70,7 +80,12 @@ def test_arm2_rerun_recovers_from_messy_json(monkeypatch: pytest.MonkeyPatch, de
     calls: list[int] = []
     question = _fg_question("2")
 
-    def _messy(messages_list: list[list[dict[str, str]]], args: Any, client: Any) -> list[str]:
+    def _messy(
+        messages_list: list[list[dict[str, str]]],
+        args: Any,
+        client: Any,
+        **_: Any,
+    ) -> list[str]:
         calls.append(len(messages_list))
         if len(messages_list) == 1:
             return ["completely not json"]

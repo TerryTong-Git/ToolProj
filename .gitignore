@@ -5,6 +5,7 @@
 /.cursor/*
 .vscode/
 .pymon
+/.rlm_workspace/
 
 # Caches & build artefacts
 **/__pycache__/**
@@ -25,6 +26,7 @@ dmypy.json
 /src/**/out*
 /src/exps_performance/Data*
 /src/exps_performance/Open/
+/src/exps_performance/debug/
 /src/exps_benchmarks/*
 /src/exps_logistic/results/*
 

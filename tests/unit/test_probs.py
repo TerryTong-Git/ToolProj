@@ -78,7 +78,12 @@ def toy_questions() -> list[ToyQuestion]:
 
 @pytest.fixture
 def stub_run_batch(monkeypatch: pytest.MonkeyPatch) -> None:
-    def _fake_run_batch(messages_list: list[list[dict[str, str]]], args: Any, client: Any) -> list[str]:
+    def _fake_run_batch(
+        messages_list: list[list[dict[str, str]]],
+        args: Any,
+        client: Any,
+        **_: Any,
+    ) -> list[str]:
         outs: list[str] = []
         for msgs in messages_list:
             content = msgs[-1]["content"]
