@@ -58,6 +58,9 @@ OPENROUTER_API_KEY=your_openrouter_key  # For accessing various LLMs
 
 ## Quick Start
 
+For paper table, figure, and PDF reproduction commands, see
+[`PAPER_REPRODUCTION.md`](PAPER_REPRODUCTION.md).
+
 ### Run Performance Experiments
 
 ```bash
