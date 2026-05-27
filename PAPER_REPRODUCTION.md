@@ -13,15 +13,27 @@ The older sibling `../Bayesian_Tool_Use` is not used for result matching.
 ## One Command
 
 ```bash
-PAPER_DIR=../Bayesian_Tool_Use_source_20260521 bash scripts/reproduce_paper_results.sh all
+PAPER_DIR=../Bayesian_Tool_Use_source_20260521 uv run python scripts/reproduce_paper.py all
 ```
 
 This regenerates the compact table outputs, regenerates the scripted figures, copies generated figures into the paper source, and builds `example_paper.pdf`.
 
+The older shell entry point still works:
+
+```bash
+PAPER_DIR=../Bayesian_Tool_Use_source_20260521 bash scripts/reproduce_paper_results.sh all
+```
+
+Use `--dry-run` to inspect the commands for any target without running them:
+
+```bash
+uv run python scripts/reproduce_paper.py --dry-run tables
+```
+
 ## Tables
 
 ```bash
-bash scripts/reproduce_paper_results.sh tables
+uv run python scripts/reproduce_paper.py tables
 ```
 
 The table source is `../Bayesian_Tool_Use_source_20260521/Appendix/part_1.tex`.
@@ -45,7 +57,7 @@ For the full 0-5 shot sweep, first run `src/exps_functional/scripts/run_translat
 ## Five Percent Validation
 
 ```bash
-bash scripts/reproduce_paper_results.sh validation
+uv run python scripts/reproduce_paper.py validation
 ```
 
 This runs the exact-output shard tests for each rebuttal table. Each test
@@ -55,7 +67,7 @@ table input and asserts the regenerated markdown or CSV values exactly.
 ## Figures
 
 ```bash
-bash scripts/reproduce_paper_results.sh figures
+uv run python scripts/reproduce_paper.py figures
 ```
 
 The figure references are in `../Bayesian_Tool_Use_source_20260521/sections/*.tex`.
@@ -74,7 +86,7 @@ The recovery figure is notebook-backed. The default figure command does not run 
 ## Paper Build
 
 ```bash
-PAPER_DIR=../Bayesian_Tool_Use_source_20260521 bash scripts/reproduce_paper_results.sh paper
+PAPER_DIR=../Bayesian_Tool_Use_source_20260521 uv run python scripts/reproduce_paper.py paper
 ```
 
 This runs:
@@ -90,7 +102,9 @@ The paper build expects a local TeX installation with `latexmk`.
 
 ```bash
 bash -n scripts/reproduce_paper_results.sh
+uv run python scripts/reproduce_paper.py --list
 bash scripts/reproduce_paper_results.sh --list
+uv run python scripts/reproduce_paper.py --dry-run tables
 uv run pytest tests/integration/test_analyze_sim_code_overlap_e2e.py -q
 uv run pytest tests/integration/test_route_accuracy_tables_e2e.py -q
 uv run pytest tests/integration/test_translation_shot_ablation_e2e.py -q
