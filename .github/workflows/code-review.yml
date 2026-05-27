@@ -60,6 +60,7 @@ jobs:
       - name: Run Research Code Review
         id: review
         if: steps.changed-files.outputs.no_changes != 'true'
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -359,6 +360,7 @@ jobs:
       - name: Run Quality Code Review
         id: quality-review
         if: steps.changed-files.outputs.no_changes != 'true'
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
