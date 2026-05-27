@@ -122,13 +122,15 @@ def load_samples_for_model(model_name: str, max_samples: int = N_SAMPLES) -> lis
                     if len(nl_reasoning) < 100 or len(sim_code) < 50:
                         continue
 
-                    samples.append(Sample(
-                        kind=kind,
-                        question=question,
-                        native_nl=nl_reasoning,
-                        sim_code=sim_code,
-                        source_model=model_name,
-                    ))
+                    samples.append(
+                        Sample(
+                            kind=kind,
+                            question=question,
+                            native_nl=nl_reasoning,
+                            sim_code=sim_code,
+                            source_model=model_name,
+                        )
+                    )
 
     random.shuffle(samples)
     return samples[:max_samples]
@@ -196,7 +198,7 @@ def get_embeddings_sync(texts: list[str], batch_size: int = 25) -> np.ndarray:
     all_embeddings = []
 
     for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
+        batch = texts[i : i + batch_size]
         for attempt in range(3):  # Retry up to 3 times
             try:
                 response = httpx.post(
@@ -221,6 +223,7 @@ def get_embeddings_sync(texts: list[str], batch_size: int = 25) -> np.ndarray:
                 if attempt == 2:
                     raise
                 import time
+
                 time.sleep(5)
 
     return np.array(all_embeddings)
@@ -281,12 +284,8 @@ async def run_discrimination_trials(
 
     async def judge_one(ts: TranslatedSample, true_label: int, client: httpx.AsyncClient) -> tuple[int, int, bool]:
         async with semaphore:
-            trace = ts.sample.native_nl if true_label == 0 else (
-                ts.translated_same if use_same_translator else ts.translated_diff
-            )
-            predicted, _ = await judge_discrimination(
-                ts.sample.native_nl, trace, judge_model, classifier_prompt, client
-            )
+            trace = ts.sample.native_nl if true_label == 0 else (ts.translated_same if use_same_translator else ts.translated_diff)
+            predicted, _ = await judge_discrimination(ts.sample.native_nl, trace, judge_model, classifier_prompt, client)
             correct = (predicted == true_label) if predicted != -1 else False
             return true_label, predicted, correct
 
@@ -355,22 +354,20 @@ def plot_clusters(
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    native_coords = coords[:len(native_emb)]
-    translated_coords = coords[len(native_emb):]
+    native_coords = coords[: len(native_emb)]
+    translated_coords = coords[len(native_emb) :]
 
-    ax.scatter(native_coords[:, 0], native_coords[:, 1],
-               c='#2ecc71', alpha=0.6, label='Native NL', s=50)
-    ax.scatter(translated_coords[:, 0], translated_coords[:, 1],
-               c='#e74c3c', alpha=0.6, label='Translated', s=50)
+    ax.scatter(native_coords[:, 0], native_coords[:, 1], c="#2ecc71", alpha=0.6, label="Native NL", s=50)
+    ax.scatter(translated_coords[:, 0], translated_coords[:, 1], c="#e74c3c", alpha=0.6, label="Translated", s=50)
 
-    ax.set_xlabel('t-SNE Dimension 1', fontsize=12)
-    ax.set_ylabel('t-SNE Dimension 2', fontsize=12)
-    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.set_xlabel("t-SNE Dimension 1", fontsize=12)
+    ax.set_ylabel("t-SNE Dimension 2", fontsize=12)
+    ax.set_title(title, fontsize=14, fontweight="bold")
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches='tight')
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"  Saved plot to {output_path}")
 
@@ -386,7 +383,7 @@ async def main():
     # Store all results
     all_results = {
         "distributional": {},  # source_model -> {same: stats, diff: stats}
-        "functional": {},      # source_model -> judge_model -> {same: stats, diff: stats}
+        "functional": {},  # source_model -> judge_model -> {same: stats, diff: stats}
     }
 
     # Store embeddings for plotting
@@ -530,7 +527,9 @@ async def main():
             if source_name in all_results["functional"] and judge_name in all_results["functional"][source_name]:
                 same = all_results["functional"][source_name][judge_name]["same_translator"]
                 diff = all_results["functional"][source_name][judge_name]["diff_translator"]
-                print(f"{source_name:<20} {same['accuracy']*100:.1f}% [{same['ci_low']*100:.0f}%-{same['ci_high']*100:.0f}%]       {diff['accuracy']*100:.1f}% [{diff['ci_low']*100:.0f}%-{diff['ci_high']*100:.0f}%]")
+                print(
+                    f"{source_name:<20} {same['accuracy']*100:.1f}% [{same['ci_low']*100:.0f}%-{same['ci_high']*100:.0f}%]       {diff['accuracy']*100:.1f}% [{diff['ci_low']*100:.0f}%-{diff['ci_high']*100:.0f}%]"
+                )
 
     # Save results
     output_path = OUTPUT_DIR / f"functional_similarity_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"

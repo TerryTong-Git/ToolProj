@@ -43,10 +43,15 @@ def main():
             colors.append("#e07070")  # red: distinguishable
 
     bars = ax.bar(
-        x, accuracies, width,
+        x,
+        accuracies,
+        width,
         yerr=[errors_low, errors_high],
-        color=colors, edgecolor="black", linewidth=1,
-        capsize=5, error_kw={"linewidth": 1.5},
+        color=colors,
+        edgecolor="black",
+        linewidth=1,
+        capsize=5,
+        error_kw={"linewidth": 1.5},
     )
 
     # Value labels
@@ -55,7 +60,10 @@ def main():
             bar.get_x() + bar.get_width() / 2,
             bar.get_height() + errors_high[i] + 1.0,
             f"{acc:.1f}%\n(n={n})",
-            ha="center", va="bottom", fontsize=11, fontweight="bold",
+            ha="center",
+            va="bottom",
+            fontsize=11,
+            fontweight="bold",
         )
 
     # Reference line at chance
@@ -66,7 +74,8 @@ def main():
     ax.set_xlabel("Judge Model", fontsize=13, fontweight="bold")
     ax.set_title(
         "Source Discrimination Accuracy\n(GPT-4o Translator, ~2 000 trials each)",
-        fontsize=14, fontweight="bold",
+        fontsize=14,
+        fontweight="bold",
     )
 
     ax.set_xticks(x)

@@ -25,7 +25,7 @@ from statsmodels.stats.multitest import multipletests
 
 from src.reasoning_benchmark.artifact_paths import LEGACY_BENCHMARK_RESULTS_DIR
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 RESULTS_DIR = LEGACY_BENCHMARK_RESULTS_DIR
 OUTPUT_DIR = LEGACY_BENCHMARK_RESULTS_DIR
@@ -94,23 +94,18 @@ def pairwise_mcnemar(data: np.ndarray, conditions: list[str]) -> dict:
                 stat = b
             else:
                 # Chi-square approximation with continuity correction
-                stat = (abs(b - c) - 1)**2 / (b + c) if (b + c) > 0 else 0
+                stat = (abs(b - c) - 1) ** 2 / (b + c) if (b + c) > 0 else 0
                 p_val = 1 - stats.chi2.cdf(stat, 1) if (b + c) > 0 else 1.0
 
             pairs.append((conditions[i], conditions[j]))
             p_values.append(p_val)
-            results[(conditions[i], conditions[j])] = {
-                'statistic': stat,
-                'b': b,
-                'c': c,
-                'p_raw': p_val
-            }
+            results[(conditions[i], conditions[j])] = {"statistic": stat, "b": b, "c": c, "p_raw": p_val}
 
     # Holm-Bonferroni correction
     if p_values:
-        _, p_corrected, _, _ = multipletests(p_values, method='holm')
+        _, p_corrected, _, _ = multipletests(p_values, method="holm")
         for idx, pair in enumerate(pairs):
-            results[pair]['p_corrected'] = p_corrected[idx]
+            results[pair]["p_corrected"] = p_corrected[idx]
 
     return results
 
@@ -128,18 +123,20 @@ def load_all_data() -> pd.DataFrame:
                     continue
                 try:
                     row = json.loads(line)
-                    records.append({
-                        'model_seed': model_seed,
-                        'model': row.get('model', model_seed.rsplit('_seed', 1)[0]),
-                        'seed': row.get('seed', 0),
-                        'digit': row.get('digit', 0),
-                        'kind': row.get('kind', ''),
-                        'unique_tag': row.get('unique_tag', ''),
-                        'nl_correct': bool(row.get('nl_correct', False)),
-                        'sim_correct': bool(row.get('sim_correct', False)),
-                        'code_correct': bool(row.get('code_correct', False)),
-                        'controlsim_correct': bool(row.get('controlsim_correct', False)),
-                    })
+                    records.append(
+                        {
+                            "model_seed": model_seed,
+                            "model": row.get("model", model_seed.rsplit("_seed", 1)[0]),
+                            "seed": row.get("seed", 0),
+                            "digit": row.get("digit", 0),
+                            "kind": row.get("kind", ""),
+                            "unique_tag": row.get("unique_tag", ""),
+                            "nl_correct": bool(row.get("nl_correct", False)),
+                            "sim_correct": bool(row.get("sim_correct", False)),
+                            "code_correct": bool(row.get("code_correct", False)),
+                            "controlsim_correct": bool(row.get("controlsim_correct", False)),
+                        }
+                    )
                 except json.JSONDecodeError:
                     continue
 
@@ -154,37 +151,39 @@ STANDARD_DIGITS = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
 
 def compute_accuracy_by_digit(df: pd.DataFrame) -> pd.DataFrame:
     """Compute accuracy with Wilson CIs for each digit and condition."""
-    conditions = ['nl_correct', 'sim_correct', 'controlsim_correct']
-    condition_labels = {'nl_correct': 'NL', 'sim_correct': 'Sim', 'controlsim_correct': 'ControlSim'}
+    conditions = ["nl_correct", "sim_correct", "controlsim_correct"]
+    condition_labels = {"nl_correct": "NL", "sim_correct": "Sim", "controlsim_correct": "ControlSim"}
 
     results = []
     # Filter to standard digits only
-    digits = [d for d in STANDARD_DIGITS if d in df['digit'].unique()]
+    digits = [d for d in STANDARD_DIGITS if d in df["digit"].unique()]
 
     for digit in digits:
-        digit_df = df[df['digit'] == digit]
+        digit_df = df[df["digit"] == digit]
         n_total = len(digit_df)
 
         for cond in conditions:
             n_correct = digit_df[cond].sum()
             acc, ci_low, ci_high = wilson_ci(n_correct, n_total)
-            results.append({
-                'digit': digit,
-                'condition': condition_labels[cond],
-                'accuracy': acc * 100,
-                'ci_low': ci_low * 100,
-                'ci_high': ci_high * 100,
-                'n_correct': n_correct,
-                'n_total': n_total,
-            })
+            results.append(
+                {
+                    "digit": digit,
+                    "condition": condition_labels[cond],
+                    "accuracy": acc * 100,
+                    "ci_low": ci_low * 100,
+                    "ci_high": ci_high * 100,
+                    "n_correct": n_correct,
+                    "n_total": n_total,
+                }
+            )
 
     return pd.DataFrame(results)
 
 
 def run_statistical_tests(df: pd.DataFrame) -> dict:
     """Run Cochran's Q and pairwise McNemar tests."""
-    conditions = ['nl_correct', 'sim_correct', 'controlsim_correct']
-    condition_labels = ['NL', 'Sim', 'ControlSim']
+    conditions = ["nl_correct", "sim_correct", "controlsim_correct"]
+    condition_labels = ["NL", "Sim", "ControlSim"]
 
     # Build binary matrix for all subjects
     # Each row = one trial (unique question), columns = conditions
@@ -197,10 +196,10 @@ def run_statistical_tests(df: pd.DataFrame) -> dict:
     mcnemar_results = pairwise_mcnemar(data_matrix, condition_labels)
 
     return {
-        'cochran_q': Q_stat,
-        'cochran_p': Q_pval,
-        'mcnemar': mcnemar_results,
-        'n_samples': len(df),
+        "cochran_q": Q_stat,
+        "cochran_p": Q_pval,
+        "mcnemar": mcnemar_results,
+        "n_samples": len(df),
     }
 
 
@@ -209,9 +208,9 @@ def run_tests_by_digit(df: pd.DataFrame) -> dict:
     results_by_digit = {}
 
     # Only test standard digits
-    digits = [d for d in STANDARD_DIGITS if d in df['digit'].unique()]
+    digits = [d for d in STANDARD_DIGITS if d in df["digit"].unique()]
     for digit in digits:
-        digit_df = df[df['digit'] == digit]
+        digit_df = df[df["digit"] == digit]
         results_by_digit[digit] = run_statistical_tests(digit_df)
 
     return results_by_digit
@@ -234,81 +233,101 @@ def create_plot(acc_df: pd.DataFrame, overall_stats: dict, digit_stats: dict):
 
     # Use a nice color palette
     palette = sns.color_palette("viridis", 3)
-    condition_colors = {'NL': palette[0], 'Sim': palette[1], 'ControlSim': palette[2]}
+    condition_colors = {"NL": palette[0], "Sim": palette[1], "ControlSim": palette[2]}
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
-    digits = sorted(acc_df['digit'].unique())
-    conditions = ['NL', 'Sim', 'ControlSim']
+    digits = sorted(acc_df["digit"].unique())
+    conditions = ["NL", "Sim", "ControlSim"]
 
     x = np.arange(len(digits))
     width = 0.25
-    offsets = {'NL': -width, 'Sim': 0, 'ControlSim': width}
+    offsets = {"NL": -width, "Sim": 0, "ControlSim": width}
 
     for cond in conditions:
-        cond_df = acc_df[acc_df['condition'] == cond].sort_values('digit')
-        accuracies = cond_df['accuracy'].values
-        ci_low = cond_df['ci_low'].values
-        ci_high = cond_df['ci_high'].values
+        cond_df = acc_df[acc_df["condition"] == cond].sort_values("digit")
+        accuracies = cond_df["accuracy"].values
+        ci_low = cond_df["ci_low"].values
+        ci_high = cond_df["ci_high"].values
 
         errors_low = np.maximum(0, accuracies - ci_low)
         errors_high = np.maximum(0, ci_high - accuracies)
 
-        ax.bar(x + offsets[cond], accuracies, width,
-               yerr=[errors_low, errors_high],
-               label=cond, color=condition_colors[cond],
-               edgecolor='black', linewidth=0.5,
-               capsize=2, error_kw={'linewidth': 1})
+        ax.bar(
+            x + offsets[cond],
+            accuracies,
+            width,
+            yerr=[errors_low, errors_high],
+            label=cond,
+            color=condition_colors[cond],
+            edgecolor="black",
+            linewidth=0.5,
+            capsize=2,
+            error_kw={"linewidth": 1},
+        )
 
     # Customize plot
-    ax.set_xlabel('Problem Hardness (Digit Length)', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Accuracy (%)', fontsize=14, fontweight='bold')
-    ax.set_title('Accuracy vs Problem Hardness by Reasoning Condition\n(Wilson 95% CIs, Holm-Bonferroni corrected)',
-                 fontsize=15, fontweight='bold')
+    ax.set_xlabel("Problem Hardness (Digit Length)", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Accuracy (%)", fontsize=14, fontweight="bold")
+    ax.set_title("Accuracy vs Problem Hardness by Reasoning Condition\n(Wilson 95% CIs, Holm-Bonferroni corrected)", fontsize=15, fontweight="bold")
 
     ax.set_xticks(x)
     ax.set_xticklabels([str(d) for d in digits], fontsize=11)
-    ax.tick_params(axis='y', labelsize=11)
+    ax.tick_params(axis="y", labelsize=11)
 
-    ax.set_ylim(0, max(acc_df['ci_high']) + 10)
-    ax.legend(loc='upper right', fontsize=10, title='Condition', title_fontsize=11)
+    ax.set_ylim(0, max(acc_df["ci_high"]) + 10)
+    ax.legend(loc="upper right", fontsize=10, title="Condition", title_fontsize=11)
 
-    ax.yaxis.grid(True, linestyle='--', alpha=0.3)
+    ax.yaxis.grid(True, linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     # Add overall Cochran's Q annotation (top left)
     cochran_text = f"Cochran's Q = {overall_stats['cochran_q']:.1f}, {format_pval(overall_stats['cochran_p'])}"
-    ax.text(0.02, 0.98, cochran_text, transform=ax.transAxes,
-            fontsize=11, fontweight='bold', verticalalignment='top',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='wheat', alpha=0.9))
+    ax.text(
+        0.02,
+        0.98,
+        cochran_text,
+        transform=ax.transAxes,
+        fontsize=11,
+        fontweight="bold",
+        verticalalignment="top",
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.9),
+    )
 
     # Add pairwise McNemar results (below Cochran's Q)
     mcnemar_lines = ["Pairwise McNemar (Holm-Bonferroni):"]
-    for pair, res in overall_stats['mcnemar'].items():
-        p_corr = res['p_corrected']
+    for pair, res in overall_stats["mcnemar"].items():
+        p_corr = res["p_corrected"]
         sig = "***" if p_corr < 0.001 else "**" if p_corr < 0.01 else "*" if p_corr < 0.05 else "ns"
         mcnemar_lines.append(f"  {pair[0]}–{pair[1]}: {format_pval(p_corr)} {sig}")
 
     mcnemar_text = "\n".join(mcnemar_lines)
-    ax.text(0.02, 0.82, mcnemar_text, transform=ax.transAxes,
-            fontsize=9, verticalalignment='top', horizontalalignment='left',
-            fontfamily='monospace',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='lightcyan', alpha=0.9))
+    ax.text(
+        0.02,
+        0.82,
+        mcnemar_text,
+        transform=ax.transAxes,
+        fontsize=9,
+        verticalalignment="top",
+        horizontalalignment="left",
+        fontfamily="monospace",
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="lightcyan", alpha=0.9),
+    )
 
     # Add significance markers above bars for each digit
     for i, digit in enumerate(digits):
         digit_res = digit_stats.get(digit, {})
-        if 'mcnemar' in digit_res:
+        if "mcnemar" in digit_res:
             # Check if NL vs Sim is significant
-            nl_sim = digit_res['mcnemar'].get(('NL', 'Sim'), {})
-            if nl_sim.get('p_corrected', 1) < 0.05:
+            nl_sim = digit_res["mcnemar"].get(("NL", "Sim"), {})
+            if nl_sim.get("p_corrected", 1) < 0.05:
                 max_y = max(
-                    acc_df[(acc_df['digit'] == digit) & (acc_df['condition'] == 'NL')]['ci_high'].values[0],
-                    acc_df[(acc_df['digit'] == digit) & (acc_df['condition'] == 'Sim')]['ci_high'].values[0]
+                    acc_df[(acc_df["digit"] == digit) & (acc_df["condition"] == "NL")]["ci_high"].values[0],
+                    acc_df[(acc_df["digit"] == digit) & (acc_df["condition"] == "Sim")]["ci_high"].values[0],
                 )
-                ax.text(i - width/2, max_y + 2, '*', ha='center', fontsize=14, fontweight='bold')
+                ax.text(i - width / 2, max_y + 2, "*", ha="center", fontsize=14, fontweight="bold")
 
     plt.tight_layout()
     return fig
@@ -335,9 +354,8 @@ def main():
     print(f"  N samples = {overall_stats['n_samples']}")
 
     print("\nPairwise McNemar tests (Holm-Bonferroni corrected):")
-    for pair, res in overall_stats['mcnemar'].items():
-        print(f"  {pair[0]} vs {pair[1]}: χ² = {res['statistic']:.2f}, "
-              f"p_raw = {res['p_raw']:.4f}, p_corrected = {res['p_corrected']:.4f}")
+    for pair, res in overall_stats["mcnemar"].items():
+        print(f"  {pair[0]} vs {pair[1]}: χ² = {res['statistic']:.2f}, " f"p_raw = {res['p_raw']:.4f}, p_corrected = {res['p_corrected']:.4f}")
 
     print("\nRunning tests by digit...")
     digit_stats = run_tests_by_digit(df)
@@ -346,19 +364,19 @@ def main():
     fig = create_plot(acc_df, overall_stats, digit_stats)
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    fig.savefig(OUTPUT_DIR / 'accuracy_vs_hardness.pdf', bbox_inches='tight', dpi=300)
-    fig.savefig(OUTPUT_DIR / 'accuracy_vs_hardness.png', bbox_inches='tight', dpi=300)
+    fig.savefig(OUTPUT_DIR / "accuracy_vs_hardness.pdf", bbox_inches="tight", dpi=300)
+    fig.savefig(OUTPUT_DIR / "accuracy_vs_hardness.png", bbox_inches="tight", dpi=300)
     plt.close()
 
     print(f"\nSaved to {OUTPUT_DIR}/accuracy_vs_hardness.pdf/png")
 
     # Print summary table
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SUMMARY TABLE")
-    print("="*80)
-    pivot = acc_df.pivot(index='digit', columns='condition', values='accuracy')
+    print("=" * 80)
+    pivot = acc_df.pivot(index="digit", columns="condition", values="accuracy")
     print(pivot.round(1).to_string())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

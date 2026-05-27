@@ -20,6 +20,8 @@ Usage:
     uv run python -m src.translation_additivity.cli information --model claude-opus-4 --n_samples 100
 """
 
+# mypy: ignore-errors
+
 import argparse
 import asyncio
 import json
@@ -63,6 +65,7 @@ MODEL_MAP = {
 @dataclass
 class Sample:
     """A sample for the additivity experiment."""
+
     kind: str
     question: str
     nl_reasoning: str
@@ -75,6 +78,7 @@ class Sample:
 @dataclass
 class Trial:
     """A single evaluation trial."""
+
     sample_id: str
     kind: str
     condition: str  # "x", "x_nl", "x_code", "x_nl_code", "mismatch"
@@ -87,6 +91,7 @@ class Trial:
 @dataclass
 class ConditionResults:
     """Results for a single condition."""
+
     condition: str
     n_trials: int
     n_correct: int
@@ -99,6 +104,7 @@ class ConditionResults:
 @dataclass
 class ExperimentResults:
     """Full experiment results."""
+
     model: str
     n_samples: int
     conditions: dict[str, ConditionResults]
@@ -219,18 +225,20 @@ def load_samples(
 
                 # Clean code (remove markdown fences if present)
                 if sim_code.startswith("```"):
-                    sim_code = re.sub(r'^```\w*\n?', '', sim_code)
-                    sim_code = re.sub(r'\n?```$', '', sim_code)
+                    sim_code = re.sub(r"^```\w*\n?", "", sim_code)
+                    sim_code = re.sub(r"\n?```$", "", sim_code)
 
-                samples_by_kind[kind].append(Sample(
-                    kind=kind,
-                    question=question,
-                    nl_reasoning=nl_reasoning,
-                    sim_code=sim_code,
-                    gold_answer=gold_answer,
-                    source_model=source_model,
-                    index_in_kind=index_in_kind,
-                ))
+                samples_by_kind[kind].append(
+                    Sample(
+                        kind=kind,
+                        question=question,
+                        nl_reasoning=nl_reasoning,
+                        sim_code=sim_code,
+                        gold_answer=gold_answer,
+                        source_model=source_model,
+                        index_in_kind=index_in_kind,
+                    )
+                )
 
     # Apply per-kind limits
     samples = []
@@ -261,9 +269,9 @@ def normalize_answer(answer: str) -> str:
     """Normalize an answer for comparison."""
     answer = answer.strip()
     # Remove common prefixes
-    answer = re.sub(r'^(Answer:|The answer is|Result:)\s*', '', answer, flags=re.IGNORECASE)
+    answer = re.sub(r"^(Answer:|The answer is|Result:)\s*", "", answer, flags=re.IGNORECASE)
     # Extract first number-like thing
-    match = re.search(r'-?\d+\.?\d*', answer)
+    match = re.search(r"-?\d+\.?\d*", answer)
     if match:
         return match.group()
     return answer.strip()
@@ -316,7 +324,7 @@ async def call_llm_async(
             if attempt == 2:
                 print(f"API error after 3 attempts: {e}")
                 return ""
-            await asyncio.sleep(2 ** attempt)
+            await asyncio.sleep(2**attempt)
     return ""
 
 

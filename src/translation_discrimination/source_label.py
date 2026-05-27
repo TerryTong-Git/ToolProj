@@ -20,6 +20,8 @@ Usage:
     uv run python -m src.translation_discrimination.cli --n_samples 200
 """
 
+# mypy: ignore-errors
+
 import argparse
 import asyncio
 import json
@@ -63,6 +65,7 @@ REASONING_EFFORT = None  # None, "low", "medium", "high"
 @dataclass
 class Sample:
     """A sample for source discrimination."""
+
     kind: str
     question: str
     original_nl: str
@@ -74,6 +77,7 @@ class Sample:
 @dataclass
 class Trial:
     """A single discrimination trial."""
+
     kind: str
     question: str
     trace: str  # The explanation shown to judge
@@ -87,6 +91,7 @@ class Trial:
 @dataclass
 class ControlTrial:
     """A positive control trial (easy cases)."""
+
     control_type: str  # "code_vs_nl" or "random_vs_nl"
     trace: str
     true_label: int  # 0 = NL, 1 = obviously different
@@ -97,6 +102,7 @@ class ControlTrial:
 @dataclass
 class Results:
     """Experiment results."""
+
     n_trials: int
     accuracy: float
     accuracy_ci_low: float
@@ -169,13 +175,15 @@ def load_samples(
                 if kind_filter is not None and kind not in kind_filter:
                     continue
 
-                samples_by_kind[kind].append(Sample(
-                    kind=kind,
-                    question=question,
-                    original_nl=nl_reasoning,
-                    sim_code=sim_code,
-                    model=model_name,
-                ))
+                samples_by_kind[kind].append(
+                    Sample(
+                        kind=kind,
+                        question=question,
+                        original_nl=nl_reasoning,
+                        sim_code=sim_code,
+                        model=model_name,
+                    )
+                )
 
     # Second pass: apply per-kind limits and collect final samples
     samples = []
@@ -226,11 +234,7 @@ async def call_llm_async(
     resp = await client.post(f"{BASE_URL}/chat/completions", headers=headers, json=payload)
     if resp.status_code != 200:
         error_detail = resp.text[:500] if resp.text else "No error details"
-        raise httpx.HTTPStatusError(
-            f"{resp.status_code}: {error_detail}",
-            request=resp.request,
-            response=resp
-        )
+        raise httpx.HTTPStatusError(f"{resp.status_code}: {error_detail}", request=resp.request, response=resp)
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
@@ -264,9 +268,12 @@ async def classify_source_async(
     prompt = classifier_prompt.format(question=question[:500], trace=trace[:2000])
 
     response = await call_llm_async(
-        client, api_key, JUDGE_MODEL,
+        client,
+        api_key,
+        JUDGE_MODEL,
         [{"role": "user", "content": prompt}],
-        max_tokens=400, temperature=0.1,
+        max_tokens=400,
+        temperature=0.1,
         reasoning_effort=REASONING_EFFORT,
     )
 
@@ -341,9 +348,7 @@ async def run_experiment(
         async def translate_one(sample: Sample) -> tuple[Sample, str, Optional[str]]:
             async with semaphore:
                 try:
-                    translated = await translate_code_async(
-                        client, api_key, translator_prompt, sample.sim_code, sample.question
-                    )
+                    translated = await translate_code_async(client, api_key, translator_prompt, sample.sim_code, sample.question)
                     return sample, translated, None
                 except Exception as e:
                     return sample, "", str(e)
@@ -366,17 +371,21 @@ async def run_experiment(
         trial_inputs = []
         for sample in valid_samples:
             # Native NL trial (label 0)
-            trial_inputs.append({
-                "sample": sample,
-                "trace": sample.original_nl,
-                "true_label": 0,
-            })
+            trial_inputs.append(
+                {
+                    "sample": sample,
+                    "trace": sample.original_nl,
+                    "true_label": 0,
+                }
+            )
             # Translated trial (label 1)
-            trial_inputs.append({
-                "sample": sample,
-                "trace": sample.translated_nl,
-                "true_label": 1,
-            })
+            trial_inputs.append(
+                {
+                    "sample": sample,
+                    "trace": sample.translated_nl,
+                    "true_label": 1,
+                }
+            )
 
         random.shuffle(trial_inputs)
 
@@ -384,9 +393,7 @@ async def run_experiment(
             sample = inp["sample"]
             async with semaphore:
                 try:
-                    pred, conf, reasoning = await classify_source_async(
-                        client, api_key, classifier_prompt, sample.question, inp["trace"]
-                    )
+                    pred, conf, reasoning = await classify_source_async(client, api_key, classifier_prompt, sample.question, inp["trace"])
                     return Trial(
                         kind=sample.kind,
                         question=sample.question[:200],
@@ -426,19 +433,23 @@ async def run_experiment(
         control_inputs = []
         for sample in valid_samples[:50]:  # Use subset for controls
             # NL explanation (label 0)
-            control_inputs.append({
-                "sample": sample,
-                "trace": sample.original_nl,
-                "true_label": 0,
-                "control_type": "code_vs_nl",
-            })
+            control_inputs.append(
+                {
+                    "sample": sample,
+                    "trace": sample.original_nl,
+                    "true_label": 0,
+                    "control_type": "code_vs_nl",
+                }
+            )
             # Raw code (label 1 - obviously different)
-            control_inputs.append({
-                "sample": sample,
-                "trace": f"```python\n{sample.sim_code}\n```",
-                "true_label": 1,
-                "control_type": "code_vs_nl",
-            })
+            control_inputs.append(
+                {
+                    "sample": sample,
+                    "trace": f"```python\n{sample.sim_code}\n```",
+                    "true_label": 1,
+                    "control_type": "code_vs_nl",
+                }
+            )
 
         random.shuffle(control_inputs)
 
@@ -446,9 +457,7 @@ async def run_experiment(
             sample = inp["sample"]
             async with semaphore:
                 try:
-                    pred, _, _ = await classify_source_async(
-                        client, api_key, classifier_prompt, sample.question, inp["trace"]
-                    )
+                    pred, _, _ = await classify_source_async(client, api_key, classifier_prompt, sample.question, inp["trace"])
                     return ControlTrial(
                         control_type=inp["control_type"],
                         trace=inp["trace"][:500],
@@ -506,6 +515,7 @@ async def run_experiment(
         # Compute AUC
         try:
             from sklearn.metrics import roc_auc_score
+
             auc = roc_auc_score(y_true, y_score)
         except Exception:
             # Fallback: estimate from accuracy
@@ -529,9 +539,7 @@ async def run_experiment(
         kind_stats = {}
         for kind, data in by_kind.items():
             acc = data["correct"] / data["total"] if data["total"] > 0 else 0
-            acc_val, acc_ci_low, acc_ci_high = compute_accuracy_ci([
-                t.correct for t in trials if t.kind == kind
-            ])
+            acc_val, acc_ci_low, acc_ci_high = compute_accuracy_ci([t.correct for t in trials if t.kind == kind])
             kind_stats[kind] = {
                 "accuracy": acc,
                 "accuracy_ci": [acc_ci_low, acc_ci_high],
@@ -583,8 +591,8 @@ def print_results(results: Results):
     print(f"  Actual Translated{cm['fn']:4d}      {cm['tp']:4d}")
 
     # Precision/Recall for detecting translated
-    precision = cm['tp'] / (cm['tp'] + cm['fp']) if (cm['tp'] + cm['fp']) > 0 else 0
-    recall = cm['tp'] / (cm['tp'] + cm['fn']) if (cm['tp'] + cm['fn']) > 0 else 0
+    precision = cm["tp"] / (cm["tp"] + cm["fp"]) if (cm["tp"] + cm["fp"]) > 0 else 0
+    recall = cm["tp"] / (cm["tp"] + cm["fn"]) if (cm["tp"] + cm["fn"]) > 0 else 0
     print(f"\n  Precision (Translated): {precision*100:.1f}%")
     print(f"  Recall (Translated):    {recall*100:.1f}%")
 
@@ -608,9 +616,11 @@ def print_results(results: Results):
     print(f"  {'-'*20} {'-'*6} {'-'*16} {'-'*5}  {'-'*3} {'-'*3} {'-'*3} {'-'*3}")
     for kind in sorted(results.by_kind.keys()):
         data = results.by_kind[kind]
-        ci = data.get('accuracy_ci', [0, 0])
-        cm = data.get('confusion', {})
-        print(f"  {kind:<20} {data['accuracy']*100:5.1f}% [{ci[0]*100:4.1f}%, {ci[1]*100:4.1f}%] {data['total']:5d}  {cm.get('tp',0):3d} {cm.get('tn',0):3d} {cm.get('fp',0):3d} {cm.get('fn',0):3d}")
+        ci = data.get("accuracy_ci", [0, 0])
+        cm = data.get("confusion", {})
+        print(
+            f"  {kind:<20} {data['accuracy']*100:5.1f}% [{ci[0]*100:4.1f}%, {ci[1]*100:4.1f}%] {data['total']:5d}  {cm.get('tp',0):3d} {cm.get('tn',0):3d} {cm.get('fp',0):3d} {cm.get('fn',0):3d}"
+        )
 
 
 def save_results(
@@ -645,12 +655,13 @@ def main():
     parser.add_argument("--concurrency", type=int, default=32, help="Concurrent requests")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--output", type=str, default=None, help="Output file path")
-    parser.add_argument("--translator_model", type=str, default=DEFAULT_TRANSLATOR_MODEL,
-                        help=f"Translator model (default: {DEFAULT_TRANSLATOR_MODEL})")
-    parser.add_argument("--judge_model", type=str, default=DEFAULT_JUDGE_MODEL,
-                        help=f"Judge/discriminator model (default: {DEFAULT_JUDGE_MODEL})")
-    parser.add_argument("--reasoning_effort", type=str, default=None, choices=["low", "medium", "high"],
-                        help="Reasoning effort for judge model (low/medium/high)")
+    parser.add_argument(
+        "--translator_model", type=str, default=DEFAULT_TRANSLATOR_MODEL, help=f"Translator model (default: {DEFAULT_TRANSLATOR_MODEL})"
+    )
+    parser.add_argument("--judge_model", type=str, default=DEFAULT_JUDGE_MODEL, help=f"Judge/discriminator model (default: {DEFAULT_JUDGE_MODEL})")
+    parser.add_argument(
+        "--reasoning_effort", type=str, default=None, choices=["low", "medium", "high"], help="Reasoning effort for judge model (low/medium/high)"
+    )
     args = parser.parse_args()
 
     # Set global model configuration
@@ -696,9 +707,7 @@ def main():
     print(f"Models: {set(s.model for s in samples)}")
 
     # Run
-    trials, controls, results = asyncio.run(
-        run_experiment(api_key, samples, translator_prompt, classifier_prompt, args.concurrency)
-    )
+    trials, controls, results = asyncio.run(run_experiment(api_key, samples, translator_prompt, classifier_prompt, args.concurrency))
 
     print_results(results)
     save_results(trials, controls, results, output_file)

@@ -41,6 +41,7 @@ DEFAULT_DISCRIMINATOR = "anthropic/claude-opus-4.5"
 TRANSLATOR_MODEL = None
 DISCRIMINATOR_MODEL = None
 
+
 def load_samples(n_samples: int = 200) -> list[dict]:
     """Load samples with both code and NL reasoning from experiment results."""
     results_dir = Path(__file__).parent / "results"
@@ -55,13 +56,15 @@ def load_samples(n_samples: int = 200) -> list[dict]:
                     record = json.loads(line)
                     # Need both sim_code and nl_reasoning
                     if record.get("sim_code") and record.get("nl_reasoning"):
-                        all_samples.append({
-                            "kind": record["kind"],
-                            "question": record.get("nl_question", ""),
-                            "code": record["sim_code"],
-                            "nl_reasoning": record["nl_reasoning"],
-                            "answer": record.get("answer", ""),
-                        })
+                        all_samples.append(
+                            {
+                                "kind": record["kind"],
+                                "question": record.get("nl_question", ""),
+                                "code": record["sim_code"],
+                                "nl_reasoning": record["nl_reasoning"],
+                                "answer": record.get("answer", ""),
+                            }
+                        )
                 except json.JSONDecodeError:
                     continue
 
@@ -139,7 +142,7 @@ Natural Language Reasoning:"""
             if response.status_code != 200:
                 print(f"Translation error: {response.status_code} - {response.text}")
                 if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
+                    time.sleep(2**attempt)
                     continue
                 return ""
 
@@ -149,12 +152,12 @@ Natural Language Reasoning:"""
         except requests.exceptions.Timeout:
             print(f"Translation timeout on attempt {attempt + 1}/{max_retries}")
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             continue
         except Exception as e:
             print(f"Translation error: {e}")
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             continue
 
     return ""
@@ -199,7 +202,7 @@ Answer with just one word: "original" or "translated"."""
             if response.status_code != 200:
                 print(f"Discrimination error: {response.status_code} - {response.text}")
                 if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
+                    time.sleep(2**attempt)
                     continue
                 return "error"
 
@@ -209,12 +212,12 @@ Answer with just one word: "original" or "translated"."""
         except requests.exceptions.Timeout:
             print(f"Timeout on attempt {attempt + 1}/{max_retries}")
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             continue
         except Exception as e:
             print(f"Error: {e}")
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             continue
 
     return "error"
@@ -267,14 +270,16 @@ def run_experiment(n_samples: int = 200):
             correct += 1
         total += 1
 
-        results.append({
-            "kind": sample["kind"],
-            "ground_truth": ground_truth,
-            "prediction": prediction,
-            "correct": is_correct,
-            "original_nl": sample["nl_reasoning"][:200],
-            "translated_nl": translated_nl[:200] if show_translated else None,
-        })
+        results.append(
+            {
+                "kind": sample["kind"],
+                "ground_truth": ground_truth,
+                "prediction": prediction,
+                "correct": is_correct,
+                "original_nl": sample["nl_reasoning"][:200],
+                "translated_nl": translated_nl[:200] if show_translated else None,
+            }
+        )
 
         # Progress update every 20 samples
         if total % 20 == 0:
@@ -286,9 +291,9 @@ def run_experiment(n_samples: int = 200):
     accuracy = correct / total if total > 0 else 0
     consistency = max(accuracy, 1 - accuracy)
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("FINAL RESULTS")
-    print("="*60)
+    print("=" * 60)
     print(f"Samples evaluated: {total}")
     print(f"Raw accuracy: {accuracy:.1%}")
     print(f"Consistency (|acc - 50%|): {consistency:.1%}")
@@ -310,19 +315,23 @@ def run_experiment(n_samples: int = 200):
     model_short = TRANSLATOR_MODEL.split("/")[-1]
     output_path = Path(__file__).parent / f"translation_discrimination_{model_short}_{timestamp}.json"
     with open(output_path, "w") as f:
-        json.dump({
-            "config": {
-                "translator": TRANSLATOR_MODEL,
-                "discriminator": DISCRIMINATOR_MODEL,
-                "n_samples": total,
-                "timestamp": timestamp,
+        json.dump(
+            {
+                "config": {
+                    "translator": TRANSLATOR_MODEL,
+                    "discriminator": DISCRIMINATOR_MODEL,
+                    "n_samples": total,
+                    "timestamp": timestamp,
+                },
+                "summary": {
+                    "accuracy": accuracy,
+                    "consistency": consistency,
+                },
+                "results": results,
             },
-            "summary": {
-                "accuracy": accuracy,
-                "consistency": consistency,
-            },
-            "results": results,
-        }, f, indent=2)
+            f,
+            indent=2,
+        )
 
     print(f"\nResults saved to {output_path}")
 
@@ -333,15 +342,16 @@ def main():
     global TRANSLATOR_MODEL, DISCRIMINATOR_MODEL
 
     parser = argparse.ArgumentParser(description="Run translation discrimination experiment")
-    parser.add_argument("--translator", type=str, default=DEFAULT_TRANSLATOR,
-                        choices=list(TRANSLATOR_MODELS.keys()),
-                        help=f"Translator model (default: {DEFAULT_TRANSLATOR})")
-    parser.add_argument("--discriminator", type=str, default=DEFAULT_DISCRIMINATOR,
-                        help=f"Discriminator model (default: {DEFAULT_DISCRIMINATOR})")
-    parser.add_argument("--n_samples", type=int, default=200,
-                        help="Number of samples to evaluate (default: 200)")
-    parser.add_argument("--all", action="store_true",
-                        help="Run all translator models sequentially")
+    parser.add_argument(
+        "--translator",
+        type=str,
+        default=DEFAULT_TRANSLATOR,
+        choices=list(TRANSLATOR_MODELS.keys()),
+        help=f"Translator model (default: {DEFAULT_TRANSLATOR})",
+    )
+    parser.add_argument("--discriminator", type=str, default=DEFAULT_DISCRIMINATOR, help=f"Discriminator model (default: {DEFAULT_DISCRIMINATOR})")
+    parser.add_argument("--n_samples", type=int, default=200, help="Number of samples to evaluate (default: 200)")
+    parser.add_argument("--all", action="store_true", help="Run all translator models sequentially")
 
     args = parser.parse_args()
 
@@ -362,9 +372,9 @@ def main():
                 all_results[name] = {"error": str(e)}
 
         # Print summary
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("SUMMARY: ALL MODELS")
-        print("="*60)
+        print("=" * 60)
         for name, result in all_results.items():
             if "error" in result:
                 print(f"  {name}: ERROR - {result['error']}")

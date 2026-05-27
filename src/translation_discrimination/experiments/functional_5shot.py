@@ -161,13 +161,15 @@ def load_samples_for_model(model_name: str, max_samples: int = N_SAMPLES) -> lis
                     if len(nl_reasoning) < 100 or len(sim_code) < 50:
                         continue
 
-                    samples.append(Sample(
-                        kind=kind,
-                        question=question,
-                        native_nl=nl_reasoning,
-                        sim_code=sim_code,
-                        source_model=model_name,
-                    ))
+                    samples.append(
+                        Sample(
+                            kind=kind,
+                            question=question,
+                            native_nl=nl_reasoning,
+                            sim_code=sim_code,
+                            source_model=model_name,
+                        )
+                    )
 
     random.shuffle(samples)
     return samples[:max_samples]
@@ -341,9 +343,7 @@ async def run_discrimination_trials(
     async def judge_one(ts: TranslatedSample, true_label: int, client: httpx.AsyncClient) -> tuple[int, int, bool]:
         async with semaphore:
             question = ts.sample.question
-            trace = ts.sample.native_nl if true_label == 0 else (
-                ts.translated_same if use_same_translator else ts.translated_diff
-            )
+            trace = ts.sample.native_nl if true_label == 0 else (ts.translated_same if use_same_translator else ts.translated_diff)
             predicted, _ = await judge_discrimination(question, trace, judge_model, client)
             correct = (predicted == true_label) if predicted != -1 else False
             return true_label, predicted, correct
@@ -429,12 +429,8 @@ async def main():
 
             # Run controls first
             print("      Running controls...")
-            code_control = await run_control_trials(
-                translated_samples, judge_model, "code_vs_nl", concurrency=15
-            )
-            shuffled_control = await run_control_trials(
-                translated_samples, judge_model, "shuffled", concurrency=15
-            )
+            code_control = await run_control_trials(translated_samples, judge_model, "code_vs_nl", concurrency=15)
+            shuffled_control = await run_control_trials(translated_samples, judge_model, "shuffled", concurrency=15)
 
             code_pass = "✅" if code_control["accuracy"] > 0.7 else "❌"
             shuf_pass = "✅" if shuffled_control["accuracy"] > 0.7 else "❌"
@@ -467,8 +463,12 @@ async def main():
             same_contains = "✅" if same_results["ci_low"] <= 0.5 <= same_results["ci_high"] else "❌"
             diff_contains = "✅" if diff_results["ci_low"] <= 0.5 <= diff_results["ci_high"] else "❌"
 
-            print(f"      Same: {same_results['accuracy']*100:.1f}% [{same_results['ci_low']*100:.1f}%, {same_results['ci_high']*100:.1f}%] {same_contains} (n={same_results['n']})")
-            print(f"      Diff: {diff_results['accuracy']*100:.1f}% [{diff_results['ci_low']*100:.1f}%, {diff_results['ci_high']*100:.1f}%] {diff_contains} (n={diff_results['n']})")
+            print(
+                f"      Same: {same_results['accuracy']*100:.1f}% [{same_results['ci_low']*100:.1f}%, {same_results['ci_high']*100:.1f}%] {same_contains} (n={same_results['n']})"
+            )
+            print(
+                f"      Diff: {diff_results['accuracy']*100:.1f}% [{diff_results['ci_low']*100:.1f}%, {diff_results['ci_high']*100:.1f}%] {diff_contains} (n={diff_results['n']})"
+            )
 
     # Print summary
     print(f"\n{'='*70}")

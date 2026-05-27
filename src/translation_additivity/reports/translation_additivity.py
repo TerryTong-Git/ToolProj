@@ -87,8 +87,14 @@ def draw_bracket(ax, x1, x2, y, h, p):
     color = p_color(p)
     ax.plot([x1, x1, x2, x2], [y, y + h, y + h, y], color="black", linewidth=1.2)
     ax.text(
-        (x1 + x2) / 2, y + h + 0.2, p_label(p),
-        ha="center", va="bottom", fontsize=8.5, fontweight="bold", color=color,
+        (x1 + x2) / 2,
+        y + h + 0.2,
+        p_label(p),
+        ha="center",
+        va="bottom",
+        fontsize=8.5,
+        fontweight="bold",
+        color=color,
     )
 
 
@@ -197,8 +203,7 @@ def main():
 
     # Build flattened legend at bottom with annotation entries
     legend_handles = [
-        Patch(facecolor=color, edgecolor="black", linewidth=0.8, label=label.replace("\n", " "))
-        for color, label in zip(BAR_COLORS, CONDITION_LABELS)
+        Patch(facecolor=color, edgecolor="black", linewidth=0.8, label=label.replace("\n", " ")) for color, label in zip(BAR_COLORS, CONDITION_LABELS)
     ]
     legend_handles.append(Line2D([], [], color="none", label=""))  # spacer
     legend_handles.append(Line2D([], [], color="none", label="McNemar's test (paired)"))
@@ -206,9 +211,14 @@ def main():
     legend_handles.append(Line2D([], [], color="#cc2222", marker="s", linestyle="none", markersize=6, label="p >= .05 (n.s.)"))
 
     ax.legend(
-        handles=legend_handles, fontsize=9,
-        loc="upper center", bbox_to_anchor=(0.5, -0.22),
-        ncol=6, framealpha=0.9, columnspacing=1.2, handletextpad=0.5,
+        handles=legend_handles,
+        fontsize=9,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.22),
+        ncol=6,
+        framealpha=0.9,
+        columnspacing=1.2,
+        handletextpad=0.5,
     )
 
     plt.tight_layout()

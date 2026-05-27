@@ -88,7 +88,7 @@ def get_embeddings(texts: List[str], batch_size: int = 50) -> np.ndarray:
     all_embeddings = []
 
     for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
+        batch = texts[i : i + batch_size]
 
         response = httpx.post(
             f"{BASE_URL}/embeddings",
@@ -138,8 +138,7 @@ def calculate_similarity_stats(native_emb: np.ndarray, translated_emb: np.ndarra
     }
 
 
-def plot_clusters(native_emb: np.ndarray, translated_emb: np.ndarray,
-                  model_name: str, output_path: Path):
+def plot_clusters(native_emb: np.ndarray, translated_emb: np.ndarray, model_name: str, output_path: Path):
     """Create t-SNE cluster visualization."""
     # Combine embeddings
     all_emb = np.vstack([native_emb, translated_emb])
@@ -152,23 +151,20 @@ def plot_clusters(native_emb: np.ndarray, translated_emb: np.ndarray,
     # Plot
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    native_coords = coords[:len(native_emb)]
-    translated_coords = coords[len(native_emb):]
+    native_coords = coords[: len(native_emb)]
+    translated_coords = coords[len(native_emb) :]
 
-    ax.scatter(native_coords[:, 0], native_coords[:, 1],
-               c='#2ecc71', alpha=0.6, label='Native NL', s=50)
-    ax.scatter(translated_coords[:, 0], translated_coords[:, 1],
-               c='#e74c3c', alpha=0.6, label='Translated', s=50)
+    ax.scatter(native_coords[:, 0], native_coords[:, 1], c="#2ecc71", alpha=0.6, label="Native NL", s=50)
+    ax.scatter(translated_coords[:, 0], translated_coords[:, 1], c="#e74c3c", alpha=0.6, label="Translated", s=50)
 
-    ax.set_xlabel('t-SNE Dimension 1', fontsize=12)
-    ax.set_ylabel('t-SNE Dimension 2', fontsize=12)
-    ax.set_title(f'Embedding Clusters: {model_name}\n(Native NL vs Translated Traces)',
-                 fontsize=14, fontweight='bold')
+    ax.set_xlabel("t-SNE Dimension 1", fontsize=12)
+    ax.set_ylabel("t-SNE Dimension 2", fontsize=12)
+    ax.set_title(f"Embedding Clusters: {model_name}\n(Native NL vs Translated Traces)", fontsize=14, fontweight="bold")
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches='tight')
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"  Saved plot to {output_path}")
 
@@ -222,8 +218,7 @@ def main():
     native_emb = get_embeddings(native_traces)
     translated_emb = get_embeddings(translated_traces)
 
-    plot_clusters(native_emb, translated_emb, "Claude Opus 4",
-                  OUTPUT_DIR / "embedding_clusters_opus4.png")
+    plot_clusters(native_emb, translated_emb, "Claude Opus 4", OUTPUT_DIR / "embedding_clusters_opus4.png")
 
     # Print summary table
     print("\n" + "=" * 60)
@@ -232,9 +227,11 @@ def main():
     print(f"{'Model':<20} {'Native↔Native':<18} {'Trans↔Trans':<18} {'Native↔Trans':<18}")
     print("-" * 74)
     for model_name, stats in all_stats.items():
-        print(f"{model_name:<20} {stats['native_within_mean']:.4f} ± {stats['native_within_std']:.4f}   "
-              f"{stats['translated_within_mean']:.4f} ± {stats['translated_within_std']:.4f}   "
-              f"{stats['cross_group_mean']:.4f} ± {stats['cross_group_std']:.4f}")
+        print(
+            f"{model_name:<20} {stats['native_within_mean']:.4f} ± {stats['native_within_std']:.4f}   "
+            f"{stats['translated_within_mean']:.4f} ± {stats['translated_within_std']:.4f}   "
+            f"{stats['cross_group_mean']:.4f} ± {stats['cross_group_std']:.4f}"
+        )
 
     # Save stats to JSON
     stats_path = OUTPUT_DIR / "embedding_similarity_stats.json"

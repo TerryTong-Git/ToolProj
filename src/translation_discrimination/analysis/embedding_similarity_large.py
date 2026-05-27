@@ -85,12 +85,14 @@ def load_all_pairs() -> List[Dict]:
             if key in seen:
                 continue
             seen.add(key)
-            pairs.append({
-                "question": q,
-                "kind": native_by_q[q]["kind"],
-                "native": native_by_q[q]["trace"],
-                "translated": translated_by_q[q]["trace"],
-            })
+            pairs.append(
+                {
+                    "question": q,
+                    "kind": native_by_q[q]["kind"],
+                    "native": native_by_q[q]["trace"],
+                    "translated": translated_by_q[q]["trace"],
+                }
+            )
 
     return pairs
 
@@ -139,7 +141,11 @@ def compute_stats(values: np.ndarray) -> Dict:
 
 def plot_three_bars(stats: Dict, output_path: Path):
     """3-bar chart: Native↔Native, Translated↔Translated, Native↔Translated."""
-    labels = ["Native ↔ Native\n(same task, diff instance)", "Translated ↔\nTranslated\n(same task, diff instance)", "Native ↔\nTranslated\n(same instance)"]
+    labels = [
+        "Native ↔ Native\n(same task, diff instance)",
+        "Translated ↔\nTranslated\n(same task, diff instance)",
+        "Native ↔\nTranslated\n(same instance)",
+    ]
     keys = ["native_native", "translated_translated", "native_translated"]
     means = [stats[k]["mean"] for k in keys]
     ci_lows = [stats[k]["ci_low"] for k in keys]
@@ -156,10 +162,15 @@ def plot_three_bars(stats: Dict, output_path: Path):
     width = 0.5
 
     bars = ax.bar(
-        x, means, width,
+        x,
+        means,
+        width,
         yerr=[err_low, err_high],
-        color=colors, edgecolor="black", linewidth=1,
-        capsize=5, error_kw={"linewidth": 1.5},
+        color=colors,
+        edgecolor="black",
+        linewidth=1,
+        capsize=5,
+        error_kw={"linewidth": 1.5},
     )
 
     for i, (bar, m, n) in enumerate(zip(bars, means, ns)):
@@ -168,14 +179,17 @@ def plot_three_bars(stats: Dict, output_path: Path):
             bar.get_x() + bar.get_width() / 2,
             bar.get_height() + err_high[i] + 0.005,
             label_text,
-            ha="center", va="bottom", fontsize=11, fontweight="bold",
+            ha="center",
+            va="bottom",
+            fontsize=11,
+            fontweight="bold",
         )
 
     ax.set_ylabel("Mean Cosine Similarity", fontsize=13, fontweight="bold")
     ax.set_title(
-        "Embedding Cosine Similarity: Native NL vs GPT-4o Translated\n"
-        "(text-embedding-3-large · mixed source benchmark models)",
-        fontsize=13, fontweight="bold",
+        "Embedding Cosine Similarity: Native NL vs GPT-4o Translated\n" "(text-embedding-3-large · mixed source benchmark models)",
+        fontsize=13,
+        fontweight="bold",
     )
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=12)
@@ -239,10 +253,7 @@ def main():
     print(f"\nComputing similarities conditioned on same task kind ({len(unique_kinds)} kinds)...")
 
     # (a) Native ↔ Translated — same task instance
-    same_instance_sims = np.array([
-        cosine_similarity(native_emb[i : i + 1], translated_emb[i : i + 1])[0, 0]
-        for i in range(len(pairs))
-    ])
+    same_instance_sims = np.array([cosine_similarity(native_emb[i : i + 1], translated_emb[i : i + 1])[0, 0] for i in range(len(pairs))])
     nt_stats = compute_stats(same_instance_sims)
 
     # (b) Native ↔ Native — different instances of the SAME task kind

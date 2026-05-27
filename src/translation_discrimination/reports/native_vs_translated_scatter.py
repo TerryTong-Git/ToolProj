@@ -43,17 +43,15 @@ def main():
 
     fig, ax = plt.subplots(figsize=(11, 6))
 
-    ax.scatter(X_tsne[:N, 0], X_tsne[:N, 1],
-               c="#2ecc71", alpha=0.6, s=50, label="Native NL", edgecolors="white", linewidths=0.3)
-    ax.scatter(X_tsne[N:, 0], X_tsne[N:, 1],
-               c="#e74c3c", alpha=0.6, s=50, label="Translated (GPT-4o)", edgecolors="white", linewidths=0.3)
+    ax.scatter(X_tsne[:N, 0], X_tsne[:N, 1], c="#2ecc71", alpha=0.6, s=50, label="Native NL", edgecolors="white", linewidths=0.3)
+    ax.scatter(X_tsne[N:, 0], X_tsne[N:, 1], c="#e74c3c", alpha=0.6, s=50, label="Translated (GPT-4o)", edgecolors="white", linewidths=0.3)
 
     ax.set_xlabel("t-SNE Dim 1", fontsize=14, fontweight="bold")
     ax.set_ylabel("t-SNE Dim 2", fontsize=14, fontweight="bold")
     ax.set_title(
-        "Native NL vs GPT-4o Translated in Embedding Space\n"
-        f"(text-embedding-3-large \u00b7 t-SNE \u00b7 n={N} per class)",
-        fontsize=15, fontweight="bold",
+        "Native NL vs GPT-4o Translated in Embedding Space\n" f"(text-embedding-3-large \u00b7 t-SNE \u00b7 n={N} per class)",
+        fontsize=15,
+        fontweight="bold",
     )
 
     # Scatter legend — top-left, compact
@@ -67,8 +65,12 @@ def main():
         f"  Nat \u2194 Trans:   {nt['mean']:.3f} \u00b1 {nt['std']:.3f}"
     )
     ax.text(
-        0.02, 0.02, cos_text,
-        transform=ax.transAxes, fontsize=12, fontfamily="monospace",
+        0.02,
+        0.02,
+        cos_text,
+        transform=ax.transAxes,
+        fontsize=12,
+        fontfamily="monospace",
         verticalalignment="bottom",
         bbox=dict(boxstyle="round,pad=0.5", facecolor="white", edgecolor="gray", alpha=0.9),
     )
@@ -98,9 +100,16 @@ def main():
         height = 2.0 * 2 * np.sqrt(eigenvalues[1])
 
         ellipse = Ellipse(
-            (cx, cy), width, height, angle=angle,
-            fill=False, edgecolor="#444444", linewidth=2.0,
-            linestyle="--", alpha=0.7, zorder=1,
+            (cx, cy),
+            width,
+            height,
+            angle=angle,
+            fill=False,
+            edgecolor="#444444",
+            linewidth=2.0,
+            linestyle="--",
+            alpha=0.7,
+            zorder=1,
         )
         ax.add_patch(ellipse)
 

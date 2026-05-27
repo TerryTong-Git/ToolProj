@@ -42,17 +42,23 @@ def main():
     width = 0.7
 
     # Color bars based on whether CI contains 50%
-    colors = ["#7fbf7f" if low <= 50 <= high else "#e07070"
-              for low, high in zip(ci_low, ci_high)]
+    colors = ["#7fbf7f" if low <= 50 <= high else "#e07070" for low, high in zip(ci_low, ci_high)]
 
-    bars = ax.bar(x, accuracies, width, yerr=[errors_low, errors_high],
-                  color=colors, edgecolor="black", linewidth=1,
-                  capsize=4, error_kw={"linewidth": 1.5})
+    bars = ax.bar(
+        x, accuracies, width, yerr=[errors_low, errors_high], color=colors, edgecolor="black", linewidth=1, capsize=4, error_kw={"linewidth": 1.5}
+    )
 
     # Add value labels above bars
     for i, (bar, acc, n) in enumerate(zip(bars, accuracies, n_samples)):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + errors_high[i] + 1.5,
-                f"{acc:.1f}%\n(n={n})", ha="center", va="bottom", fontsize=11, fontweight="bold")
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + errors_high[i] + 1.5,
+            f"{acc:.1f}%\n(n={n})",
+            ha="center",
+            va="bottom",
+            fontsize=11,
+            fontweight="bold",
+        )
 
     # Add reference lines
     ax.axhline(y=50, color="blue", linestyle="--", linewidth=2, label="Chance (50%)")
@@ -61,8 +67,7 @@ def main():
     # Customize plot
     ax.set_ylabel("Judge Accuracy on Native NL (%)", fontsize=14, fontweight="bold")
     ax.set_xlabel("Source Model (generated the native NL)", fontsize=14, fontweight="bold")
-    ax.set_title("Source Discrimination by Model\n(Lower = Native NL more similar to Translated)",
-                 fontsize=16, fontweight="bold")
+    ax.set_title("Source Discrimination by Model\n(Lower = Native NL more similar to Translated)", fontsize=16, fontweight="bold")
 
     ax.set_xticks(x)
     ax.set_xticklabels(models, fontsize=12, ha="center")

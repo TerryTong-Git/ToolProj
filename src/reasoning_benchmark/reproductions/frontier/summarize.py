@@ -6,4 +6,4 @@ from src.reasoning_benchmark.scripts.analyze_sim_code_overlap import *  # noqa: 
 from src.reasoning_benchmark.scripts.analyze_sim_code_overlap import main
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

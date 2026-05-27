@@ -58,17 +58,17 @@ def extract_model_answer(raw_answer: str, arm: str) -> str | None:
 
     # For other arms, try to extract from JSON
     # First, try to find JSON in the response (may be wrapped in ```json ... ```)
-    json_match = re.search(r'```json\s*(\{.*?\})\s*```', raw_answer, re.DOTALL)
+    json_match = re.search(r"```json\s*(\{.*?\})\s*```", raw_answer, re.DOTALL)
     if json_match:
         json_str = json_match.group(1)
-    elif raw_answer.startswith('{'):
+    elif raw_answer.startswith("{"):
         # Find the end of the JSON object
         brace_count = 0
         end_idx = 0
         for i, c in enumerate(raw_answer):
-            if c == '{':
+            if c == "{":
                 brace_count += 1
-            elif c == '}':
+            elif c == "}":
                 brace_count -= 1
                 if brace_count == 0:
                     end_idx = i + 1
@@ -87,10 +87,7 @@ def extract_model_answer(raw_answer: str, arm: str) -> str | None:
 
 def fix_jsonl_file(filepath: Path, dry_run: bool = False) -> dict:
     """Fix a single jsonl file and return stats."""
-    stats = {
-        "total": 0, "fixed": 0, "arithmetic": 0,
-        "code_flipped": 0, "nl_flipped": 0, "sim_flipped": 0, "controlsim_flipped": 0
-    }
+    stats = {"total": 0, "fixed": 0, "arithmetic": 0, "code_flipped": 0, "nl_flipped": 0, "sim_flipped": 0, "controlsim_flipped": 0}
 
     rows = []
     with open(filepath) as f:
@@ -149,6 +146,7 @@ def fix_jsonl_file(filepath: Path, dry_run: bool = False) -> dict:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--results-dir", type=str, default=str(LEGACY_BENCHMARK_RESULTS_DIR))
     parser.add_argument("--dry-run", action="store_true", help="Don't write changes, just report")
@@ -159,10 +157,7 @@ def main():
 
     print(f"Found {len(jsonl_files)} jsonl files")
 
-    total_stats = {
-        "total": 0, "fixed": 0, "arithmetic": 0,
-        "code_flipped": 0, "nl_flipped": 0, "sim_flipped": 0, "controlsim_flipped": 0
-    }
+    total_stats = {"total": 0, "fixed": 0, "arithmetic": 0, "code_flipped": 0, "nl_flipped": 0, "sim_flipped": 0, "controlsim_flipped": 0}
 
     for filepath in jsonl_files:
         stats = fix_jsonl_file(filepath, dry_run=args.dry_run)
@@ -171,9 +166,11 @@ def main():
 
         any_flips = stats["code_flipped"] + stats["nl_flipped"] + stats["sim_flipped"] + stats["controlsim_flipped"]
         if stats["fixed"] > 0 or any_flips > 0:
-            print(f"  {filepath.relative_to(results_root)}: fixed {stats['fixed']} answers, "
-                  f"code={stats['code_flipped']}, nl={stats['nl_flipped']}, "
-                  f"sim={stats['sim_flipped']}, controlsim={stats['controlsim_flipped']}")
+            print(
+                f"  {filepath.relative_to(results_root)}: fixed {stats['fixed']} answers, "
+                f"code={stats['code_flipped']}, nl={stats['nl_flipped']}, "
+                f"sim={stats['sim_flipped']}, controlsim={stats['controlsim_flipped']}"
+            )
 
     print(f"\n{'DRY RUN - ' if args.dry_run else ''}Summary:")
     print(f"  Total records: {total_stats['total']}")

@@ -6,4 +6,4 @@ from src.reasoning_benchmark.scripts.reproduce_frontier_structured import *  # n
 from src.reasoning_benchmark.scripts.reproduce_frontier_structured import main
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

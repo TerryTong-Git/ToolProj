@@ -18,6 +18,7 @@ from src.reasoning_benchmark.records import create_big_df
 # Statistical Functions: McNemar (one-sided) and Cochran's Q
 # =============================================================================
 
+
 def mcnemar_one_sided(df: pd.DataFrame, col_a: str, col_b: str) -> dict:
     """
     One-sided exact McNemar test.
@@ -29,12 +30,12 @@ def mcnemar_one_sided(df: pd.DataFrame, col_a: str, col_b: str) -> dict:
     n = n01 + n10
 
     if n == 0:
-        return {'n01': n01, 'n10': n10, 'p_value': 1.0}
+        return {"n01": n01, "n10": n10, "p_value": 1.0}
 
     # One-sided: P(X >= n01) where X ~ Binomial(n, 0.5)
     p_value = stats.binom.sf(n01 - 1, n, 0.5)
 
-    return {'n01': n01, 'n10': n10, 'p_value': p_value}
+    return {"n01": n01, "n10": n10, "p_value": p_value}
 
 
 def cochrans_q_test(df: pd.DataFrame, cols: list) -> dict:
@@ -53,12 +54,12 @@ def cochrans_q_test(df: pd.DataFrame, cols: list) -> dict:
     denominator = k * total - (row_sums**2).sum()
 
     if denominator == 0:
-        return {'Q': 0.0, 'p_value': 1.0, 'df': k - 1}
+        return {"Q": 0.0, "p_value": 1.0, "df": k - 1}
 
     Q = numerator / denominator
     p_value = 1 - stats.chi2.cdf(Q, k - 1)
 
-    return {'Q': Q, 'p_value': p_value, 'df': k - 1}
+    return {"Q": Q, "p_value": p_value, "df": k - 1}
 
 
 def create_instance_id(df: pd.DataFrame) -> pd.DataFrame:
@@ -67,17 +68,17 @@ def create_instance_id(df: pd.DataFrame) -> pd.DataFrame:
     Instance = unique problem, not model/seed variation.
     """
     df = df.copy()
-    if 'instance_id' not in df.columns:
+    if "instance_id" not in df.columns:
         # Create instance_id from kind, digit, and row index within kind+digit
-        df['instance_id'] = df.groupby(['kind', 'digit']).cumcount().astype(str)
-        df['instance_id'] = df['kind'] + '_' + df['digit'].astype(str) + '_' + df['instance_id']
+        df["instance_id"] = df.groupby(["kind", "digit"]).cumcount().astype(str)
+        df["instance_id"] = df["kind"] + "_" + df["digit"].astype(str) + "_" + df["instance_id"]
     return df
 
 
 def cluster_bootstrap_ci(
     df: pd.DataFrame,
     col: str,
-    cluster_col: str = 'instance_id',
+    cluster_col: str = "instance_id",
     n_bootstrap: int = 1000,
     ci: float = 0.95,
     random_state: int = 42,
@@ -89,7 +90,7 @@ def cluster_bootstrap_ci(
     Returns: (ci_lower, ci_upper)
     """
     # Ensure instance_id exists
-    if cluster_col == 'instance_id' and 'instance_id' not in df.columns:
+    if cluster_col == "instance_id" and "instance_id" not in df.columns:
         df = create_instance_id(df)
 
     rng = np.random.RandomState(random_state)
@@ -117,7 +118,7 @@ def cluster_bootstrap_delta(
     df: pd.DataFrame,
     col_a: str,
     col_b: str,
-    cluster_col: str = 'instance_id',
+    cluster_col: str = "instance_id",
     n_bootstrap: int = 2000,
     confidence: float = 0.95,
     random_state: int = 42,
@@ -128,7 +129,7 @@ def cluster_bootstrap_delta(
     Returns: dict with delta, CI bounds, and bootstrap samples.
     """
     # Ensure instance_id exists
-    if cluster_col == 'instance_id' and 'instance_id' not in df.columns:
+    if cluster_col == "instance_id" and "instance_id" not in df.columns:
         df = create_instance_id(df)
 
     rng = np.random.RandomState(random_state)
@@ -149,7 +150,7 @@ def cluster_bootstrap_delta(
     delta = p_b - p_a
 
     if n_clusters == 0:
-        return {'delta': delta, 'delta_ci_low': np.nan, 'delta_ci_high': np.nan, 'boot_deltas': np.array([])}
+        return {"delta": delta, "delta_ci_low": np.nan, "delta_ci_high": np.nan, "boot_deltas": np.array([])}
 
     # Vectorized bootstrap
     boot_indices = rng.choice(n_clusters, size=(n_bootstrap, n_clusters), replace=True)
@@ -159,10 +160,10 @@ def cluster_bootstrap_delta(
 
     alpha = 1 - confidence
     return {
-        'delta': delta,
-        'delta_ci_low': np.percentile(boot_deltas, 100 * alpha / 2),
-        'delta_ci_high': np.percentile(boot_deltas, 100 * (1 - alpha / 2)),
-        'boot_deltas': boot_deltas,
+        "delta": delta,
+        "delta_ci_low": np.percentile(boot_deltas, 100 * alpha / 2),
+        "delta_ci_high": np.percentile(boot_deltas, 100 * (1 - alpha / 2)),
+        "boot_deltas": boot_deltas,
     }
 
 
@@ -173,38 +174,62 @@ def cluster_bootstrap_delta(
 # Task family mapping
 TASK_FAMILY_MAP = {
     # Arithmetic
-    "add": "arithmetic", "sub": "arithmetic", "mul": "arithmetic",
+    "add": "arithmetic",
+    "sub": "arithmetic",
+    "mul": "arithmetic",
     # Dynamic Programming
-    "lcs": "dp", "rod": "dp", "knap": "dp", "lcs_length": "dp",
-    "matrix_chain_order": "dp", "optimal_bst": "dp",
+    "lcs": "dp",
+    "rod": "dp",
+    "knap": "dp",
+    "lcs_length": "dp",
+    "matrix_chain_order": "dp",
+    "optimal_bst": "dp",
     # ILP
-    "ilp_assign": "ilp", "ilp_prod": "ilp", "ilp_partition": "ilp",
+    "ilp_assign": "ilp",
+    "ilp_prod": "ilp",
+    "ilp_partition": "ilp",
     # Graph - Search
-    "bfs": "graph_search", "dfs": "graph_search", "topological_sort": "graph_search",
+    "bfs": "graph_search",
+    "dfs": "graph_search",
+    "topological_sort": "graph_search",
     # Graph - Shortest Path
-    "dijkstra": "shortest_path", "bellman_ford": "shortest_path",
-    "floyd_warshall": "shortest_path", "dag_shortest_paths": "shortest_path",
+    "dijkstra": "shortest_path",
+    "bellman_ford": "shortest_path",
+    "floyd_warshall": "shortest_path",
+    "dag_shortest_paths": "shortest_path",
     # Graph - MST
-    "mst_kruskal": "mst", "mst_prim": "mst",
+    "mst_kruskal": "mst",
+    "mst_prim": "mst",
     # Graph - Connectivity
-    "articulation_points": "connectivity", "bridges": "connectivity",
+    "articulation_points": "connectivity",
+    "bridges": "connectivity",
     "strongly_connected_components": "connectivity",
     # Sorting
-    "bubble_sort": "sorting", "insertion_sort": "sorting",
-    "quicksort": "sorting", "heapsort": "sorting",
+    "bubble_sort": "sorting",
+    "insertion_sort": "sorting",
+    "quicksort": "sorting",
+    "heapsort": "sorting",
     # Selection/Search
-    "binary_search": "selection", "quickselect": "selection",
-    "minimum": "selection", "find_maximum_subarray_kadane": "selection",
+    "binary_search": "selection",
+    "quickselect": "selection",
+    "minimum": "selection",
+    "find_maximum_subarray_kadane": "selection",
     # String
-    "kmp_matcher": "string", "naive_string_matcher": "string",
+    "kmp_matcher": "string",
+    "naive_string_matcher": "string",
     # Geometry
-    "graham_scan": "geometry", "jarvis_march": "geometry",
+    "graham_scan": "geometry",
+    "jarvis_march": "geometry",
     "segments_intersect": "geometry",
     # Greedy
-    "activity_selector": "greedy", "task_scheduling": "greedy",
+    "activity_selector": "greedy",
+    "task_scheduling": "greedy",
     # NP-Hard
-    "edp": "np_hard", "gcp": "np_hard", "ksp": "np_hard",
-    "spp": "np_hard", "tsp": "np_hard",
+    "edp": "np_hard",
+    "gcp": "np_hard",
+    "ksp": "np_hard",
+    "spp": "np_hard",
+    "tsp": "np_hard",
 }
 
 
@@ -216,24 +241,24 @@ def prepare_glmm_data(df: pd.DataFrame) -> pd.DataFrame:
     arm_names = {"nl_correct": "NL", "sim_correct": "Sim", "code_correct": "Code"}
 
     # Create instance_id if not present
-    if 'instance_id' not in df.columns:
+    if "instance_id" not in df.columns:
         df = create_instance_id(df)
 
     # Add task_family
     df = df.copy()
-    df['task_family'] = df['kind'].map(TASK_FAMILY_MAP).fillna('other')
+    df["task_family"] = df["kind"].map(TASK_FAMILY_MAP).fillna("other")
 
     # Melt to long format
-    id_vars = ['instance_id', 'digit', 'kind', 'task_family', 'model']
-    long_df = pd.melt(df, id_vars=id_vars, value_vars=cols, var_name='arm_col', value_name='correct')
-    long_df['arm'] = long_df['arm_col'].map(arm_names)
-    long_df['tau'] = long_df['digit']  # τ = digit (difficulty)
+    id_vars = ["instance_id", "digit", "kind", "task_family", "model"]
+    long_df = pd.melt(df, id_vars=id_vars, value_vars=cols, var_name="arm_col", value_name="correct")
+    long_df["arm"] = long_df["arm_col"].map(arm_names)
+    long_df["tau"] = long_df["digit"]  # τ = digit (difficulty)
 
     # Standardize τ for numerical stability
-    long_df['tau_std'] = (long_df['tau'] - long_df['tau'].mean()) / long_df['tau'].std()
+    long_df["tau_std"] = (long_df["tau"] - long_df["tau"].mean()) / long_df["tau"].std()
 
     # Create short model names
-    long_df['model_short'] = long_df['model'].apply(lambda x: x.split('/')[-1] if '/' in x else x)
+    long_df["model_short"] = long_df["model"].apply(lambda x: x.split("/")[-1] if "/" in x else x)
 
     return long_df
 
@@ -252,12 +277,12 @@ def fit_glmm(long_df: pd.DataFrame) -> dict:
     long_df = long_df.copy()
 
     # CRITICAL: Convert correct to integer (0/1) to avoid encoding issues
-    long_df['correct'] = long_df['correct'].astype(int)
+    long_df["correct"] = long_df["correct"].astype(int)
 
     # Set reference categories
-    long_df['arm'] = pd.Categorical(long_df['arm'], categories=['NL', 'Sim', 'Code'], ordered=False)
-    long_df['task_family'] = pd.Categorical(long_df['task_family'])
-    long_df['model_short'] = pd.Categorical(long_df['model_short'])
+    long_df["arm"] = pd.Categorical(long_df["arm"], categories=["NL", "Sim", "Code"], ordered=False)
+    long_df["task_family"] = pd.Categorical(long_df["task_family"])
+    long_df["model_short"] = pd.Categorical(long_df["model_short"])
 
     # Formula: fixed effects + arm×tau interaction
     formula = "correct ~ C(arm, Treatment('NL')) + tau_std + C(task_family) + C(model_short) + C(arm, Treatment('NL')):tau_std"
@@ -273,18 +298,14 @@ def fit_glmm(long_df: pd.DataFrame) -> dict:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # GLM with cluster-robust standard errors (approximates random intercept)
-        result = smf.glm(
-            formula,
-            data=long_df,
-            family=sm.families.Binomial()
-        ).fit(cov_type='cluster', cov_kwds={'groups': long_df['instance_id']})
+        result = smf.glm(formula, data=long_df, family=sm.families.Binomial()).fit(cov_type="cluster", cov_kwds={"groups": long_df["instance_id"]})
         print("[fit_glmm] GLM with cluster-robust SEs fitted successfully")
 
     return {
-        'model': result,
-        'data': long_df,
-        'tau_mean': long_df['digit'].mean(),
-        'tau_std': long_df['digit'].std(),
+        "model": result,
+        "data": long_df,
+        "tau_mean": long_df["digit"].mean(),
+        "tau_std": long_df["digit"].std(),
     }
 
 
@@ -300,10 +321,10 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
     rcParams["savefig.dpi"] = 300
     rcParams["font.family"] = "Arial"
 
-    model = glmm_result['model']
-    long_df = glmm_result['data']
-    tau_mean = glmm_result['tau_mean']
-    tau_std_val = glmm_result['tau_std']
+    model = glmm_result["model"]
+    long_df = glmm_result["data"]
+    tau_mean = glmm_result["tau_mean"]
+    tau_std_val = glmm_result["tau_std"]
 
     # Extended τ range with log scaling (2 to 64)
     tau_values = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64])
@@ -311,15 +332,15 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
     interp_mask = tau_values <= max_obs_tau
     extrap_mask = tau_values >= max_obs_tau  # overlap at boundary for continuity
 
-    arms = ['NL', 'Sim', 'Code']
+    arms = ["NL", "Sim", "Code"]
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    colors = {'NL': 'steelblue', 'Sim': 'forestgreen', 'Code': 'darkorange'}
+    colors = {"NL": "steelblue", "Sim": "forestgreen", "Code": "darkorange"}
 
     # Get model parameters for manual prediction
     params = model.params
-    intercept = params.get('Intercept', 0)
+    intercept = params.get("Intercept", 0)
     arm_sim = params.get("C(arm, Treatment('NL'))[T.Sim]", 0)
     arm_code = params.get("C(arm, Treatment('NL'))[T.Code]", 0)
     tau_coef = params.get("tau_std", 0)
@@ -327,9 +348,8 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
     arm_code_tau = params.get("C(arm, Treatment('NL'))[T.Code]:tau_std", 0)
 
     # Find model's actual reference categories (absorbed into intercept, coef=0)
-    all_families = set(long_df['task_family'].unique())
-    modeled_families = {n.split('[T.')[1].rstrip(']')
-                        for n in params.index if 'task_family' in n}
+    all_families = set(long_df["task_family"].unique())
+    modeled_families = {n.split("[T.")[1].rstrip("]") for n in params.index if "task_family" in n}
     ref_family = sorted(all_families - modeled_families)[0]
 
     family_coef = 0  # reference category: implicit coefficient = 0
@@ -342,10 +362,9 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
         return 1 / (1 + np.exp(-np.clip(x, -30, 30)))
 
     # Extrapolation region shading
-    ax.axvspan(max_obs_tau, 80, color='#f0f0f0', zorder=0)
-    ax.axvline(x=max_obs_tau, color='gray', linestyle=':', linewidth=1, alpha=0.5)
-    ax.text(max_obs_tau * 1.08, 0.50, 'extrapolation →', fontsize=10,
-            color='gray', ha='left', va='center', style='italic', rotation=90)
+    ax.axvspan(max_obs_tau, 80, color="#f0f0f0", zorder=0)
+    ax.axvline(x=max_obs_tau, color="gray", linestyle=":", linewidth=1, alpha=0.5)
+    ax.text(max_obs_tau * 1.08, 0.50, "extrapolation →", fontsize=10, color="gray", ha="left", va="center", style="italic", rotation=90)
 
     for arm in arms:
         probs = []
@@ -355,23 +374,27 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
         for tau in tau_values:
             tau_std = (tau - tau_mean) / tau_std_val
 
-            if arm == 'NL':
+            if arm == "NL":
                 eta = intercept + tau_coef * tau_std + family_coef + model_coef
-                var_eta = (cov.loc['Intercept', 'Intercept'] +
-                           tau_std**2 * cov.loc['tau_std', 'tau_std'] +
-                           2 * tau_std * cov.loc['Intercept', 'tau_std'])
-            elif arm == 'Sim':
+                var_eta = (
+                    cov.loc["Intercept", "Intercept"] + tau_std**2 * cov.loc["tau_std", "tau_std"] + 2 * tau_std * cov.loc["Intercept", "tau_std"]
+                )
+            elif arm == "Sim":
                 eta = intercept + arm_sim + tau_coef * tau_std + arm_sim_tau * tau_std + family_coef + model_coef
-                var_eta = (cov.loc['Intercept', 'Intercept'] +
-                           cov.loc["C(arm, Treatment('NL'))[T.Sim]", "C(arm, Treatment('NL'))[T.Sim]"] +
-                           (tau_std**2) * (cov.loc['tau_std', 'tau_std'] +
-                                           cov.loc["C(arm, Treatment('NL'))[T.Sim]:tau_std", "C(arm, Treatment('NL'))[T.Sim]:tau_std"]))
+                var_eta = (
+                    cov.loc["Intercept", "Intercept"]
+                    + cov.loc["C(arm, Treatment('NL'))[T.Sim]", "C(arm, Treatment('NL'))[T.Sim]"]
+                    + (tau_std**2)
+                    * (cov.loc["tau_std", "tau_std"] + cov.loc["C(arm, Treatment('NL'))[T.Sim]:tau_std", "C(arm, Treatment('NL'))[T.Sim]:tau_std"])
+                )
             else:  # Code
                 eta = intercept + arm_code + tau_coef * tau_std + arm_code_tau * tau_std + family_coef + model_coef
-                var_eta = (cov.loc['Intercept', 'Intercept'] +
-                           cov.loc["C(arm, Treatment('NL'))[T.Code]", "C(arm, Treatment('NL'))[T.Code]"] +
-                           (tau_std**2) * (cov.loc['tau_std', 'tau_std'] +
-                                           cov.loc["C(arm, Treatment('NL'))[T.Code]:tau_std", "C(arm, Treatment('NL'))[T.Code]:tau_std"]))
+                var_eta = (
+                    cov.loc["Intercept", "Intercept"]
+                    + cov.loc["C(arm, Treatment('NL'))[T.Code]", "C(arm, Treatment('NL'))[T.Code]"]
+                    + (tau_std**2)
+                    * (cov.loc["tau_std", "tau_std"] + cov.loc["C(arm, Treatment('NL'))[T.Code]:tau_std", "C(arm, Treatment('NL'))[T.Code]:tau_std"])
+                )
 
             se_eta = np.sqrt(max(0, var_eta))
             prob = inv_logit(eta)
@@ -384,23 +407,17 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
         ci_upper = np.array(ci_upper)
 
         # Interpolation: solid lines
-        ax.plot(tau_values[interp_mask], probs[interp_mask], color=colors[arm],
-                linewidth=2.5, label=arm, zorder=3)
-        ax.fill_between(tau_values[interp_mask], ci_lower[interp_mask],
-                        ci_upper[interp_mask], color=colors[arm], alpha=0.2)
+        ax.plot(tau_values[interp_mask], probs[interp_mask], color=colors[arm], linewidth=2.5, label=arm, zorder=3)
+        ax.fill_between(tau_values[interp_mask], ci_lower[interp_mask], ci_upper[interp_mask], color=colors[arm], alpha=0.2)
 
         # Extrapolation: dashed lines, lighter CI
-        ax.plot(tau_values[extrap_mask], probs[extrap_mask], color=colors[arm],
-                linewidth=2.5, linestyle='--', zorder=3)
-        ax.fill_between(tau_values[extrap_mask], ci_lower[extrap_mask],
-                        ci_upper[extrap_mask], color=colors[arm], alpha=0.08)
+        ax.plot(tau_values[extrap_mask], probs[extrap_mask], color=colors[arm], linewidth=2.5, linestyle="--", zorder=3)
+        ax.fill_between(tau_values[extrap_mask], ci_lower[extrap_mask], ci_upper[extrap_mask], color=colors[arm], alpha=0.08)
 
         # Observed empirical means at reference task family (calibration)
-        obs_df = long_df[(long_df['arm'] == arm) &
-                         (long_df['task_family'] == ref_family)]
-        obs = obs_df.groupby('digit')['correct'].mean()
-        ax.scatter(obs.index, obs.values, color=colors[arm],
-                   marker='x', s=60, zorder=5, linewidths=2)
+        obs_df = long_df[(long_df["arm"] == arm) & (long_df["task_family"] == ref_family)]
+        obs = obs_df.groupby("digit")["correct"].mean()
+        ax.scatter(obs.index, obs.values, color=colors[arm], marker="x", s=60, zorder=5, linewidths=2)
 
     # GOF and odds ratios
     or_sim = np.exp(arm_sim)
@@ -419,33 +436,41 @@ def plot_glmm_predicted_prob(glmm_result: dict, output_path: str = "figures/glmm
         f"  Code × τ: {or_code_tau:.2f}\n"
         f"  McFadden R²: {pseudo_r2:.3f}"
     )
-    ax.text(0.02, 0.02, coef_text, transform=ax.transAxes, fontsize=10,
-            verticalalignment='bottom', fontfamily='monospace',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9))
+    ax.text(
+        0.02,
+        0.02,
+        coef_text,
+        transform=ax.transAxes,
+        fontsize=10,
+        verticalalignment="bottom",
+        fontfamily="monospace",
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.9),
+    )
 
     # Observed marker annotation
-    ax.text(0.98, 0.02, f'× observed ({ref_family})', fontsize=9, color='gray',
-            transform=ax.transAxes, ha='right', va='bottom')
+    ax.text(0.98, 0.02, f"× observed ({ref_family})", fontsize=9, color="gray", transform=ax.transAxes, ha="right", va="bottom")
 
     # Log scale for τ
-    ax.set_xscale('log', base=2)
+    ax.set_xscale("log", base=2)
     ax.set_xticks([2, 4, 8, 16, 32, 64])
-    ax.set_xticklabels(['2', '4', '8', '16', '32', '64'])
+    ax.set_xticklabels(["2", "4", "8", "16", "32", "64"])
 
-    ax.set_xlabel('τ (Digit Length / Difficulty, log₂ scale)', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Predicted P(Correct)', fontsize=14, fontweight='bold')
-    ax.set_title('Logistic GLMM: Marginal Predictions vs Difficulty\n'
-                 'logit P(correct) = arm + τ + arm×τ + task_family + model  (cluster-robust SEs)',
-                 fontsize=14, fontweight='bold')
-    ax.legend(title='Arm', fontsize=12, title_fontsize=13, loc='upper right')
+    ax.set_xlabel("τ (Digit Length / Difficulty, log₂ scale)", fontsize=14, fontweight="bold")
+    ax.set_ylabel("Predicted P(Correct)", fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Logistic GLMM: Marginal Predictions vs Difficulty\n" "logit P(correct) = arm + τ + arm×τ + task_family + model  (cluster-robust SEs)",
+        fontsize=14,
+        fontweight="bold",
+    )
+    ax.legend(title="Arm", fontsize=12, title_fontsize=13, loc="upper right")
     ax.set_ylim([0, 1])
     ax.set_xlim([1.5, 80])
     ax.grid(True, alpha=0.3)
     ax.tick_params(labelsize=12)
 
     plt.tight_layout()
-    plt.savefig(output_path, bbox_inches='tight', dpi=300)
-    plt.savefig(output_path.replace('.png', '.pdf'), bbox_inches='tight', dpi=300)
+    plt.savefig(output_path, bbox_inches="tight", dpi=300)
+    plt.savefig(output_path.replace(".png", ".pdf"), bbox_inches="tight", dpi=300)
     print(f"[plot_glmm_predicted_prob] Saved {output_path}")
     plt.close()
 
@@ -461,7 +486,7 @@ def plot_glmm_odds_ratio_forest(glmm_result: dict, output_path: str = "figures/g
     rcParams["savefig.dpi"] = 300
     rcParams["font.family"] = "Arial"
 
-    model = glmm_result['model']
+    model = glmm_result["model"]
 
     # Extract coefficients and CIs
     params = model.params
@@ -472,7 +497,7 @@ def plot_glmm_odds_ratio_forest(glmm_result: dict, output_path: str = "figures/g
     labels = []
 
     for name in params.index:
-        if 'Intercept' in name:
+        if "Intercept" in name:
             continue
 
         # Skip extreme coefficients (near-perfect separation, |coef| > 5)
@@ -520,51 +545,51 @@ def plot_glmm_odds_ratio_forest(glmm_result: dict, output_path: str = "figures/g
     # Color by type
     colors = []
     for label in labels:
-        if 'Arm:' in label:
-            colors.append('darkorange')
-        elif '× τ' in label:
-            colors.append('red')
-        elif 'τ' in label:
-            colors.append('purple')
-        elif 'Family:' in label:
-            colors.append('forestgreen')
-        elif 'Model:' in label:
-            colors.append('steelblue')
+        if "Arm:" in label:
+            colors.append("darkorange")
+        elif "× τ" in label:
+            colors.append("red")
+        elif "τ" in label:
+            colors.append("purple")
+        elif "Family:" in label:
+            colors.append("forestgreen")
+        elif "Model:" in label:
+            colors.append("steelblue")
         else:
-            colors.append('gray')
+            colors.append("gray")
 
     # Plot points and CIs
     for i, (y, or_val, ci_l, ci_h, color) in enumerate(zip(y_pos, odds_ratios, or_ci_low, or_ci_high, colors)):
-        ax.errorbar(or_val, y, xerr=[[or_val - ci_l], [ci_h - or_val]],
-                    fmt='o', color=color, markersize=8, capsize=4, capthick=2, elinewidth=2)
+        ax.errorbar(or_val, y, xerr=[[or_val - ci_l], [ci_h - or_val]], fmt="o", color=color, markersize=8, capsize=4, capthick=2, elinewidth=2)
 
     # Reference line at OR=1
-    ax.axvline(1, color='red', linestyle='--', linewidth=2, alpha=0.7, label='OR = 1 (no effect)')
+    ax.axvline(1, color="red", linestyle="--", linewidth=2, alpha=0.7, label="OR = 1 (no effect)")
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(labels, fontsize=11)
-    ax.set_xlabel('Odds Ratio (95% CI)', fontsize=14, fontweight='bold')
-    ax.set_title('GLMM Fixed Effects: Odds Ratio Forest Plot\n(Excluding effects with perfect separation)', fontsize=15, fontweight='bold')
+    ax.set_xlabel("Odds Ratio (95% CI)", fontsize=14, fontweight="bold")
+    ax.set_title("GLMM Fixed Effects: Odds Ratio Forest Plot\n(Excluding effects with perfect separation)", fontsize=15, fontweight="bold")
 
     # Log scale for x-axis
-    ax.set_xscale('log')
+    ax.set_xscale("log")
     ax.set_xlim([0.05, 50])
 
     # Add legend for colors
     from matplotlib.lines import Line2D
-    legend_elements = [
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='darkorange', markersize=10, label='Arm effect'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Arm × τ interaction'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='purple', markersize=10, label='τ (difficulty)'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='forestgreen', markersize=10, label='Task family'),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='steelblue', markersize=10, label='Model'),
-    ]
-    ax.legend(handles=legend_elements, loc='lower right', fontsize=10)
 
-    ax.grid(True, alpha=0.3, axis='x')
+    legend_elements = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="darkorange", markersize=10, label="Arm effect"),
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="red", markersize=10, label="Arm × τ interaction"),
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="purple", markersize=10, label="τ (difficulty)"),
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="forestgreen", markersize=10, label="Task family"),
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="steelblue", markersize=10, label="Model"),
+    ]
+    ax.legend(handles=legend_elements, loc="lower right", fontsize=10)
+
+    ax.grid(True, alpha=0.3, axis="x")
     plt.tight_layout()
-    plt.savefig(output_path, bbox_inches='tight', dpi=300)
-    plt.savefig(output_path.replace('.png', '.pdf'), bbox_inches='tight', dpi=300)
+    plt.savefig(output_path, bbox_inches="tight", dpi=300)
+    plt.savefig(output_path.replace(".png", ".pdf"), bbox_inches="tight", dpi=300)
     print(f"[plot_glmm_odds_ratio_forest] Saved {output_path}")
     plt.close()
 
@@ -584,7 +609,7 @@ def run_glmm_analysis(df: pd.DataFrame) -> dict:
 
     # Print summary
     print("\n[run_glmm_analysis] Model Summary:")
-    print(glmm_result['model'].summary())
+    print(glmm_result["model"].summary())
 
     # Generate plots
     plot_glmm_predicted_prob(glmm_result)
@@ -653,7 +678,8 @@ def plot_main_fig(df: pd.DataFrame) -> None:
     # Add legend at the bottom
     handles, labels = g.axes[0].get_legend_handles_labels()
     g.fig.legend(
-        handles, labels,
+        handles,
+        labels,
         loc="lower center",
         bbox_to_anchor=(0.5, -0.02),
         ncol=4,
@@ -714,19 +740,17 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
                 means.append(mean)
                 # Bootstrap CI
                 if len(vals) > 1:
-                    boot_means = [np.random.choice(vals, size=len(vals), replace=True).mean()
-                                  for _ in range(1000)]
+                    boot_means = [np.random.choice(vals, size=len(vals), replace=True).mean() for _ in range(1000)]
                     ci_low.append(np.percentile(boot_means, 2.5))
                     ci_high.append(np.percentile(boot_means, 97.5))
                 else:
                     ci_low.append(mean)
                     ci_high.append(mean)
 
-            ax.plot(digits, means, marker='o', markersize=4, linewidth=1.5,
-                    color=arm_colors[arm], label=arm_labels[arm])
+            ax.plot(digits, means, marker="o", markersize=4, linewidth=1.5, color=arm_colors[arm], label=arm_labels[arm])
             ax.fill_between(digits, ci_low, ci_high, color=arm_colors[arm], alpha=0.2)
 
-        ax.set_title(task.replace("_", " "), fontsize=11, fontweight='bold')
+        ax.set_title(task.replace("_", " "), fontsize=11, fontweight="bold")
         ax.set_xlim(1, 21)
         ax.set_ylim(0, 1.05)
         ax.tick_params(labelsize=9)
@@ -745,21 +769,21 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
     ax_glmm = fig.add_subplot(gs[0, 4])
 
     if glmm_result is not None:
-        model = glmm_result['model']
-        tau_mean = glmm_result['tau_mean']
-        tau_std_val = glmm_result['tau_std']
-        long_df = glmm_result['data']
+        model = glmm_result["model"]
+        tau_mean = glmm_result["tau_mean"]
+        tau_std_val = glmm_result["tau_std"]
+        long_df = glmm_result["data"]
 
         tau_values = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64])
         max_obs_tau = 20
         interp_mask = tau_values <= max_obs_tau
         extrap_mask = tau_values >= max_obs_tau  # overlap at boundary for line continuity
 
-        glmm_arms = ['NL', 'Sim', 'Code']
-        glmm_colors = {'NL': 'tab:blue', 'Sim': 'tab:orange', 'Code': 'tab:red'}
+        glmm_arms = ["NL", "Sim", "Code"]
+        glmm_colors = {"NL": "tab:blue", "Sim": "tab:orange", "Code": "tab:red"}
 
         params = model.params
-        intercept = params.get('Intercept', 0)
+        intercept = params.get("Intercept", 0)
         arm_sim = params.get("C(arm, Treatment('NL'))[T.Sim]", 0)
         arm_code = params.get("C(arm, Treatment('NL'))[T.Code]", 0)
         tau_coef = params.get("tau_std", 0)
@@ -767,9 +791,8 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
         arm_code_tau = params.get("C(arm, Treatment('NL'))[T.Code]:tau_std", 0)
 
         # Find model's actual reference categories (coef absorbed into intercept)
-        all_families = set(long_df['task_family'].unique())
-        modeled_families = {n.split('[T.')[1].rstrip(']')
-                            for n in params.index if 'task_family' in n}
+        all_families = set(long_df["task_family"].unique())
+        modeled_families = {n.split("[T.")[1].rstrip("]") for n in params.index if "task_family" in n}
         ref_family = sorted(all_families - modeled_families)[0]
 
         family_coef = 0  # reference category: implicit coef = 0
@@ -781,8 +804,8 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
             return 1 / (1 + np.exp(-np.clip(x, -30, 30)))
 
         # Extrapolation region: gray background + vertical demarcation
-        ax_glmm.axvspan(max_obs_tau, 80, color='#f0f0f0', zorder=0)
-        ax_glmm.axvline(x=max_obs_tau, color='gray', linestyle=':', linewidth=0.8, alpha=0.5)
+        ax_glmm.axvspan(max_obs_tau, 80, color="#f0f0f0", zorder=0)
+        ax_glmm.axvline(x=max_obs_tau, color="gray", linestyle=":", linewidth=0.8, alpha=0.5)
 
         for arm in glmm_arms:
             probs = []
@@ -792,23 +815,33 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
             for tau in tau_values:
                 tau_std = (tau - tau_mean) / tau_std_val
 
-                if arm == 'NL':
+                if arm == "NL":
                     eta = intercept + tau_coef * tau_std + family_coef + model_coef
-                    var_eta = (cov.loc['Intercept', 'Intercept'] +
-                               tau_std**2 * cov.loc['tau_std', 'tau_std'] +
-                               2 * tau_std * cov.loc['Intercept', 'tau_std'])
-                elif arm == 'Sim':
+                    var_eta = (
+                        cov.loc["Intercept", "Intercept"] + tau_std**2 * cov.loc["tau_std", "tau_std"] + 2 * tau_std * cov.loc["Intercept", "tau_std"]
+                    )
+                elif arm == "Sim":
                     eta = intercept + arm_sim + tau_coef * tau_std + arm_sim_tau * tau_std + family_coef + model_coef
-                    var_eta = (cov.loc['Intercept', 'Intercept'] +
-                               cov.loc["C(arm, Treatment('NL'))[T.Sim]", "C(arm, Treatment('NL'))[T.Sim]"] +
-                               (tau_std**2) * (cov.loc['tau_std', 'tau_std'] +
-                                               cov.loc["C(arm, Treatment('NL'))[T.Sim]:tau_std", "C(arm, Treatment('NL'))[T.Sim]:tau_std"]))
+                    var_eta = (
+                        cov.loc["Intercept", "Intercept"]
+                        + cov.loc["C(arm, Treatment('NL'))[T.Sim]", "C(arm, Treatment('NL'))[T.Sim]"]
+                        + (tau_std**2)
+                        * (
+                            cov.loc["tau_std", "tau_std"]
+                            + cov.loc["C(arm, Treatment('NL'))[T.Sim]:tau_std", "C(arm, Treatment('NL'))[T.Sim]:tau_std"]
+                        )
+                    )
                 else:  # Code
                     eta = intercept + arm_code + tau_coef * tau_std + arm_code_tau * tau_std + family_coef + model_coef
-                    var_eta = (cov.loc['Intercept', 'Intercept'] +
-                               cov.loc["C(arm, Treatment('NL'))[T.Code]", "C(arm, Treatment('NL'))[T.Code]"] +
-                               (tau_std**2) * (cov.loc['tau_std', 'tau_std'] +
-                                               cov.loc["C(arm, Treatment('NL'))[T.Code]:tau_std", "C(arm, Treatment('NL'))[T.Code]:tau_std"]))
+                    var_eta = (
+                        cov.loc["Intercept", "Intercept"]
+                        + cov.loc["C(arm, Treatment('NL'))[T.Code]", "C(arm, Treatment('NL'))[T.Code]"]
+                        + (tau_std**2)
+                        * (
+                            cov.loc["tau_std", "tau_std"]
+                            + cov.loc["C(arm, Treatment('NL'))[T.Code]:tau_std", "C(arm, Treatment('NL'))[T.Code]:tau_std"]
+                        )
+                    )
 
                 se_eta = np.sqrt(max(0, var_eta))
                 prob = inv_logit(eta)
@@ -821,41 +854,39 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
             ci_upper = np.array(ci_upper)
 
             # Interpolation region: solid lines, full CI shading
-            ax_glmm.plot(tau_values[interp_mask], probs[interp_mask],
-                        linewidth=2, color=glmm_colors[arm], label=arm, zorder=3)
-            ax_glmm.fill_between(tau_values[interp_mask], ci_lower[interp_mask],
-                                ci_upper[interp_mask], color=glmm_colors[arm], alpha=0.2)
+            ax_glmm.plot(tau_values[interp_mask], probs[interp_mask], linewidth=2, color=glmm_colors[arm], label=arm, zorder=3)
+            ax_glmm.fill_between(tau_values[interp_mask], ci_lower[interp_mask], ci_upper[interp_mask], color=glmm_colors[arm], alpha=0.2)
 
             # Extrapolation region: dashed lines, lighter CI shading
-            ax_glmm.plot(tau_values[extrap_mask], probs[extrap_mask],
-                        linewidth=2, linestyle='--', color=glmm_colors[arm], zorder=3)
-            ax_glmm.fill_between(tau_values[extrap_mask], ci_lower[extrap_mask],
-                                ci_upper[extrap_mask], color=glmm_colors[arm], alpha=0.08)
+            ax_glmm.plot(tau_values[extrap_mask], probs[extrap_mask], linewidth=2, linestyle="--", color=glmm_colors[arm], zorder=3)
+            ax_glmm.fill_between(tau_values[extrap_mask], ci_lower[extrap_mask], ci_upper[extrap_mask], color=glmm_colors[arm], alpha=0.08)
 
             # Observed empirical means at reference task family (calibration)
-            obs_df = long_df[(long_df['arm'] == arm) &
-                             (long_df['task_family'] == ref_family)]
-            obs = obs_df.groupby('digit')['correct'].mean()
-            ax_glmm.scatter(obs.index, obs.values, color=glmm_colors[arm],
-                           marker='x', s=25, zorder=5, linewidths=1.5)
+            obs_df = long_df[(long_df["arm"] == arm) & (long_df["task_family"] == ref_family)]
+            obs = obs_df.groupby("digit")["correct"].mean()
+            ax_glmm.scatter(obs.index, obs.values, color=glmm_colors[arm], marker="x", s=25, zorder=5, linewidths=1.5)
 
         # GOF and odds ratios annotation
         or_code = np.exp(arm_code)
         or_code_tau = np.exp(arm_code_tau)
         pseudo_r2 = 1 - (model.llf / model.llnull)
-        ax_glmm.text(0.02, 0.02,
-                     f"OR Code/NL: {or_code:.1f}\nCode×τ: {or_code_tau:.2f}\nMcF R²={pseudo_r2:.3f}",
-                     transform=ax_glmm.transAxes, fontsize=7, verticalalignment='bottom',
-                     fontfamily='monospace',
-                     bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8))
+        ax_glmm.text(
+            0.02,
+            0.02,
+            f"OR Code/NL: {or_code:.1f}\nCode×τ: {or_code_tau:.2f}\nMcF R²={pseudo_r2:.3f}",
+            transform=ax_glmm.transAxes,
+            fontsize=7,
+            verticalalignment="bottom",
+            fontfamily="monospace",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8),
+        )
 
-
-    ax_glmm.set_title("Logistic GLMM", fontsize=11, fontweight='bold')
+    ax_glmm.set_title("Logistic GLMM", fontsize=11, fontweight="bold")
     ax_glmm.set_xlabel("difficulty (τ)", fontsize=10)
     ax_glmm.set_ylabel("P(Correct)", fontsize=10)
-    ax_glmm.set_xscale('log', base=2)
+    ax_glmm.set_xscale("log", base=2)
     ax_glmm.set_xticks([2, 4, 8, 16, 32, 64])
-    ax_glmm.set_xticklabels(['2', '4', '8', '16', '32', '64'])
+    ax_glmm.set_xticklabels(["2", "4", "8", "16", "32", "64"])
     ax_glmm.set_xlim(1.5, 80)
     ax_glmm.set_ylim(0, 1.05)
     ax_glmm.tick_params(labelsize=9)
@@ -865,7 +896,7 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
     ax_avg = fig.add_subplot(gs[1, 4])
 
     # Create instance ID for clustering
-    df_tasks['instance_id'] = df_tasks['kind'] + '_' + df_tasks['digit'].astype(str) + '_' + df_tasks['unique_tag'].astype(str)
+    df_tasks["instance_id"] = df_tasks["kind"] + "_" + df_tasks["digit"].astype(str) + "_" + df_tasks["unique_tag"].astype(str)
 
     digits = sorted(df_tasks["digit"].unique())
 
@@ -878,24 +909,23 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
             digit_df = df_tasks[df_tasks["digit"] == digit]
 
             # Instance-level bootstrap
-            instances = digit_df['instance_id'].unique()
+            instances = digit_df["instance_id"].unique()
             n_boot = 1000
             boot_means = []
 
             for _ in range(n_boot):
                 boot_instances = np.random.choice(instances, size=len(instances), replace=True)
-                boot_df = digit_df[digit_df['instance_id'].isin(boot_instances)]
+                boot_df = digit_df[digit_df["instance_id"].isin(boot_instances)]
                 boot_means.append(boot_df[arm].mean())
 
             means.append(digit_df[arm].mean())
             ci_low.append(np.percentile(boot_means, 2.5))
             ci_high.append(np.percentile(boot_means, 97.5))
 
-        ax_avg.plot(digits, means, marker='o', markersize=5, linewidth=2,
-                    color=arm_colors[arm], label=arm_labels[arm])
+        ax_avg.plot(digits, means, marker="o", markersize=5, linewidth=2, color=arm_colors[arm], label=arm_labels[arm])
         ax_avg.fill_between(digits, ci_low, ci_high, color=arm_colors[arm], alpha=0.2)
 
-    ax_avg.set_title("Average (8 tasks)", fontsize=11, fontweight='bold')
+    ax_avg.set_title("Average (8 tasks)", fontsize=11, fontweight="bold")
     ax_avg.set_xlabel("τ", fontsize=10)
     ax_avg.set_ylabel("Accuracy", fontsize=10)
     ax_avg.set_xlim(1, 21)
@@ -904,8 +934,7 @@ def plot_main_combined(df: pd.DataFrame, glmm_result: dict = None) -> None:
     ax_avg.grid(True, alpha=0.3)
 
     # Add shared legend at bottom
-    fig.legend(task_handles, task_labels, loc='lower center', ncol=3,
-               fontsize=11, frameon=True, bbox_to_anchor=(0.5, -0.02))
+    fig.legend(task_handles, task_labels, loc="lower center", ncol=3, fontsize=11, frameon=True, bbox_to_anchor=(0.5, -0.02))
 
     plt.subplots_adjust(bottom=0.15)
     plt.savefig("figures/main_combined.png", bbox_inches="tight", dpi=300)
@@ -1355,14 +1384,36 @@ def plot_v_graph_open(df: pd.DataFrame) -> None:
 
     # Define task sets (same as closed)
     CLRS_KINDS = {
-        "activity_selector", "articulation_points", "bellman_ford", "bfs",
-        "binary_search", "bridges", "bubble_sort", "dag_shortest_paths",
-        "dfs", "dijkstra", "find_maximum_subarray_kadane", "floyd_warshall",
-        "graham_scan", "heapsort", "insertion_sort", "jarvis_march",
-        "kmp_matcher", "lcs_length", "matrix_chain_order", "minimum",
-        "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
-        "quickselect", "quicksort", "segments_intersect",
-        "strongly_connected_components", "task_scheduling", "topological_sort",
+        "activity_selector",
+        "articulation_points",
+        "bellman_ford",
+        "bfs",
+        "binary_search",
+        "bridges",
+        "bubble_sort",
+        "dag_shortest_paths",
+        "dfs",
+        "dijkstra",
+        "find_maximum_subarray_kadane",
+        "floyd_warshall",
+        "graham_scan",
+        "heapsort",
+        "insertion_sort",
+        "jarvis_march",
+        "kmp_matcher",
+        "lcs_length",
+        "matrix_chain_order",
+        "minimum",
+        "mst_kruskal",
+        "mst_prim",
+        "naive_string_matcher",
+        "optimal_bst",
+        "quickselect",
+        "quicksort",
+        "segments_intersect",
+        "strongly_connected_components",
+        "task_scheduling",
+        "topological_sort",
     }
     NPHARD_KINDS = {"edp", "gcp", "ksp", "spp", "tsp"}
     FG_KINDS = {"add", "sub", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"}
@@ -1408,8 +1459,14 @@ def plot_v_graph_open(df: pd.DataFrame) -> None:
         model_means = model_data.groupby("variable")["value"].mean().reindex(cols)
         x_positions = list(range(len(cols)))
         ax.scatter(
-            x_positions, model_means.values, marker="o", s=120,
-            color=palette_map[model], alpha=0.8, linewidths=2, label=model,
+            x_positions,
+            model_means.values,
+            marker="o",
+            s=120,
+            color=palette_map[model],
+            alpha=0.8,
+            linewidths=2,
+            label=model,
         )
 
     # Plot aggregated line with bootstrap CI error bars
@@ -1421,9 +1478,16 @@ def plot_v_graph_open(df: pd.DataFrame) -> None:
     yerr_upper = ci_upper - means
 
     ax.errorbar(
-        x_positions, means, yerr=[yerr_lower, yerr_upper],
-        fmt="s-", color="black", markersize=10, linewidth=2,
-        capsize=5, capthick=2, label="All open models (mean)",
+        x_positions,
+        means,
+        yerr=[yerr_lower, yerr_upper],
+        fmt="s-",
+        color="black",
+        markersize=10,
+        linewidth=2,
+        capsize=5,
+        capthick=2,
+        label="All open models (mean)",
     )
 
     # Compute p-values for adjacent pairs
@@ -1534,14 +1598,36 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
 
     # Define task sets
     CLRS_KINDS = {
-        "activity_selector", "articulation_points", "bellman_ford", "bfs",
-        "binary_search", "bridges", "bubble_sort", "dag_shortest_paths",
-        "dfs", "dijkstra", "find_maximum_subarray_kadane", "floyd_warshall",
-        "graham_scan", "heapsort", "insertion_sort", "jarvis_march",
-        "kmp_matcher", "lcs_length", "matrix_chain_order", "minimum",
-        "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
-        "quickselect", "quicksort", "segments_intersect",
-        "strongly_connected_components", "task_scheduling", "topological_sort",
+        "activity_selector",
+        "articulation_points",
+        "bellman_ford",
+        "bfs",
+        "binary_search",
+        "bridges",
+        "bubble_sort",
+        "dag_shortest_paths",
+        "dfs",
+        "dijkstra",
+        "find_maximum_subarray_kadane",
+        "floyd_warshall",
+        "graham_scan",
+        "heapsort",
+        "insertion_sort",
+        "jarvis_march",
+        "kmp_matcher",
+        "lcs_length",
+        "matrix_chain_order",
+        "minimum",
+        "mst_kruskal",
+        "mst_prim",
+        "naive_string_matcher",
+        "optimal_bst",
+        "quickselect",
+        "quicksort",
+        "segments_intersect",
+        "strongly_connected_components",
+        "task_scheduling",
+        "topological_sort",
     }
     NPHARD_KINDS = {"edp", "gcp", "ksp", "spp", "tsp"}
     FG_KINDS = {"add", "sub", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"}
@@ -1595,7 +1681,7 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     for col in cols:
         values = df1[col].dropna().values
         mean_val = np.mean(values) if len(values) > 0 else np.nan
-        ci_lower, ci_upper = cluster_bootstrap_ci(df1, col, cluster_col='instance_id', n_bootstrap=1000, ci=0.95)
+        ci_lower, ci_upper = cluster_bootstrap_ci(df1, col, cluster_col="instance_id", n_bootstrap=1000, ci=0.95)
         arm_stats.append({"arm": col, "mean": mean_val, "ci_lower": ci_lower, "ci_upper": ci_upper})
     stats_df = pd.DataFrame(arm_stats)
 
@@ -1614,9 +1700,9 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     jitter_width = 0.35  # Total width of jitter spread
 
     # Closed models: spread from -jitter_width/2 to center
-    closed_offsets = np.linspace(-jitter_width/2, -0.02, n_closed) if n_closed > 1 else [(-jitter_width/4) if n_closed == 1 else 0]
+    closed_offsets = np.linspace(-jitter_width / 2, -0.02, n_closed) if n_closed > 1 else [(-jitter_width / 4) if n_closed == 1 else 0]
     # Open models: spread from center to +jitter_width/2
-    open_offsets = np.linspace(0.02, jitter_width/2, n_open) if n_open > 1 else [(jitter_width/4) if n_open == 1 else 0]
+    open_offsets = np.linspace(0.02, jitter_width / 2, n_open) if n_open > 1 else [(jitter_width / 4) if n_open == 1 else 0]
 
     model_offsets = {}
     for i, m in enumerate(closed_models):
@@ -1635,7 +1721,7 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
         model_cis = []
         for col in cols:
             if len(model_df) > 1:
-                ci_lo, ci_hi = cluster_bootstrap_ci(model_df, col, cluster_col='instance_id', n_bootstrap=500, ci=0.95)
+                ci_lo, ci_hi = cluster_bootstrap_ci(model_df, col, cluster_col="instance_id", n_bootstrap=500, ci=0.95)
             else:
                 ci_lo, ci_hi = model_means[col], model_means[col]
             model_cis.append((ci_lo, ci_hi))
@@ -1647,9 +1733,18 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
         x_jittered = [x + offset for x in x_positions]
 
         ax.errorbar(
-            x_jittered, model_means.values, yerr=[model_yerr_lower, model_yerr_upper],
-            fmt=marker, markersize=12, color=palette_map[model], alpha=0.8,
-            linewidth=0, elinewidth=2, capsize=4, capthick=1.5, label=model,
+            x_jittered,
+            model_means.values,
+            yerr=[model_yerr_lower, model_yerr_upper],
+            fmt=marker,
+            markersize=12,
+            color=palette_map[model],
+            alpha=0.8,
+            linewidth=0,
+            elinewidth=2,
+            capsize=4,
+            capthick=1.5,
+            label=model,
         )
 
         for i, val in enumerate(model_means.values):
@@ -1665,7 +1760,7 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     for col in cols:
         values = df_closed[col].dropna().values
         mean_val = np.mean(values) if len(values) > 0 else np.nan
-        ci_lo, ci_hi = cluster_bootstrap_ci(df_closed, col, cluster_col='instance_id', n_bootstrap=1000, ci=0.95)
+        ci_lo, ci_hi = cluster_bootstrap_ci(df_closed, col, cluster_col="instance_id", n_bootstrap=1000, ci=0.95)
         closed_stats.append({"arm": col, "mean": mean_val, "ci_lower": ci_lo, "ci_upper": ci_hi})
     closed_stats_df = pd.DataFrame(closed_stats)
 
@@ -1674,7 +1769,7 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     for col in cols:
         values = df_open[col].dropna().values
         mean_val = np.mean(values) if len(values) > 0 else np.nan
-        ci_lo, ci_hi = cluster_bootstrap_ci(df_open, col, cluster_col='instance_id', n_bootstrap=1000, ci=0.95)
+        ci_lo, ci_hi = cluster_bootstrap_ci(df_open, col, cluster_col="instance_id", n_bootstrap=1000, ci=0.95)
         open_stats.append({"arm": col, "mean": mean_val, "ci_lower": ci_lo, "ci_upper": ci_hi})
     open_stats_df = pd.DataFrame(open_stats)
 
@@ -1693,9 +1788,16 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     closed_yerr_upper = np.maximum(0, closed_ci_upper - closed_means)
 
     ax.errorbar(
-        [x - 0.12 for x in x_positions], closed_means, yerr=[closed_yerr_lower, closed_yerr_upper],
-        fmt="s-", color="steelblue", markersize=9, linewidth=2.5,
-        capsize=5, capthick=2, label="Closed mean",
+        [x - 0.12 for x in x_positions],
+        closed_means,
+        yerr=[closed_yerr_lower, closed_yerr_upper],
+        fmt="s-",
+        color="steelblue",
+        markersize=9,
+        linewidth=2.5,
+        capsize=5,
+        capthick=2,
+        label="Closed mean",
     )
 
     # Plot open models mean line (slightly right offset)
@@ -1706,9 +1808,16 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     open_yerr_upper = np.maximum(0, open_ci_upper - open_means)
 
     ax.errorbar(
-        [x + 0.12 for x in x_positions], open_means, yerr=[open_yerr_lower, open_yerr_upper],
-        fmt="^-", color="darkorange", markersize=9, linewidth=2.5,
-        capsize=5, capthick=2, label="Open mean",
+        [x + 0.12 for x in x_positions],
+        open_means,
+        yerr=[open_yerr_lower, open_yerr_upper],
+        fmt="^-",
+        color="darkorange",
+        markersize=9,
+        linewidth=2.5,
+        capsize=5,
+        capthick=2,
+        label="Open mean",
     )
 
     # Use overall stats for annotations
@@ -1729,10 +1838,10 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
     for col_a, col_b in adjacent_pairs:
         result = mcnemar_one_sided(df1, col_a, col_b)
         mcnemar_results.append(result)
-        p_values_raw.append(result['p_value'])
+        p_values_raw.append(result["p_value"])
 
     # Holm correction
-    _, p_values_holm, _, _ = multipletests(p_values_raw, method='holm')
+    _, p_values_holm, _, _ = multipletests(p_values_raw, method="holm")
 
     print("[plot_v_graph_all] Pairwise McNemar (one-sided, Holm corrected):")
     for i, (pair, result, p_holm) in enumerate(zip(adjacent_pairs, mcnemar_results, p_values_holm)):
@@ -1773,16 +1882,23 @@ def plot_v_graph_all(df: pd.DataFrame, selected_models: list[str] | None = None)
 
     # Add Cochran's Q annotation box
     q_text = f"Cochran's Q = {cochran_result['Q']:.1f}"
-    q_p = "p<.001" if cochran_result['p_value'] < 0.001 else f"p={cochran_result['p_value']:.3f}"
-    ax.text(0.02, 0.98, f"{q_text}, {q_p}", transform=ax.transAxes,
-            fontsize=13, fontweight='bold', verticalalignment='top',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='wheat', alpha=0.9))
+    q_p = "p<.001" if cochran_result["p_value"] < 0.001 else f"p={cochran_result['p_value']:.3f}"
+    ax.text(
+        0.02,
+        0.98,
+        f"{q_text}, {q_p}",
+        transform=ax.transAxes,
+        fontsize=13,
+        fontweight="bold",
+        verticalalignment="top",
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.9),
+    )
 
     ax.set_xticks(x_positions)
-    ax.set_xticklabels(arm_labels, fontsize=15, fontweight='bold')
-    ax.set_xlabel("Arm", fontsize=16, fontweight='bold')
-    ax.set_ylabel("Accuracy", fontsize=16, fontweight='bold')
-    ax.tick_params(axis='y', labelsize=13)
+    ax.set_xticklabels(arm_labels, fontsize=15, fontweight="bold")
+    ax.set_xlabel("Arm", fontsize=16, fontweight="bold")
+    ax.set_ylabel("Accuracy", fontsize=16, fontweight="bold")
+    ax.tick_params(axis="y", labelsize=13)
 
     # Dynamic y-limit to avoid overlaps
     y_max = p_y_start + len(adjacent_pairs) * p_y_step + 0.08
@@ -1863,14 +1979,36 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
 
     # Define task sets
     CLRS_KINDS = {
-        "activity_selector", "articulation_points", "bellman_ford", "bfs",
-        "binary_search", "bridges", "bubble_sort", "dag_shortest_paths",
-        "dfs", "dijkstra", "find_maximum_subarray_kadane", "floyd_warshall",
-        "graham_scan", "heapsort", "insertion_sort", "jarvis_march",
-        "kmp_matcher", "lcs_length", "matrix_chain_order", "minimum",
-        "mst_kruskal", "mst_prim", "naive_string_matcher", "optimal_bst",
-        "quickselect", "quicksort", "segments_intersect",
-        "strongly_connected_components", "task_scheduling", "topological_sort",
+        "activity_selector",
+        "articulation_points",
+        "bellman_ford",
+        "bfs",
+        "binary_search",
+        "bridges",
+        "bubble_sort",
+        "dag_shortest_paths",
+        "dfs",
+        "dijkstra",
+        "find_maximum_subarray_kadane",
+        "floyd_warshall",
+        "graham_scan",
+        "heapsort",
+        "insertion_sort",
+        "jarvis_march",
+        "kmp_matcher",
+        "lcs_length",
+        "matrix_chain_order",
+        "minimum",
+        "mst_kruskal",
+        "mst_prim",
+        "naive_string_matcher",
+        "optimal_bst",
+        "quickselect",
+        "quicksort",
+        "segments_intersect",
+        "strongly_connected_components",
+        "task_scheduling",
+        "topological_sort",
     }
     NPHARD_KINDS = {"edp", "gcp", "ksp", "spp", "tsp"}
     FG_KINDS = {"add", "sub", "mul", "lcs", "rod", "knap", "ilp_assign", "ilp_prod", "ilp_partition"}
@@ -1925,8 +2063,8 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     n_open = len(open_models)
     jitter_width = 0.35
 
-    closed_offsets = np.linspace(-jitter_width/2, -0.02, n_closed) if n_closed > 1 else [(-jitter_width/4) if n_closed == 1 else 0]
-    open_offsets = np.linspace(0.02, jitter_width/2, n_open) if n_open > 1 else [(jitter_width/4) if n_open == 1 else 0]
+    closed_offsets = np.linspace(-jitter_width / 2, -0.02, n_closed) if n_closed > 1 else [(-jitter_width / 4) if n_closed == 1 else 0]
+    open_offsets = np.linspace(0.02, jitter_width / 2, n_open) if n_open > 1 else [(jitter_width / 4) if n_open == 1 else 0]
 
     model_offsets = {}
     for i, m in enumerate(closed_models):
@@ -1945,7 +2083,7 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
         model_cis = []
         for col in cols:
             if len(model_df) > 1:
-                ci_lo, ci_hi = cluster_bootstrap_ci(model_df, col, cluster_col='instance_id', n_bootstrap=500, ci=0.95)
+                ci_lo, ci_hi = cluster_bootstrap_ci(model_df, col, cluster_col="instance_id", n_bootstrap=500, ci=0.95)
             else:
                 ci_lo, ci_hi = model_means[col], model_means[col]
             model_cis.append((ci_lo, ci_hi))
@@ -1956,9 +2094,17 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
         x_jittered = [x + offset for x in x_positions]
 
         ax_acc.errorbar(
-            x_jittered, model_means.values, yerr=[model_yerr_lower, model_yerr_upper],
-            fmt=marker, markersize=10, color=palette_map[model], alpha=0.8,
-            linewidth=0, elinewidth=1.5, capsize=3, capthick=1.2,
+            x_jittered,
+            model_means.values,
+            yerr=[model_yerr_lower, model_yerr_upper],
+            fmt=marker,
+            markersize=10,
+            color=palette_map[model],
+            alpha=0.8,
+            linewidth=0,
+            elinewidth=1.5,
+            capsize=3,
+            capthick=1.2,
         )
 
         for i, val in enumerate(model_means.values):
@@ -1972,13 +2118,13 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     closed_stats = []
     for col in cols:
         mean_val = df_closed[col].mean() if len(df_closed) > 0 else np.nan
-        ci_lo, ci_hi = cluster_bootstrap_ci(df_closed, col, cluster_col='instance_id', n_bootstrap=1000, ci=0.95)
+        ci_lo, ci_hi = cluster_bootstrap_ci(df_closed, col, cluster_col="instance_id", n_bootstrap=1000, ci=0.95)
         closed_stats.append({"mean": mean_val, "ci_lower": ci_lo, "ci_upper": ci_hi})
 
     open_stats = []
     for col in cols:
         mean_val = df_open[col].mean() if len(df_open) > 0 else np.nan
-        ci_lo, ci_hi = cluster_bootstrap_ci(df_open, col, cluster_col='instance_id', n_bootstrap=1000, ci=0.95)
+        ci_lo, ci_hi = cluster_bootstrap_ci(df_open, col, cluster_col="instance_id", n_bootstrap=1000, ci=0.95)
         open_stats.append({"mean": mean_val, "ci_lower": ci_lo, "ci_upper": ci_hi})
 
     closed_means = np.array([s["mean"] for s in closed_stats])
@@ -1986,9 +2132,15 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     closed_yerr_upper = np.maximum(0, np.array([s["ci_upper"] for s in closed_stats]) - closed_means)
 
     ax_acc.errorbar(
-        [x - 0.12 for x in x_positions], closed_means, yerr=[closed_yerr_lower, closed_yerr_upper],
-        fmt="s-", color="steelblue", markersize=8, linewidth=2,
-        capsize=4, capthick=1.5,
+        [x - 0.12 for x in x_positions],
+        closed_means,
+        yerr=[closed_yerr_lower, closed_yerr_upper],
+        fmt="s-",
+        color="steelblue",
+        markersize=8,
+        linewidth=2,
+        capsize=4,
+        capthick=1.5,
     )
 
     open_means = np.array([s["mean"] for s in open_stats])
@@ -1996,9 +2148,15 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     open_yerr_upper = np.maximum(0, np.array([s["ci_upper"] for s in open_stats]) - open_means)
 
     ax_acc.errorbar(
-        [x + 0.12 for x in x_positions], open_means, yerr=[open_yerr_lower, open_yerr_upper],
-        fmt="^-", color="darkorange", markersize=8, linewidth=2,
-        capsize=4, capthick=1.5,
+        [x + 0.12 for x in x_positions],
+        open_means,
+        yerr=[open_yerr_lower, open_yerr_upper],
+        fmt="^-",
+        color="darkorange",
+        markersize=8,
+        linewidth=2,
+        capsize=4,
+        capthick=1.5,
     )
 
     # Overall stats for annotations
@@ -2015,9 +2173,9 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     for col_a, col_b in adjacent_pairs:
         result = mcnemar_one_sided(df1, col_a, col_b)
         mcnemar_results.append(result)
-        p_values_raw.append(result['p_value'])
+        p_values_raw.append(result["p_value"])
 
-    _, p_values_holm, _, _ = multipletests(p_values_raw, method='holm')
+    _, p_values_holm, _, _ = multipletests(p_values_raw, method="holm")
 
     # Add p-value annotations
     max_data_y = max(max(all_model_values[i]) for i in range(len(cols)) if all_model_values[i])
@@ -2044,10 +2202,10 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     # (Cochran's Q removed per request)
 
     ax_acc.set_xticks(x_positions)
-    ax_acc.set_xticklabels(arm_labels, fontsize=13, fontweight='bold')
-    ax_acc.set_xlabel("Route", fontsize=14, fontweight='bold')
-    ax_acc.set_ylabel("Accuracy", fontsize=14, fontweight='bold')
-    ax_acc.tick_params(axis='y', labelsize=11)
+    ax_acc.set_xticklabels(arm_labels, fontsize=13, fontweight="bold")
+    ax_acc.set_xlabel("Route", fontsize=14, fontweight="bold")
+    ax_acc.set_ylabel("Accuracy", fontsize=14, fontweight="bold")
+    ax_acc.tick_params(axis="y", labelsize=11)
 
     y_max = p_y_start + len(adjacent_pairs) * p_y_step + 0.07
     ax_acc.set_ylim([0.08, max(0.65, y_max)])
@@ -2070,58 +2228,77 @@ def plot_combined_accuracy_delta(df: pd.DataFrame, selected_models: list[str] | 
     handles_custom.append(Line2D([0], [0], marker="^", color="darkorange", linestyle="-", markersize=7, linewidth=1.5))
     labels_custom.append("Open ± 95% CI")
 
-    ax_acc.legend(handles_custom, labels_custom, loc="upper center", bbox_to_anchor=(0.5, -0.18),
-                  ncol=4, fontsize=7, handlelength=1.5, columnspacing=0.8, framealpha=0.95)
+    ax_acc.legend(
+        handles_custom,
+        labels_custom,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.18),
+        ncol=4,
+        fontsize=7,
+        handlelength=1.5,
+        columnspacing=0.8,
+        framealpha=0.95,
+    )
 
     # === RIGHT PANELS: Delta distributions ===
 
     # Delta 1: Sim - NL
     print("[plot_combined] Computing delta distributions (instance-level bootstrap)...")
-    delta_sim_nl = cluster_bootstrap_delta(df1, 'nl_correct', 'sim_correct', n_bootstrap=2000)
-    boot_vals_1 = delta_sim_nl['boot_deltas'] * 100
+    delta_sim_nl = cluster_bootstrap_delta(df1, "nl_correct", "sim_correct", n_bootstrap=2000)
+    boot_vals_1 = delta_sim_nl["boot_deltas"] * 100
 
     # Use viridis colors for deltas (avoid blue/orange used for closed/open)
     viridis = plt.cm.viridis
     delta1_color = viridis(0.3)  # Teal-ish
     delta2_color = viridis(0.7)  # Yellow-green
 
-    sns.histplot(boot_vals_1, kde=True, ax=ax_delta1, color=delta1_color, alpha=0.7, stat='density')
-    ax_delta1.axvline(0, color='red', linestyle='--', linewidth=2, label='Zero')
-    ax_delta1.axvline(delta_sim_nl['delta'] * 100, color='black', linestyle='-', linewidth=2, label='Observed')
-    ax_delta1.axvline(delta_sim_nl['delta_ci_low'] * 100, color='gray', linestyle=':', linewidth=1.5)
-    ax_delta1.axvline(delta_sim_nl['delta_ci_high'] * 100, color='gray', linestyle=':', linewidth=1.5)
+    sns.histplot(boot_vals_1, kde=True, ax=ax_delta1, color=delta1_color, alpha=0.7, stat="density")
+    ax_delta1.axvline(0, color="red", linestyle="--", linewidth=2, label="Zero")
+    ax_delta1.axvline(delta_sim_nl["delta"] * 100, color="black", linestyle="-", linewidth=2, label="Observed")
+    ax_delta1.axvline(delta_sim_nl["delta_ci_low"] * 100, color="gray", linestyle=":", linewidth=1.5)
+    ax_delta1.axvline(delta_sim_nl["delta_ci_high"] * 100, color="gray", linestyle=":", linewidth=1.5)
 
-    ax_delta1.set_xlabel('Δ (Sim − NL) [%]', fontsize=10, fontweight='bold')
-    ax_delta1.set_ylabel('Density', fontsize=10, fontweight='bold')
-    ax_delta1.set_title(f'(B) Δ = {delta_sim_nl["delta"]*100:+.2f}% [{delta_sim_nl["delta_ci_low"]*100:.2f}, {delta_sim_nl["delta_ci_high"]*100:.2f}]',
-                        fontsize=10, fontweight='bold')
-    ax_delta1.legend(loc='upper right', fontsize=7)
+    ax_delta1.set_xlabel("Δ (Sim − NL) [%]", fontsize=10, fontweight="bold")
+    ax_delta1.set_ylabel("Density", fontsize=10, fontweight="bold")
+    ax_delta1.set_title(
+        f'(B) Δ = {delta_sim_nl["delta"]*100:+.2f}% [{delta_sim_nl["delta_ci_low"]*100:.2f}, {delta_sim_nl["delta_ci_high"]*100:.2f}]',
+        fontsize=10,
+        fontweight="bold",
+    )
+    ax_delta1.legend(loc="upper right", fontsize=7)
     ax_delta1.tick_params(labelsize=9)
 
     # Delta 2: Code Exec - Sim (zoomed in scale to see distribution clearly)
-    delta_code_sim = cluster_bootstrap_delta(df1, 'sim_correct', 'code_correct', n_bootstrap=2000)
-    boot_vals_2 = delta_code_sim['boot_deltas'] * 100
+    delta_code_sim = cluster_bootstrap_delta(df1, "sim_correct", "code_correct", n_bootstrap=2000)
+    boot_vals_2 = delta_code_sim["boot_deltas"] * 100
 
-    sns.histplot(boot_vals_2, kde=True, ax=ax_delta2, color=delta2_color, alpha=0.7, stat='density')
-    ax_delta2.axvline(delta_code_sim['delta'] * 100, color='black', linestyle='-', linewidth=2, label='Observed')
-    ax_delta2.axvline(delta_code_sim['delta_ci_low'] * 100, color='gray', linestyle=':', linewidth=1.5)
-    ax_delta2.axvline(delta_code_sim['delta_ci_high'] * 100, color='gray', linestyle=':', linewidth=1.5)
+    sns.histplot(boot_vals_2, kde=True, ax=ax_delta2, color=delta2_color, alpha=0.7, stat="density")
+    ax_delta2.axvline(delta_code_sim["delta"] * 100, color="black", linestyle="-", linewidth=2, label="Observed")
+    ax_delta2.axvline(delta_code_sim["delta_ci_low"] * 100, color="gray", linestyle=":", linewidth=1.5)
+    ax_delta2.axvline(delta_code_sim["delta_ci_high"] * 100, color="gray", linestyle=":", linewidth=1.5)
 
     # Zoom in on the distribution - center around observed delta with margin
-    delta_center = delta_code_sim['delta'] * 100
-    delta_range = (delta_code_sim['delta_ci_high'] - delta_code_sim['delta_ci_low']) * 100
+    delta_center = delta_code_sim["delta"] * 100
+    delta_range = (delta_code_sim["delta_ci_high"] - delta_code_sim["delta_ci_low"]) * 100
     x_margin = max(delta_range * 2, 3)  # At least 3% margin
     ax_delta2.set_xlim(delta_center - x_margin, delta_center + x_margin)
 
-    ax_delta2.set_xlabel('Δ (Code Exec − Sim) [%]', fontsize=10, fontweight='bold')
-    ax_delta2.set_ylabel('Density', fontsize=10, fontweight='bold')
-    ax_delta2.set_title(f'(C) Δ = {delta_code_sim["delta"]*100:+.2f}% [{delta_code_sim["delta_ci_low"]*100:.2f}, {delta_code_sim["delta_ci_high"]*100:.2f}]',
-                        fontsize=10, fontweight='bold')
-    ax_delta2.legend(loc='upper left', fontsize=7)
+    ax_delta2.set_xlabel("Δ (Code Exec − Sim) [%]", fontsize=10, fontweight="bold")
+    ax_delta2.set_ylabel("Density", fontsize=10, fontweight="bold")
+    ax_delta2.set_title(
+        f'(C) Δ = {delta_code_sim["delta"]*100:+.2f}% [{delta_code_sim["delta_ci_low"]*100:.2f}, {delta_code_sim["delta_ci_high"]*100:.2f}]',
+        fontsize=10,
+        fontweight="bold",
+    )
+    ax_delta2.legend(loc="upper left", fontsize=7)
     ax_delta2.tick_params(labelsize=9)
 
-    print(f"[plot_combined] Delta (Sim - NL): {delta_sim_nl['delta']*100:+.2f}% [{delta_sim_nl['delta_ci_low']*100:.2f}, {delta_sim_nl['delta_ci_high']*100:.2f}]")
-    print(f"[plot_combined] Delta (Code Exec - Sim): {delta_code_sim['delta']*100:+.2f}% [{delta_code_sim['delta_ci_low']*100:.2f}, {delta_code_sim['delta_ci_high']*100:.2f}]")
+    print(
+        f"[plot_combined] Delta (Sim - NL): {delta_sim_nl['delta']*100:+.2f}% [{delta_sim_nl['delta_ci_low']*100:.2f}, {delta_sim_nl['delta_ci_high']*100:.2f}]"
+    )
+    print(
+        f"[plot_combined] Delta (Code Exec - Sim): {delta_code_sim['delta']*100:+.2f}% [{delta_code_sim['delta_ci_low']*100:.2f}, {delta_code_sim['delta_ci_high']*100:.2f}]"
+    )
 
     plt.tight_layout()
     plt.savefig("figures/combined_accuracy_delta.png", bbox_inches="tight", pad_inches=0.05)

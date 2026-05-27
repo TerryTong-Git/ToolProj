@@ -56,10 +56,12 @@ def main():
 
     # Pool: repeat native 3× to match (each translator used same 288 questions)
     # Native side: 288 × 3 = 864, Translated side: 288 × 3 = 864
-    X = np.vstack([
-        np.tile(native_emb, (3, 1)),  # native repeated 3×
-        *trans_embs,                   # all translated pooled
-    ])
+    X = np.vstack(
+        [
+            np.tile(native_emb, (3, 1)),  # native repeated 3×
+            *trans_embs,  # all translated pooled
+        ]
+    )
     y = np.array([0] * (n * 3) + [1] * (n * 3))
     print(f"\n  Native: {n*3}  Translated: {n*3}  dim={X.shape[1]}")
 
@@ -118,8 +120,7 @@ def main():
     # Scatter — colour translated by translator for visual insight
     native_mask = y == 0
     native_2d = X_2d[native_mask]
-    ax.scatter(native_2d[:, 0], native_2d[:, 1],
-               c="#2ecc71", alpha=0.35, s=18, label=f"Native NL (n={n*3})", edgecolors="none")
+    ax.scatter(native_2d[:, 0], native_2d[:, 1], c="#2ecc71", alpha=0.35, s=18, label=f"Native NL (n={n*3})", edgecolors="none")
 
     trans_colors = ["#3498db", "#e74c3c", "#9b59b6"]
     trans_labels = ["GPT-4o", "Gemini 2.0 Flash", "Claude Sonnet 4.5"]
@@ -127,16 +128,14 @@ def main():
     for i in range(3):
         start = offset + i * n
         end = start + n
-        ax.scatter(X_2d[start:end, 0], X_2d[start:end, 1],
-                   c=trans_colors[i], alpha=0.45, s=18, label=f"Trans: {trans_labels[i]}",
-                   edgecolors="none")
+        ax.scatter(X_2d[start:end, 0], X_2d[start:end, 1], c=trans_colors[i], alpha=0.45, s=18, label=f"Trans: {trans_labels[i]}", edgecolors="none")
 
     ax.set_xlabel("PC 1", fontsize=13, fontweight="bold")
     ax.set_ylabel("PC 2", fontsize=13, fontweight="bold")
     ax.set_title(
-        f"Native NL vs Translated (3 translators pooled)\n"
-        f"Full-dim: Acc={acc:.1%} AUC={auc:.3f}  |  2-D PCA: Acc={acc_2d:.1%}",
-        fontsize=13, fontweight="bold",
+        f"Native NL vs Translated (3 translators pooled)\n" f"Full-dim: Acc={acc:.1%} AUC={auc:.3f}  |  2-D PCA: Acc={acc_2d:.1%}",
+        fontsize=13,
+        fontweight="bold",
     )
     ax.legend(fontsize=10, loc="upper right")
     ax.grid(True, alpha=0.2)

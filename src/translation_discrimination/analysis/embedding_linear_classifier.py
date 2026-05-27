@@ -70,8 +70,7 @@ def fit_and_report(X: np.ndarray, y: np.ndarray, label: str):
 
     # Refit on full data for decision boundary
     clf.fit(X, y)
-    return clf, {"accuracy": acc, "auc": auc, "confusion_matrix": cm.tolist(),
-                 "report": report}
+    return clf, {"accuracy": acc, "auc": auc, "confusion_matrix": cm.tolist(), "report": report}
 
 
 def plot_embedding_space(X_2d, y, clf_2d, n_native, n_translated, output_path):
@@ -93,25 +92,22 @@ def plot_embedding_space(X_2d, y, clf_2d, n_native, n_translated, output_path):
     ax.contourf(xx, yy, Z, levels=[0, 0.5, 1], cmap=cmap_bg, alpha=0.35)
 
     # Decision boundary line
-    ax.contour(xx, yy, Z, levels=[0.5], colors="black", linewidths=2,
-               linestyles="--")
+    ax.contour(xx, yy, Z, levels=[0.5], colors="black", linewidths=2, linestyles="--")
 
     # Scatter points
     native_mask = y == 0
     translated_mask = y == 1
-    ax.scatter(X_2d[native_mask, 0], X_2d[native_mask, 1],
-               c="#2ecc71", alpha=0.5, s=30, label=f"Native NL (n={n_native})",
-               edgecolors="none")
-    ax.scatter(X_2d[translated_mask, 0], X_2d[translated_mask, 1],
-               c="#e74c3c", alpha=0.5, s=30, label=f"Translated (n={n_translated})",
-               edgecolors="none")
+    ax.scatter(X_2d[native_mask, 0], X_2d[native_mask, 1], c="#2ecc71", alpha=0.5, s=30, label=f"Native NL (n={n_native})", edgecolors="none")
+    ax.scatter(
+        X_2d[translated_mask, 0], X_2d[translated_mask, 1], c="#e74c3c", alpha=0.5, s=30, label=f"Translated (n={n_translated})", edgecolors="none"
+    )
 
     ax.set_xlabel("PC 1", fontsize=13, fontweight="bold")
     ax.set_ylabel("PC 2", fontsize=13, fontweight="bold")
     ax.set_title(
-        "Embedding Space: Native NL vs GPT-4o Translated\n"
-        "(PCA of text-embedding-3-large · logistic regression boundary)",
-        fontsize=13, fontweight="bold",
+        "Embedding Space: Native NL vs GPT-4o Translated\n" "(PCA of text-embedding-3-large · logistic regression boundary)",
+        fontsize=13,
+        fontweight="bold",
     )
     ax.legend(fontsize=11, loc="upper right")
     ax.grid(True, alpha=0.2)
@@ -135,16 +131,17 @@ def main():
     print("\nRunning PCA → 2-D...")
     pca = PCA(n_components=2, random_state=42)
     X_2d = pca.fit_transform(X)
-    print(f"  Explained variance: PC1={pca.explained_variance_ratio_[0]:.3f}, "
-          f"PC2={pca.explained_variance_ratio_[1]:.3f}, "
-          f"total={sum(pca.explained_variance_ratio_):.3f}")
+    print(
+        f"  Explained variance: PC1={pca.explained_variance_ratio_[0]:.3f}, "
+        f"PC2={pca.explained_variance_ratio_[1]:.3f}, "
+        f"total={sum(pca.explained_variance_ratio_):.3f}"
+    )
 
     # --- 2-D logistic regression ---
     clf_2d, metrics_2d = fit_and_report(X_2d, y, "2-D PCA")
 
     # --- Plot ---
-    plot_embedding_space(X_2d, y, clf_2d, n_native, n_translated,
-                         OUTPUT_DIR / "embedding_linear_classifier")
+    plot_embedding_space(X_2d, y, clf_2d, n_native, n_translated, OUTPUT_DIR / "embedding_linear_classifier")
 
     # --- Save metrics ---
     out = {

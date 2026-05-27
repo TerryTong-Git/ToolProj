@@ -83,12 +83,14 @@ def main():
 
     # --- 4-class: native + 3 translators ---
     X4 = np.vstack([native_emb, *embs])
-    y4 = np.concatenate([
-        np.full(n, 0),  # native
-        np.full(n, 1),  # gpt4o
-        np.full(n, 2),  # gemini
-        np.full(n, 3),  # claude
-    ])
+    y4 = np.concatenate(
+        [
+            np.full(n, 0),  # native
+            np.full(n, 1),  # gpt4o
+            np.full(n, 2),  # gemini
+            np.full(n, 3),  # claude
+        ]
+    )
 
     clf4 = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=SEED, multi_class="multinomial")
     y4_pred = cross_val_predict(clf4, X4, y4, cv=cv, method="predict")
@@ -125,13 +127,11 @@ def main():
 
     ax = axes[0]
     for i in range(3):
-        mask = (y == i)
-        ax.scatter(X3_2d[mask, 0], X3_2d[mask, 1],
-                   c=colors_3[i], alpha=0.45, s=20, label=labels_3[i], edgecolors="none")
+        mask = y == i
+        ax.scatter(X3_2d[mask, 0], X3_2d[mask, 1], c=colors_3[i], alpha=0.45, s=20, label=labels_3[i], edgecolors="none")
     ax.set_xlabel("PC 1", fontsize=11)
     ax.set_ylabel("PC 2", fontsize=11)
-    ax.set_title(f"Translator Identity (3-class)\nAcc={acc:.1%}  AUC={auc:.3f}  (chance=33%)",
-                 fontsize=12, fontweight="bold")
+    ax.set_title(f"Translator Identity (3-class)\nAcc={acc:.1%}  AUC={auc:.3f}  (chance=33%)", fontsize=12, fontweight="bold")
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.2)
 
@@ -141,19 +141,20 @@ def main():
 
     ax = axes[1]
     for i in range(4):
-        mask = (y4 == i)
-        ax.scatter(X4_2d[mask, 0], X4_2d[mask, 1],
-                   c=colors_4[i], alpha=0.45, s=20, label=labels_4[i], edgecolors="none")
+        mask = y4 == i
+        ax.scatter(X4_2d[mask, 0], X4_2d[mask, 1], c=colors_4[i], alpha=0.45, s=20, label=labels_4[i], edgecolors="none")
     ax.set_xlabel("PC 1", fontsize=11)
     ax.set_ylabel("PC 2", fontsize=11)
-    ax.set_title(f"Native + 3 Translators (4-class)\nAcc={acc4:.1%}  AUC={auc4:.3f}  (chance=25%)",
-                 fontsize=12, fontweight="bold")
+    ax.set_title(f"Native + 3 Translators (4-class)\nAcc={acc4:.1%}  AUC={auc4:.3f}  (chance=25%)", fontsize=12, fontweight="bold")
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.2)
 
-    fig.suptitle("Can a Linear Classifier Identify the Translator?\n"
-                 "(text-embedding-3-large · logistic regression · 5-fold CV)",
-                 fontsize=14, fontweight="bold", y=1.02)
+    fig.suptitle(
+        "Can a Linear Classifier Identify the Translator?\n" "(text-embedding-3-large · logistic regression · 5-fold CV)",
+        fontsize=14,
+        fontweight="bold",
+        y=1.02,
+    )
     plt.tight_layout()
     out = RESULTS_DIR / "translator_identity_classifier"
     fig.savefig(out.with_suffix(".png"), bbox_inches="tight", dpi=300)
@@ -164,12 +165,14 @@ def main():
     # Save metrics
     metrics = {
         "three_class": {
-            "accuracy": acc, "auc": auc,
+            "accuracy": acc,
+            "auc": auc,
             "confusion_matrix": cm.tolist(),
             "chance": 1 / 3,
         },
         "four_class": {
-            "accuracy": acc4, "auc": auc4,
+            "accuracy": acc4,
+            "auc": auc4,
             "confusion_matrix": cm4.tolist(),
             "chance": 0.25,
         },

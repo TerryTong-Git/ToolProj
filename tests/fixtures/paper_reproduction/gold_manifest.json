@@ -1,0 +1,234 @@
+{
+  "entries": [
+    {
+      "analyzer": "src.reasoning_benchmark.scripts.analyze_route_accuracy_tables",
+      "artifact": "experiments/route_accuracy/results",
+      "coverage": 0.05,
+      "experiment_runner": "src.reasoning_benchmark.runner recorded route shard",
+      "final_rows": 24120,
+      "generated_rows": 1206,
+      "gold_outputs": [
+        "route_accuracy_tables.md",
+        "accuracy_by_asymptotic_class.csv",
+        "accuracy_by_model.csv"
+      ],
+      "id": "route_accuracy_tables",
+      "sha256": "9846cf734df3088c18dd84a2ae38ec7ab29cbbac7b2d0985b18b373b946df222",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/route-accuracy-tables",
+      "source_commit": "b209b84",
+      "source_pr": "#48"
+    },
+    {
+      "analyzer": "src.reasoning_benchmark.analysis.reports",
+      "artifact": "experiments/route_accuracy/results",
+      "coverage": 0.05,
+      "experiment_runner": "src.reasoning_benchmark.runner recorded route shard",
+      "final_rows": 24120,
+      "generated_rows": 1206,
+      "gold_outputs": [
+        "figure_sources/reasoning_benchmark_accuracy.csv"
+      ],
+      "id": "reasoning_benchmark_figures",
+      "sha256": "9846cf734df3088c18dd84a2ae38ec7ab29cbbac7b2d0985b18b373b946df222",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/paper-reproduction-figure-dry-run",
+      "source_commit": "ddeeee9",
+      "source_pr": "#57"
+    },
+    {
+      "analyzer": "src.translation_discrimination.reports.judge_discrimination",
+      "artifact": "experiments/translation_discrimination/judge_discrimination",
+      "coverage": 0.05,
+      "experiment_runner": "src.translation_discrimination.source_label recorded judge shard",
+      "final_rows": 6000,
+      "generated_rows": 300,
+      "gold_outputs": [
+        "figure_sources/judge_discrimination.csv"
+      ],
+      "id": "judge_discrimination_figure",
+      "sha256": "e218db422bd3275703c889f6dafa116801c845b930ab8be949f2f6b9d79ce3e9",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/paper-reproduction-figure-dry-run",
+      "source_commit": "ddeeee9",
+      "source_pr": "#57"
+    },
+    {
+      "analyzer": "src.translation_discrimination.reports.native_vs_translated_scatter",
+      "artifact": "experiments/translation_discrimination/native_vs_translated_scatter",
+      "coverage": 0.05,
+      "experiment_runner": "src.translation_discrimination.analysis.embedding_similarity_large recorded embedding shard",
+      "final_rows": 400,
+      "generated_rows": 20,
+      "gold_outputs": [
+        "figure_sources/native_vs_translated_scatter.csv"
+      ],
+      "id": "native_vs_translated_scatter_figure",
+      "sha256": "b65566b4968b8cc67b8699547c8e05a715dd3d882efd994beb5851b462308ea6",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/paper-reproduction-figure-dry-run",
+      "source_commit": "ddeeee9",
+      "source_pr": "#57"
+    },
+    {
+      "analyzer": "src.translation_additivity.reports.shot_ablation",
+      "artifact": "experiments/translation_additivity/results/translation_anthropic_claude-haiku-4.5_source_claude-haiku-4.5_shots0_subset25_20260101_trials.jsonl",
+      "coverage": 0.05,
+      "experiment_runner": "src.translation_additivity.native_translation_additivity recorded trial shard",
+      "final_rows": 600,
+      "generated_rows": 30,
+      "gold_outputs": [
+        "functional_shot_ablation_summary.md",
+        "functional_shot_ablation_summary.csv"
+      ],
+      "id": "translation_shot_ablation_0shot",
+      "sha256": "7ac7a31da8bb89c3e3ae56af438463e968e225cfcf8d492c53273fe35ec56481",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/functional-shot-ablation",
+      "source_commit": "38c55b0",
+      "source_pr": "#47"
+    },
+    {
+      "analyzer": "src.translation_additivity.reports.shot_ablation",
+      "artifact": "experiments/translation_additivity/results/legacy_trials.jsonl",
+      "coverage": 0.05,
+      "experiment_runner": "src.translation_additivity.native_translation_additivity recorded trial shard",
+      "final_rows": 600,
+      "generated_rows": 30,
+      "gold_outputs": [
+        "functional_shot_ablation_summary.md",
+        "functional_shot_ablation_summary.csv"
+      ],
+      "id": "translation_shot_ablation_legacy",
+      "sha256": "a058bdcaef00ffcdd37daeb6107a3f3470e34407ac19db24bda916e5549782f0",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/functional-shot-ablation",
+      "source_commit": "38c55b0",
+      "source_pr": "#47"
+    },
+    {
+      "analyzer": "src.translation_additivity.reports.translation_additivity",
+      "artifact": "experiments/translation_additivity/figure_results",
+      "coverage": 0.05,
+      "experiment_runner": "src.translation_additivity.native_translation_additivity recorded trial shard",
+      "final_rows": 1800,
+      "generated_rows": 90,
+      "gold_outputs": [
+        "figure_sources/translation_additivity.csv"
+      ],
+      "id": "translation_additivity_figure",
+      "sha256": "54cf0a64f73a87bba30443177285aa2416ed8a33bc523e456a1c809a5d726e1f",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/paper-reproduction-figure-dry-run",
+      "source_commit": "ddeeee9",
+      "source_pr": "#57"
+    },
+    {
+      "analyzer": "src.reasoning_benchmark.scripts.analyze_rlm_subset_results",
+      "artifact": "experiments/rlm_subset/res.jsonl",
+      "coverage": 0.050292,
+      "experiment_runner": "src.reasoning_benchmark.execution.rlm_executor recorded shard",
+      "final_rows": 1372,
+      "generated_rows": 69,
+      "gold_outputs": [
+        "rlm_results.md",
+        "rlm_subset25_outcomes.csv"
+      ],
+      "id": "rlm_subset_results",
+      "sha256": "b49c39372792a437220f3adc661c8497fe6f530bda83bd81fef5b980ee066ebb",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/rlm-results",
+      "source_commit": "e8e2ae6",
+      "source_pr": "#49"
+    },
+    {
+      "analyzer": "src.reasoning_benchmark.scripts.analyze_coding_model_table",
+      "artifact": "experiments/coding_model/coding_model_outcomes.csv",
+      "coverage": 0.05,
+      "experiment_runner": "src.reasoning_benchmark.runner recorded coding-model shard",
+      "final_rows": 5440,
+      "generated_rows": 272,
+      "gold_outputs": [
+        "coding_model_table.md"
+      ],
+      "id": "coding_model_table",
+      "sha256": "fe31acebfba9c91ab6647a58bfd03602597c8699aac941281b3124b14cdd7051",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/coding-model-table",
+      "source_commit": "6feacd9",
+      "source_pr": "#50"
+    },
+    {
+      "analyzer": "src.reasoning_benchmark.scripts.analyze_code_failure_distribution",
+      "artifact": "experiments/code_failure/results",
+      "coverage": 0.05,
+      "experiment_runner": "src.reasoning_benchmark.execution.python_executor recorded failure shard",
+      "final_rows": 28440,
+      "generated_rows": 1422,
+      "gold_outputs": [
+        "code_failure_distribution.csv"
+      ],
+      "id": "code_failure_distribution",
+      "sha256": "e146dc2e0b84369d9b8f0461353c4cb88f9acf6a314b3e40c17cbee520fcdf9f",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/code-failure-distribution",
+      "source_commit": "3b977ab",
+      "source_pr": "#46"
+    },
+    {
+      "analyzer": "src.reasoning_benchmark.scripts.analyze_frontier_nopatch_table",
+      "artifact": "experiments/frontier_nopatch/frontier_nopatch_outcomes.csv",
+      "coverage": 0.050476,
+      "experiment_runner": "src.reasoning_benchmark.reproductions.frontier.run recorded no-patch shard",
+      "final_rows": 1050,
+      "generated_rows": 53,
+      "gold_outputs": [
+        "frontier_nopatch_table.md"
+      ],
+      "id": "frontier_nopatch_table",
+      "sha256": "30ebb84c27e8d1d96a2a60d6014be3dfeec5ad65366cea0d5d3eb5823c63a7c7",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/frontier-nopatch-table",
+      "source_commit": "8a4fe14",
+      "source_pr": "#51"
+    },
+    {
+      "analyzer": "src.reasoning_benchmark.scripts.analyze_sim_code_overlap",
+      "artifact": "experiments/sim_code_overlap/res.jsonl",
+      "coverage": 0.051429,
+      "experiment_runner": "src.reasoning_benchmark.reproductions.frontier.run recorded structured shard",
+      "final_rows": 350,
+      "generated_rows": 18,
+      "gold_outputs": [
+        "sim_code_overlap.md",
+        "sim_code_overlap.csv"
+      ],
+      "id": "sim_code_overlap",
+      "sha256": "6b5905f742bb8823e8f7ff778dcb3f9782033ff3a2341c6d1f1dd2534eb1b545",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "feat/openrouter-structured-reasoning",
+      "source_commit": "5d0cd3b",
+      "source_pr": "#45"
+    },
+    {
+      "analyzer": "src/exps_performance/notebooks/recovery_vs_digits.ipynb source-data",
+      "artifact": "experiments/recovery_vs_digits/recovery_rows.csv",
+      "coverage": 0.05,
+      "experiment_runner": "src.reasoning_benchmark.records recorded recovery shard",
+      "final_rows": 1000,
+      "generated_rows": 50,
+      "gold_outputs": [
+        "figure_sources/recovery_vs_digits.csv"
+      ],
+      "id": "recovery_vs_digits_figure",
+      "sha256": "3991f230ce4bb95616cb1976c7c71a82511ba396bb84f9f3595b13609c33bfa7",
+      "shard_selector": "deterministic recorded 5pct shard",
+      "source_branch": "rebuttal/paper-reproduction-figure-dry-run",
+      "source_commit": "ddeeee9",
+      "source_pr": "#57"
+    }
+  ],
+  "generated_by": "scripts/reproduce_paper.py experiments --shard 5pct",
+  "shard": "5pct",
+  "version": 1
+}

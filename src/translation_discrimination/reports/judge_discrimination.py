@@ -74,22 +74,34 @@ def main():
     d_err_lo = disc_accs - np.array(disc_ci_los)
     d_err_hi = np.array(disc_ci_his) - disc_accs
     bars_d = ax.bar(
-        x - w / 2, disc_accs, w,
+        x - w / 2,
+        disc_accs,
+        w,
         yerr=[d_err_lo, d_err_hi],
-        color="#5b9bd5", edgecolor="black", linewidth=0.8,
-        capsize=4, error_kw={"linewidth": 1.3},
-        label="Discrimination\n(Native vs Translated)", zorder=3,
+        color="#5b9bd5",
+        edgecolor="black",
+        linewidth=0.8,
+        capsize=4,
+        error_kw={"linewidth": 1.3},
+        label="Discrimination\n(Native vs Translated)",
+        zorder=3,
     )
 
     # Control bars
     c_err_lo = ctrl_accs - np.array(ctrl_ci_los)
     c_err_hi = np.array(ctrl_ci_his) - ctrl_accs
     bars_c = ax.bar(
-        x + w / 2, ctrl_accs, w,
+        x + w / 2,
+        ctrl_accs,
+        w,
         yerr=[c_err_lo, c_err_hi],
-        color="#ed7d31", edgecolor="black", linewidth=0.8,
-        capsize=4, error_kw={"linewidth": 1.3},
-        label="Control\n(Code vs NL)", zorder=3,
+        color="#ed7d31",
+        edgecolor="black",
+        linewidth=0.8,
+        capsize=4,
+        error_kw={"linewidth": 1.3},
+        label="Control\n(Code vs NL)",
+        zorder=3,
     )
 
     # Chance line
@@ -101,13 +113,21 @@ def main():
             bars_d[i].get_x() + bars_d[i].get_width() / 2,
             bars_d[i].get_height() + d_err_hi[i] + 0.8,
             f"{disc_accs[i]:.1f}%",
-            ha="center", va="bottom", fontsize=10, fontweight="bold", color="#2a5a8a",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+            color="#2a5a8a",
         )
         ax.text(
             bars_c[i].get_x() + bars_c[i].get_width() / 2,
             bars_c[i].get_height() + c_err_hi[i] + 0.8,
             f"{ctrl_accs[i]:.1f}%",
-            ha="center", va="bottom", fontsize=10, fontweight="bold", color="#b35900",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+            color="#b35900",
         )
 
     ax.set_xticks(x)
@@ -115,9 +135,9 @@ def main():
     ax.set_xlabel("Judge Model", fontsize=13, fontweight="bold")
     ax.set_ylabel("Accuracy (%)", fontsize=13, fontweight="bold")
     ax.set_title(
-        "Judge Discrimination: Native NL vs GPT-4o Translated Traces\n"
-        "~1000 pairs per judge · Wilson 95% CIs",
-        fontsize=13, fontweight="bold",
+        "Judge Discrimination: Native NL vs GPT-4o Translated Traces\n" "~1000 pairs per judge · Wilson 95% CIs",
+        fontsize=13,
+        fontweight="bold",
     )
     ax.set_ylim(35, 100)
     ax.legend(fontsize=10, loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3, framealpha=0.9)

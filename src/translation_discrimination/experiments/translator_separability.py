@@ -65,6 +65,7 @@ SEED = 42
 
 # --- Data loading ---
 
+
 def load_samples(max_samples: int = N_SAMPLES) -> List[Dict]:
     """Load samples with code and native NL from recorded benchmark artifacts."""
     random.seed(SEED)
@@ -91,13 +92,15 @@ def load_samples(max_samples: int = N_SAMPLES) -> List[Dict]:
                 if len(nl_reasoning) < 100 or len(sim_code) < 50:
                     continue
 
-                samples_by_kind[kind].append({
-                    "kind": kind,
-                    "question": question,
-                    "native_nl": nl_reasoning,
-                    "code": sim_code,
-                    "source_model": model_name,
-                })
+                samples_by_kind[kind].append(
+                    {
+                        "kind": kind,
+                        "question": question,
+                        "native_nl": nl_reasoning,
+                        "code": sim_code,
+                        "source_model": model_name,
+                    }
+                )
 
     # Balance across kinds
     samples = []
@@ -112,9 +115,14 @@ def load_samples(max_samples: int = N_SAMPLES) -> List[Dict]:
 
 # --- Translation ---
 
+
 async def call_llm_async(
-    client: httpx.AsyncClient, api_key: str, model: str,
-    messages: list, max_tokens: int = 1500, temperature: float = 0.7,
+    client: httpx.AsyncClient,
+    api_key: str,
+    model: str,
+    messages: list,
+    max_tokens: int = 1500,
+    temperature: float = 0.7,
 ) -> str:
     resp = await client.post(
         f"{BASE_URL}/chat/completions",
@@ -128,15 +136,16 @@ async def call_llm_async(
 
 
 async def translate_one(
-    sem: asyncio.Semaphore, client: httpx.AsyncClient, api_key: str,
-    translator_model: str, translator_prompt: str, sample: Dict,
+    sem: asyncio.Semaphore,
+    client: httpx.AsyncClient,
+    api_key: str,
+    translator_model: str,
+    translator_prompt: str,
+    sample: Dict,
     max_retries: int = 3,
 ) -> str:
     async with sem:
-        user_content = (
-            f"**Problem:** {sample['question']}\n\n"
-            f"**Code:**\n```python\n{sample['code']}\n```"
-        )
+        user_content = f"**Problem:** {sample['question']}\n\n" f"**Code:**\n```python\n{sample['code']}\n```"
         messages = [
             {"role": "system", "content": translator_prompt},
             {"role": "user", "content": user_content},
@@ -148,21 +157,21 @@ async def translate_one(
                 if attempt == max_retries - 1:
                     print(f"    WARN: failed after {max_retries} retries: {e}")
                     return ""
-                await asyncio.sleep(2 ** attempt)
+                await asyncio.sleep(2**attempt)
         return ""
 
 
 async def translate_batch(
-    translator_name: str, translator_model: str,
-    samples: List[Dict], translator_prompt: str, api_key: str,
+    translator_name: str,
+    translator_model: str,
+    samples: List[Dict],
+    translator_prompt: str,
+    api_key: str,
 ) -> List[str]:
     """Translate all samples with one translator model."""
     sem = asyncio.Semaphore(CONCURRENCY)
     async with httpx.AsyncClient() as client:
-        tasks = [
-            translate_one(sem, client, api_key, translator_model, translator_prompt, s)
-            for s in samples
-        ]
+        tasks = [translate_one(sem, client, api_key, translator_model, translator_prompt, s) for s in samples]
         results = await tqdm_asyncio.gather(*tasks, desc=f"  Translating ({translator_name})")
     failed = sum(1 for r in results if not r)
     if failed:
@@ -171,6 +180,7 @@ async def translate_batch(
 
 
 # --- Embedding ---
+
 
 def get_embeddings(texts: List[str], batch_size: int = 50) -> np.ndarray:
     api_key = os.getenv("OPENROUTER_API_KEY")
@@ -193,6 +203,7 @@ def get_embeddings(texts: List[str], batch_size: int = 50) -> np.ndarray:
 
 
 # --- Classification ---
+
 
 def classify_and_report(native_emb: np.ndarray, translated_emb: np.ndarray, label: str):
     """Logistic regression with 5-fold CV. Returns metrics dict."""
@@ -218,6 +229,7 @@ def classify_and_report(native_emb: np.ndarray, translated_emb: np.ndarray, labe
 
 
 # --- Plotting ---
+
 
 def plot_all_translators(all_results: Dict, output_path: Path):
     """Side-by-side PCA embedding plots with decision boundaries."""
@@ -249,10 +261,8 @@ def plot_all_translators(all_results: Dict, output_path: Path):
         ax.contour(xx, yy, Z, levels=[0.5], colors="black", linewidths=1.5, linestyles="--")
 
         native_mask = y == 0
-        ax.scatter(X_2d[native_mask, 0], X_2d[native_mask, 1],
-                   c="#2ecc71", alpha=0.45, s=18, label="Native NL", edgecolors="none")
-        ax.scatter(X_2d[~native_mask, 0], X_2d[~native_mask, 1],
-                   c="#e74c3c", alpha=0.45, s=18, label="Translated", edgecolors="none")
+        ax.scatter(X_2d[native_mask, 0], X_2d[native_mask, 1], c="#2ecc71", alpha=0.45, s=18, label="Native NL", edgecolors="none")
+        ax.scatter(X_2d[~native_mask, 0], X_2d[~native_mask, 1], c="#e74c3c", alpha=0.45, s=18, label="Translated", edgecolors="none")
 
         ax.set_xlabel("PC 1", fontsize=11)
         if ax == axes[0]:
@@ -262,9 +272,10 @@ def plot_all_translators(all_results: Dict, output_path: Path):
         ax.grid(True, alpha=0.2)
 
     fig.suptitle(
-        "Linear Separability by Translator Model\n"
-        "(text-embedding-3-large · logistic regression · 5-fold CV)",
-        fontsize=14, fontweight="bold", y=1.02,
+        "Linear Separability by Translator Model\n" "(text-embedding-3-large · logistic regression · 5-fold CV)",
+        fontsize=14,
+        fontweight="bold",
+        y=1.02,
     )
     plt.tight_layout()
     fig.savefig(output_path.with_suffix(".png"), bbox_inches="tight", dpi=300)
@@ -296,8 +307,7 @@ def plot_metric_comparison(all_results: Dict, output_path: Path):
 
     ax.set_ylabel("Score", fontsize=13, fontweight="bold")
     ax.set_xlabel("Translator Model", fontsize=13, fontweight="bold")
-    ax.set_title("Linear Separability: Native NL vs Translated\nby Translator Model (full 3072-d, 5-fold CV)",
-                 fontsize=13, fontweight="bold")
+    ax.set_title("Linear Separability: Native NL vs Translated\nby Translator Model (full 3072-d, 5-fold CV)", fontsize=13, fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels(names, fontsize=11)
     ax.set_ylim(0.4, 1.05)
@@ -313,6 +323,7 @@ def plot_metric_comparison(all_results: Dict, output_path: Path):
 
 
 # --- Main ---
+
 
 async def run():
     api_key = os.getenv("OPENROUTER_API_KEY")
