@@ -226,6 +226,9 @@ def copy_figures(config: ReproductionConfig) -> None:
     for item in figure_copies():
         source = ROOT_DIR / item.source
         target = image_dir / item.target_name
+        if config.dry_run:
+            print(f"copy {item.source} -> {target}")
+            continue
         if not source.is_file():
             print(f"skip copy: missing {item.source}")
             continue
