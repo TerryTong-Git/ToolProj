@@ -17,5 +17,5 @@ jobs:
       uses: astral-sh/setup-uv@v4
     - name: Install dependencies
       run: uv sync --extra dev
-    - name: Run pre-commit
+    - name: Run pre-commit on PR changes
       run: uv run pre-commit run --from-ref "origin/${{ github.base_ref }}" --to-ref HEAD
