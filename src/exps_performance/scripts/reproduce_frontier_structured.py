@@ -11,10 +11,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 SRC_RESULTS_ROOT = REPO_ROOT / "src" / "exps_performance" / "results"
 RESULTS_ROOT = REPO_ROOT / "results"
-SUBSET_REFERENCE_350 = RESULTS_ROOT / "seed1_subset_reference_350.jsonl"
+FRONTIER_STRUCTURED_REFERENCE = RESULTS_ROOT / "frontier_structured_seed1_reference.jsonl"
 
 SEED1_KINDS = [
     "spp",
@@ -40,16 +40,16 @@ SEED1_KINDS = [
 
 
 @dataclass(frozen=True)
-class DatasetProfile:
+class FrontierConfig:
     name: str
     n: int
     digits_list: list[int]
     gsm_samples: int
     clrs_samples: int
     kinds: list[str]
-    subset_reference_jsonl: Path
+    reference_path: Path
     expected_rows: int
-    exp_suffix: str
+    run_slug: str
     openrouter_max_concurrency: int
     batch_size: int
     checkpoint_every: int
@@ -70,16 +70,16 @@ class ModelPreset:
         return f"{self.model.split('/')[-1]}_seed1"
 
 
-SUBSET350 = DatasetProfile(
-    name="subset350",
+FRONTIER_STRUCTURED = FrontierConfig(
+    name="frontier_structured",
     n=60,
     digits_list=[2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
     gsm_samples=0,
     clrs_samples=500,
     kinds=SEED1_KINDS,
-    subset_reference_jsonl=SUBSET_REFERENCE_350,
+    reference_path=FRONTIER_STRUCTURED_REFERENCE,
     expected_rows=350,
-    exp_suffix="subset350",
+    run_slug="frontier_structured",
     openrouter_max_concurrency=350,
     batch_size=350,
     checkpoint_every=350,
@@ -141,11 +141,11 @@ def best_effort_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def validate_profile(profile: DatasetProfile) -> None:
-    actual_rows = len(best_effort_jsonl(profile.subset_reference_jsonl))
-    if actual_rows != profile.expected_rows:
+def validate_frontier_config(config: FrontierConfig) -> None:
+    actual_rows = len(best_effort_jsonl(config.reference_path))
+    if actual_rows != config.expected_rows:
         raise SystemExit(
-            f"profile size mismatch for {profile.name}: expected {profile.expected_rows}, got {actual_rows} from {profile.subset_reference_jsonl}"
+            f"frontier config size mismatch for {config.name}: expected {config.expected_rows}, got {actual_rows} from {config.reference_path}"
         )
 
 
@@ -160,35 +160,35 @@ def latest_resumable_exp_id(preset: ModelPreset) -> Optional[str]:
     return run_dirs[0].name
 
 
-def build_args(preset: ModelPreset, exp_id: Optional[str], *, resume: bool, profile: DatasetProfile = SUBSET350) -> Any:
+def build_frontier_args(preset: ModelPreset, exp_id: Optional[str], *, resume: bool, config: FrontierConfig = FRONTIER_STRUCTURED) -> Any:
     ensure_repo_root()
     from src.exps_performance.main import Args
 
     kwargs: dict[str, Any] = {
         "root": str(SRC_RESULTS_ROOT.parent),
-        "n": profile.n,
-        "digits_list": list(profile.digits_list),
-        "kinds": list(profile.kinds),
-        "gsm_samples": profile.gsm_samples,
-        "clrs_samples": profile.clrs_samples,
+        "n": config.n,
+        "digits_list": list(config.digits_list),
+        "kinds": list(config.kinds),
+        "gsm_samples": config.gsm_samples,
+        "clrs_samples": config.clrs_samples,
         "seed": 1,
         "backend": "openrouter",
         "model": preset.model,
         "tb_disable": True,
         "exp_id": exp_id,
-        "subset_reference_jsonl": str(profile.subset_reference_jsonl),
+        "subset_reference_jsonl": str(config.reference_path),
         "openrouter_structured_outputs": True,
         "openrouter_structured_strict": True,
         "openrouter_response_healing": True,
         "openrouter_reasoning_enabled": True,
         "openrouter_reasoning_exclude": True,
         "openrouter_retry_attempts": 6,
-        "openrouter_max_concurrency": profile.openrouter_max_concurrency,
+        "openrouter_max_concurrency": config.openrouter_max_concurrency,
         "stage_batch_retry_attempts": 3,
         "max_tokens": 100000,
-        "batch_size": profile.batch_size,
-        "checkpoint_every": profile.checkpoint_every,
-        "request_timeout": profile.request_timeout,
+        "batch_size": config.batch_size,
+        "checkpoint_every": config.checkpoint_every,
+        "request_timeout": config.request_timeout,
         "exec_code": True,
         "controlled_sim": False,
         "resume": resume,
@@ -202,24 +202,24 @@ def build_args(preset: ModelPreset, exp_id: Optional[str], *, resume: bool, prof
     return Args(**kwargs)
 
 
-def run_worker(alias: str, exp_id: Optional[str], *, resume: bool) -> int:
+def run_model(alias: str, exp_id: Optional[str], *, resume: bool) -> int:
     load_dotenv(REPO_ROOT / ".env")
-    validate_profile(SUBSET350)
+    validate_frontier_config(FRONTIER_STRUCTURED)
     ensure_repo_root()
     from src.exps_performance.main import run
 
     preset = MODEL_PRESETS[alias]
-    args = build_args(preset, exp_id, resume=resume)
+    args = build_frontier_args(preset, exp_id, resume=resume)
     print(
         json.dumps(
             {
                 "event": "worker_start",
                 "model": preset.model,
                 "exp_id": exp_id,
-                "profile": SUBSET350.name,
+                "frontier_config": FRONTIER_STRUCTURED.name,
                 "resume": resume,
-                "subset_reference_jsonl": str(SUBSET350.subset_reference_jsonl),
-                "expected_rows": SUBSET350.expected_rows,
+                "reference_path": str(FRONTIER_STRUCTURED.reference_path),
+                "expected_rows": FRONTIER_STRUCTURED.expected_rows,
                 "openrouter_retry_attempts": args.openrouter_retry_attempts,
                 "stage_batch_retry_attempts": args.stage_batch_retry_attempts,
                 "openrouter_max_concurrency": args.openrouter_max_concurrency,
@@ -248,13 +248,13 @@ def run_worker(alias: str, exp_id: Optional[str], *, resume: bool) -> int:
 
 def default_exp_id(alias: str) -> str:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    profile = SUBSET350
-    return f"run_{stamp}_structured_{alias}_seed1_{profile.exp_suffix}_rt{int(profile.request_timeout)}_c{profile.openrouter_max_concurrency}_or6_sr3"
+    config = FRONTIER_STRUCTURED
+    return f"run_{stamp}_{config.run_slug}_{alias}_seed1_rt{int(config.request_timeout)}_c{config.openrouter_max_concurrency}_or6_sr3"
 
 
-def run_parent(model: str, *, fresh: bool, exp_id: Optional[str]) -> int:
+def run_frontier(model: str, *, fresh: bool, exp_id: Optional[str]) -> int:
     load_dotenv(REPO_ROOT / ".env")
-    validate_profile(SUBSET350)
+    validate_frontier_config(FRONTIER_STRUCTURED)
     if not os.environ.get("OPENROUTER_API_KEY"):
         print("OPENROUTER_API_KEY is not set after loading repo .env", file=sys.stderr)
         return 2
@@ -276,7 +276,7 @@ def run_parent(model: str, *, fresh: bool, exp_id: Optional[str]) -> int:
                 {
                     "event": "launch",
                     "model": preset.model,
-                    "profile": SUBSET350.name,
+                    "frontier_config": FRONTIER_STRUCTURED.name,
                     "exp_id": selected_exp_id,
                     "resume": resume,
                 },
@@ -284,14 +284,13 @@ def run_parent(model: str, *, fresh: bool, exp_id: Optional[str]) -> int:
             ),
             flush=True,
         )
-        run_worker(alias, selected_exp_id, resume=resume)
+        run_model(alias, selected_exp_id, resume=resume)
     return 0
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the structured seed1 subset350 reproduction.")
+    parser = argparse.ArgumentParser(description="Run the frontier structured reproduction.")
     parser.add_argument("--model", choices=["gpt", "opus", "both"], default="both")
-    parser.add_argument("--profile", choices=["subset350"], default="subset350")
     parser.add_argument("--fresh", action="store_true", help="Start a fresh run instead of resuming the latest checkpointed run.")
     parser.add_argument("--exp-id", help="Resume or launch a specific exp_id. Only valid with a single model.")
     parser.add_argument("--worker", choices=["gpt", "opus"], help=argparse.SUPPRESS)
@@ -301,11 +300,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.profile != SUBSET350.name:
-        raise SystemExit(f"unsupported profile: {args.profile}")
     if args.worker:
-        return run_worker(args.worker, args.exp_id, resume=bool(args.resume))
-    return run_parent(args.model, fresh=bool(args.fresh), exp_id=args.exp_id)
+        return run_model(args.worker, args.exp_id, resume=bool(args.resume))
+    return run_frontier(args.model, fresh=bool(args.fresh), exp_id=args.exp_id)
 
 
 if __name__ == "__main__":
