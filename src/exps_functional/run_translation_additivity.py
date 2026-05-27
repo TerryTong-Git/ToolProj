@@ -23,6 +23,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 import httpx
 from dotenv import load_dotenv
@@ -54,6 +55,7 @@ MODEL_MAP = {
 @dataclass
 class Sample:
     """A sample for the experiment."""
+
     kind: str
     question: str
     nl_reasoning_native: str  # Native NL from Arm1
@@ -67,6 +69,7 @@ class Sample:
 @dataclass
 class Trial:
     """A single evaluation trial."""
+
     sample_id: str
     kind: str
     condition: str  # "x", "x_nl_native", "x_nl_translated"
@@ -77,7 +80,7 @@ class Trial:
 
 
 # Native 10-shot ICL Translation prompt (problem-solving version)
-TRANSLATE_PROMPT = '''# Natural Language Problem Solver
+TRANSLATE_PROMPT = """# Natural Language Problem Solver
 
 You are given code that solves an algorithmic problem. Your task is to **reason through the problem step-by-step using natural language** and arrive at the answer.
 
@@ -232,7 +235,7 @@ Now solve the following problem using the same natural reasoning approach. Given
 ```python
 {code}
 ```
-'''
+"""
 
 # Evaluation prompts
 CONDITION_X = """You are given an algorithmic problem. Determine the final answer.
@@ -265,11 +268,29 @@ ICL_EXAMPLE_TASKS = {
 }
 
 
+def _translate_prompt_sections() -> tuple[str, list[str], str]:
+    sections = TRANSLATE_PROMPT.split("\n---\n\n")
+    return sections[0], sections[1:-1], sections[-1]
+
+
+def available_shot_count() -> int:
+    return len(_translate_prompt_sections()[1])
+
+
+def build_translate_prompt(code: str, n_shots: int) -> str:
+    header, examples, task = _translate_prompt_sections()
+    if n_shots < 0 or n_shots > len(examples):
+        raise ValueError(f"n_shots must be between 0 and {len(examples)}")
+    prompt = "\n---\n\n".join([header, *examples[:n_shots], task])
+    return prompt.format(code=code)
+
+
 def load_samples(
     results_dir: Path,
     source_model_filter: str | None = None,
     max_samples: int = 500,
     max_per_kind: int = 50,
+    subset_fraction: float = 1.0,
     exclude_icl_tasks: bool = True,
 ) -> list[Sample]:
     """Load samples from exps_performance results.
@@ -278,6 +299,9 @@ def load_samples(
         exclude_icl_tasks: If True, excludes task types used in ICL examples
                           to ensure held-out evaluation.
     """
+    if subset_fraction <= 0 or subset_fraction > 1:
+        raise ValueError("subset_fraction must be in the interval (0, 1]")
+
     samples_by_kind: dict[str, list[Sample]] = defaultdict(list)
 
     for jsonl_path in results_dir.glob("**/res.jsonl"):
@@ -310,7 +334,7 @@ def load_samples(
                     continue
 
                 # Filter to simple answer formats only (no arrays/lists)
-                if '[' in gold_answer or ',' in gold_answer:
+                if "[" in gold_answer or "," in gold_answer:
                     continue
 
                 # Exclude ICL example tasks for held-out evaluation
@@ -319,18 +343,20 @@ def load_samples(
 
                 # Clean code
                 if sim_code.startswith("```"):
-                    sim_code = re.sub(r'^```\w*\n?', '', sim_code)
-                    sim_code = re.sub(r'\n?```$', '', sim_code)
+                    sim_code = re.sub(r"^```\w*\n?", "", sim_code)
+                    sim_code = re.sub(r"\n?```$", "", sim_code)
 
-                samples_by_kind[kind].append(Sample(
-                    kind=kind,
-                    question=question,
-                    nl_reasoning_native=nl_reasoning,
-                    sim_code=sim_code,
-                    gold_answer=gold_answer,
-                    source_model=source_model,
-                    index_in_kind=index_in_kind,
-                ))
+                samples_by_kind[kind].append(
+                    Sample(
+                        kind=kind,
+                        question=question,
+                        nl_reasoning_native=nl_reasoning,
+                        sim_code=sim_code,
+                        gold_answer=gold_answer,
+                        source_model=source_model,
+                        index_in_kind=index_in_kind,
+                    )
+                )
 
     # Apply per-kind limits
     samples = []
@@ -343,15 +369,19 @@ def load_samples(
     print(f"Task types: {sorted(samples_by_kind.keys())}")
     if exclude_icl_tasks:
         print(f"(Held-out evaluation: excluded ICL tasks {ICL_EXAMPLE_TASKS})")
-    print(f"(Filtered to simple answer formats only)")
-    return samples[:max_samples]
+    print("(Filtered to simple answer formats only)")
+    samples = samples[:max_samples]
+    if subset_fraction < 1:
+        samples = samples[: max(1, int(len(samples) * subset_fraction))]
+        print(f"Subsampled to {len(samples)} samples with subset_fraction={subset_fraction}")
+    return samples
 
 
 def normalize_answer(answer: str) -> str:
     """Normalize an answer for comparison."""
     answer = answer.strip()
-    answer = re.sub(r'^(Answer:|The answer is|Result:)\s*', '', answer, flags=re.IGNORECASE)
-    match = re.search(r'-?\d+\.?\d*', answer)
+    answer = re.sub(r"^(Answer:|The answer is|Result:)\s*", "", answer, flags=re.IGNORECASE)
+    match = re.search(r"-?\d+\.?\d*", answer)
     if match:
         return match.group()
     return answer.strip()
@@ -397,12 +427,13 @@ async def call_llm_async(
         try:
             resp = await client.post(f"{BASE_URL}/chat/completions", headers=headers, json=payload, timeout=60)
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"].strip()
+            data = cast(dict[str, Any], resp.json())
+            return str(data["choices"][0]["message"]["content"]).strip()
         except Exception as e:
             if attempt == 2:
                 print(f"API error after 3 attempts: {e}")
                 return ""
-            await asyncio.sleep(2 ** attempt)
+            await asyncio.sleep(2**attempt)
     return ""
 
 
@@ -411,6 +442,7 @@ async def translate_code_to_nl(
     api_key: str,
     model: str,
     samples: list[Sample],
+    n_shots: int,
     concurrency: int = 32,
 ) -> list[Sample]:
     """Translate code to NL for all samples."""
@@ -418,14 +450,14 @@ async def translate_code_to_nl(
 
     async def translate_one(sample: Sample) -> Sample:
         async with sem:
-            prompt = TRANSLATE_PROMPT.format(code=sample.sim_code[:3000])
+            prompt = build_translate_prompt(sample.sim_code[:3000], n_shots)
             translation = await call_llm_async(client, api_key, model, prompt, max_tokens=1000)
             sample.nl_reasoning_translated = translation
             return sample
 
     print(f"Translating {len(samples)} code samples to NL...")
     tasks = [translate_one(s) for s in samples]
-    translated = await tqdm_asyncio.gather(*tasks, desc="Translating")
+    translated = cast(list[Sample], await tqdm_asyncio.gather(*tasks, desc="Translating"))
 
     # Filter out failed translations
     valid = [s for s in translated if s.nl_reasoning_translated and len(s.nl_reasoning_translated) > 50]
@@ -480,7 +512,7 @@ async def run_evaluation(
             all_tasks.append(eval_one(sample, condition))
 
     print(f"Running {len(all_tasks)} evaluation trials...")
-    trials = await tqdm_asyncio.gather(*all_tasks, desc="Evaluating")
+    trials = cast(list[Trial], await tqdm_asyncio.gather(*all_tasks, desc="Evaluating"))
     return trials
 
 
@@ -496,7 +528,7 @@ def wilson_ci(n_correct: int, n_total: int, confidence: float = 0.95) -> tuple[f
     return max(0, center - margin), min(1, center + margin)
 
 
-def print_results(trials: list[Trial], model: str):
+def print_results(trials: list[Trial], model: str) -> dict[str, float]:
     """Print results summary."""
     conditions = ["x", "x_nl_native", "x_nl_translated"]
 
@@ -510,7 +542,7 @@ def print_results(trials: list[Trial], model: str):
     print(f"{'Condition':<20} {'Accuracy':>10} {'95% CI':>22} {'N':>6}")
     print("-" * 62)
 
-    results = {}
+    results: dict[str, float] = {}
     for cond in conditions:
         cond_trials = [t for t in trials if t.condition == cond]
         n_total = len(cond_trials)
@@ -528,7 +560,7 @@ def print_results(trials: list[Trial], model: str):
     print(f"  + Translated NL:       {results['x_nl_translated']:.1%} (Δ = {results['x_nl_translated'] - results['x']:+.1%})")
     print()
 
-    gap = results['x_nl_native'] - results['x_nl_translated']
+    gap = results["x_nl_native"] - results["x_nl_translated"]
     if abs(gap) < 0.03:
         print("→ Translated NL ≈ Native NL (translation preserves information)")
     elif gap > 0.03:
@@ -539,7 +571,20 @@ def print_results(trials: list[Trial], model: str):
     return results
 
 
-async def main_async(args):
+def output_stem(args: argparse.Namespace, timestamp: str) -> str:
+    safe_model = args.model.replace("/", "_")
+    default_shots = available_shot_count()
+    metadata_parts = [safe_model]
+    if args.source_model or args.n_shots != default_shots or args.subset_fraction != 1.0:
+        if args.source_model:
+            metadata_parts.append(f"source_{args.source_model.replace('/', '_')}")
+        metadata_parts.append(f"shots{args.n_shots}")
+        if args.subset_fraction != 1.0:
+            metadata_parts.append(f"subset{int(args.subset_fraction * 100):02d}")
+    return f"translation_{'_'.join(metadata_parts)}_{timestamp}"
+
+
+async def main_async(args: argparse.Namespace) -> None:
     """Main async entry point."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
@@ -557,6 +602,7 @@ async def main_async(args):
         source_model_filter=args.source_model,
         max_samples=args.n_samples,
         max_per_kind=args.max_per_kind,
+        subset_fraction=args.subset_fraction,
     )
 
     if not samples:
@@ -565,7 +611,7 @@ async def main_async(args):
 
     async with httpx.AsyncClient() as client:
         # Step 1: Translate code to NL
-        samples = await translate_code_to_nl(client, api_key, full_model, samples, args.concurrency)
+        samples = await translate_code_to_nl(client, api_key, full_model, samples, args.n_shots, args.concurrency)
 
         if not samples:
             print("No valid translations!")
@@ -579,36 +625,50 @@ async def main_async(args):
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_model = args.model.replace("/", "_")
+    stem = output_stem(args, timestamp)
 
     # Save trials
-    trials_path = OUTPUT_DIR / f"translation_{safe_model}_{timestamp}_trials.jsonl"
+    trials_path = OUTPUT_DIR / f"{stem}_trials.jsonl"
     with trials_path.open("w") as f:
         for t in trials:
             f.write(json.dumps(asdict(t)) + "\n")
 
     # Save summary
-    summary_path = OUTPUT_DIR / f"translation_{safe_model}_{timestamp}.json"
+    summary_path = OUTPUT_DIR / f"{stem}.json"
     with summary_path.open("w") as f:
-        json.dump({
-            "model": args.model,
-            "n_samples": len(samples),
-            "results": results,
-            "timestamp": timestamp,
-        }, f, indent=2)
+        json.dump(
+            {
+                "model": args.model,
+                "source_model": args.source_model,
+                "n_samples": len(samples),
+                "n_shots": args.n_shots,
+                "subset_fraction": args.subset_fraction,
+                "results": results,
+                "timestamp": timestamp,
+            },
+            f,
+            indent=2,
+        )
 
     print(f"\nResults saved to: {summary_path}")
     print(f"Trials saved to: {trials_path}")
 
 
-def main():
+def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Translation Additivity Experiment")
     parser.add_argument("--model", default="gemini-2.0-flash", help="Model for translation and evaluation")
     parser.add_argument("--source_model", default=None, help="Filter source data by model")
     parser.add_argument("--n_samples", type=int, default=100, help="Number of samples")
     parser.add_argument("--max_per_kind", type=int, default=20, help="Max samples per task type")
+    parser.add_argument("--subset_fraction", type=float, default=1.0, help="Fraction of loaded samples to evaluate")
+    parser.add_argument("--n_shots", type=int, default=available_shot_count(), help="Number of translation prompt examples")
     parser.add_argument("--concurrency", type=int, default=32, help="API concurrency")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    return parser
+
+
+def main() -> None:
+    parser = build_arg_parser()
     args = parser.parse_args()
 
     random.seed(args.seed)
