@@ -42,6 +42,16 @@ Validation is simple. The commands read saved result artifacts. The generated ta
 
 For the full 0-5 shot sweep, first run `src/exps_functional/scripts/run_translation_additivity_shot_ablation.sh`. Without those raw sweep files, the shot-ablation analysis only regenerates the legacy 10-shot row.
 
+## Five Percent Validation
+
+```bash
+bash scripts/reproduce_paper_results.sh validation
+```
+
+This runs the exact-output shard tests for each rebuttal table. Each test
+builds a deterministic fixture covering at least 5% of the corresponding final
+table input and asserts the regenerated markdown or CSV values exactly.
+
 ## Figures
 
 ```bash
@@ -81,6 +91,7 @@ The paper build expects a local TeX installation with `latexmk`.
 ```bash
 bash -n scripts/reproduce_paper_results.sh
 bash scripts/reproduce_paper_results.sh --list
+uv run pytest tests/integration/test_analyze_sim_code_overlap_e2e.py -q
 uv run pytest tests/integration/test_route_accuracy_tables_e2e.py -q
 uv run pytest tests/integration/test_translation_shot_ablation_e2e.py -q
 uv run pytest tests/integration/test_rlm_subset_results_e2e.py -q

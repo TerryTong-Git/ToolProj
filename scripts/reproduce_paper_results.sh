@@ -12,6 +12,7 @@ usage() {
 Usage:
   bash scripts/reproduce_paper_results.sh --list
   bash scripts/reproduce_paper_results.sh tables
+  bash scripts/reproduce_paper_results.sh validation
   bash scripts/reproduce_paper_results.sh figures
   bash scripts/reproduce_paper_results.sh paper
   bash scripts/reproduce_paper_results.sh all
@@ -32,6 +33,15 @@ Tables:
   uv run python src/exps_performance/scripts/analyze_coding_model_table.py
   uv run python src/exps_performance/scripts/analyze_code_failure_distribution.py
   uv run python src/exps_performance/scripts/analyze_frontier_nopatch_table.py
+
+Five percent validation:
+  uv run pytest tests/integration/test_analyze_sim_code_overlap_e2e.py -q
+  uv run pytest tests/integration/test_route_accuracy_tables_e2e.py -q
+  uv run pytest tests/integration/test_translation_shot_ablation_e2e.py -q
+  uv run pytest tests/integration/test_rlm_subset_results_e2e.py -q
+  uv run pytest tests/integration/test_coding_model_table_e2e.py -q
+  uv run pytest tests/integration/test_code_failure_distribution_e2e.py -q
+  uv run pytest tests/integration/test_frontier_nopatch_table_e2e.py -q
 
 Figures:
   uv run python src/exps_performance/analysis.py
@@ -67,6 +77,16 @@ run_tables() {
     --output "$REPRO_OUT_DIR/code_failure_distribution.csv"
   run uv run python src/exps_performance/scripts/analyze_frontier_nopatch_table.py \
     --output-md "$REPRO_OUT_DIR/frontier_nopatch_table.md"
+}
+
+run_validation() {
+  run uv run pytest tests/integration/test_analyze_sim_code_overlap_e2e.py -q
+  run uv run pytest tests/integration/test_route_accuracy_tables_e2e.py -q
+  run uv run pytest tests/integration/test_translation_shot_ablation_e2e.py -q
+  run uv run pytest tests/integration/test_rlm_subset_results_e2e.py -q
+  run uv run pytest tests/integration/test_coding_model_table_e2e.py -q
+  run uv run pytest tests/integration/test_code_failure_distribution_e2e.py -q
+  run uv run pytest tests/integration/test_frontier_nopatch_table_e2e.py -q
 }
 
 copy_if_present() {
@@ -142,6 +162,9 @@ case "$target" in
     ;;
   tables)
     run_tables
+    ;;
+  validation)
+    run_validation
     ;;
   figures)
     run_figures
