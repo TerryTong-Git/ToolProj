@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from pathlib import Path
@@ -8,6 +9,8 @@ from tbparse import SummaryReader
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 from src.exps_performance.logger import (
+    RLM_ONLY_RESULT_FIELDS,
+    CheckpointManager,
     create_big_df,
     create_dir,
     init_tensorboard,
@@ -75,3 +78,17 @@ def test_aggregate_results(tmp_path_factory: Any, default_args: Any, mock_record
     # mock_data1 = ['efg', "2", "False"]
     for r in rows:
         assert r["sim_parse_err"] in ["abc", "efg"], "not loaded correctly"
+
+
+def test_checkpoint_rlm_only_schema(tmp_path_factory: Any, mock_records: Any) -> None:
+    base = tmp_path_factory.mktemp("base")
+    path = Path(base) / "res.jsonl"
+    checkpoint = CheckpointManager(str(path), only_rlm=True)
+    checkpoint.save_batch(mock_records, flush=True)
+
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert rows, "expected serialized rows"
+    for row in rows:
+        assert set(row.keys()) == set(RLM_ONLY_RESULT_FIELDS)
+        assert "nl_question" not in row
+        assert "sim_question" not in row

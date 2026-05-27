@@ -2,21 +2,34 @@
 
 Research repository for studying how LLMs encode and process information across different reasoning strategies (natural language, code generation, code simulation). We evaluate 48 algorithmic problem types across 9 models to quantify the relationship between reasoning modality and task performance.
 
+## Documentation
+
+The `docs/` folder is the current source of truth for how the repository works and what was done in the project:
+
+- `docs/README.md` for the map
+- `docs/architecture.md` for the run pipeline and system structure
+- `docs/experiment-tracks.md` for the active experiment families
+- `docs/results-and-analysis.md` for result layout and validation
+- `docs/development.md` for setup and command references
+- `docs/project-history.md` for the timeline of major work
+
+Some older sections below predate repo cleanup; prefer `docs/` when they disagree.
+
 ## Overview
 
-This repository implements three categories of experiments:
+The active repository is centered on three experiment families:
 
-1. **Performance Experiments** (`src/exps_performance/`) — Evaluates LLM accuracy on algorithmic tasks using three reasoning arms: natural language (NL), code execution, and code simulation. Covers arithmetic, dynamic programming, graph algorithms, and NP-hard problems across varying difficulty levels (2–20 digits).
+1. **Performance Benchmark** (`src/exps_performance/`) — the main runner that generates benchmark data across NL, simulated-code, executed-code, and control-simulation arms.
+2. **Source Discrimination / Control Work** (`src/exps_control_again/`) — tests whether code-translated NL traces can be distinguished from native NL traces.
+3. **Functional Experiments** (`src/exps_functional/`) — tests additivity and translation-preservation claims using the benchmark outputs as input data.
 
-2. **Mutual Information Estimation** (`src/exps_logistic/`) — Estimates mutual information between model reasoning traces and problem parameters using logistic regression, measuring how much task-relevant information each reasoning strategy captures.
-
-3. **Control & Functional Experiments** (`src/exps_control_again/`, `src/exps_functional/`) — Tests indistinguishability of translated vs. native NL reasoning (source discrimination), embedding-based separability analysis, and translation additivity properties.
+The benchmark outputs in `src/exps_performance/results/` act as the shared dataset for the later experiment families.
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.10
+- Python 3.11
 - CUDA 12.4+ (for GPU acceleration, optional)
 - [uv](https://github.com/astral-sh/uv) package manager (recommended)
 
@@ -48,27 +61,20 @@ OPENROUTER_API_KEY=your_openrouter_key  # For accessing various LLMs
 ### Run Performance Experiments
 
 ```bash
-# Run experiments for a specific model
-uv run python -m src.exps_performance.main \
-  --model "google/gemini-2.0-flash-001" \
+# Small benchmark slice
+uv run python src/exps_performance/main.py \
+  --root src/exps_performance/ \
+  --backend openrouter \
+  --model "openai/gpt-4o-mini" \
   --seed 0 \
-  --output-dir results/
+  --n 3 \
+  --digits 2 4 8 \
+  --kinds add sub mul lcs rod knap ilp_assign ilp_partition ilp_prod \
+  --exec_code \
+  --controlled_sim
 
 # Or use the production script
 bash src/exps_performance/scripts/prod_all.sh
-```
-
-### Run MI Estimation
-
-```bash
-# Run logistic regression MI estimation
-uv run python -m src.exps_logistic.main \
-  --results-dir src/exps_performance/results \
-  --rep nl \
-  --label gamma
-
-# Or use the production script
-bash src/exps_logistic/prod_logistic.sh
 ```
 
 ### Run Source Discrimination
@@ -76,6 +82,13 @@ bash src/exps_logistic/prod_logistic.sh
 ```bash
 # Run translation discrimination experiment
 uv run python src/exps_control_again/run_source_discrimination.py --n_samples 200
+```
+
+### Run Functional Experiments
+
+```bash
+uv run python src/exps_functional/run_additivity.py --n_samples 200
+uv run python src/exps_functional/run_translation_additivity.py --n_samples 200
 ```
 
 ### Run Tests
@@ -89,48 +102,17 @@ uv run pytest tests/
 ```
 ToolProj/
 ├── src/
-│   ├── exps_performance/             # LLM performance benchmark
-│   │   ├── main.py                   # Main experiment runner
-│   │   ├── arms.py                   # Reasoning strategies (NL, code, sim)
-│   │   ├── analysis.py               # Statistical analysis
-│   │   ├── logger.py                 # JSONL logging & checkpointing
-│   │   ├── problems/                 # Problem generators
-│   │   │   ├── finegrained.py        #   Arithmetic (add/sub/mul), DP, ILP
-│   │   │   ├── clrs.py              #   CLRS algorithm problems (48 types)
-│   │   │   └── nphardeval.py         #   NP-hard problems (TSP, GCP, etc.)
-│   │   ├── clrs/                     # CLRS algorithm implementations
-│   │   ├── Data_V2/                  # NP-hard benchmark datasets
-│   │   ├── results/                  # Experiment results (25 model-seed runs)
-│   │   ├── figures/                  # Generated plots
-│   │   ├── notebooks/               # Analysis notebooks
-│   │   └── scripts/                  # Production & analysis scripts
-│   │
-│   ├── exps_logistic/                # MI estimation via logistic regression
-│   │   ├── main.py                   # Logistic regression runner
-│   │   ├── data_utils.py             # Data loading and preprocessing
-│   │   ├── featurizer.py             # Text feature extraction
-│   │   └── classifier.py             # Logistic regression classifier
-│   │
-│   ├── exps_control_again/           # Source discrimination experiments
-│   │   ├── run_source_discrimination.py  # Main experiment
-│   │   ├── prompts/                  # Judge & translator prompts
-│   │   │   ├── source_classifier.md  # Discrimination judge prompt
-│   │   │   └── translator_native_10shot.md  # Code-to-NL translator prompt
-│   │   ├── scripts/                  # Embedding & classifier analyses
-│   │   └── results/                  # Discrimination results & plots
-│   │
-│   └── exps_functional/              # Functional property experiments
-│       ├── run_translation_additivity.py  # Translation additivity test
-│       ├── scripts/                  # Plot generation
-│       └── results/                  # Trial data & figures
+│   ├── exps_performance/             # Main benchmark runner and shared dataset
+│   ├── exps_control_again/           # Source discrimination + embedding analysis
+│   └── exps_functional/              # Additivity and translation-preservation experiments
 │
+├── docs/                             # Current project documentation
 ├── tests/
-│   ├── unit/                         # 18 unit test files
-│   ├── integration/                  # 3 integration test files
-│   └── logistic/                     # 6 logistic regression tests
+│   ├── unit/                         # Unit and artifact-validation tests
+│   ├── integration/                  # End-to-end benchmark checks
+│   └── logistic/                     # Legacy-named analysis/parsing tests
 │
 ├── figures/                          # Root-level publication figures
-├── Bayesian_Tool_Use/                # LaTeX paper source
 ├── pyproject.toml                    # Project configuration
 └── .env                              # API keys (not tracked)
 ```
