@@ -62,6 +62,10 @@ def uv_python(script: str, *args: str) -> tuple[str, ...]:
     return ("uv", "run", "python", script, *args)
 
 
+def pytest_step(path: str) -> CommandStep:
+    return CommandStep(("uv", "run", "pytest", path, "-q"))
+
+
 def table_steps(config: ReproductionConfig) -> list[CommandStep]:
     out = config.output_dir
     return [
@@ -113,6 +117,18 @@ def table_steps(config: ReproductionConfig) -> list[CommandStep]:
                 str(out / "frontier_nopatch_table.md"),
             ),
         ),
+    ]
+
+
+def validation_steps() -> list[CommandStep]:
+    return [
+        pytest_step("tests/integration/test_analyze_sim_code_overlap_e2e.py"),
+        pytest_step("tests/integration/test_route_accuracy_tables_e2e.py"),
+        pytest_step("tests/integration/test_translation_shot_ablation_e2e.py"),
+        pytest_step("tests/integration/test_rlm_subset_results_e2e.py"),
+        pytest_step("tests/integration/test_coding_model_table_e2e.py"),
+        pytest_step("tests/integration/test_code_failure_distribution_e2e.py"),
+        pytest_step("tests/integration/test_frontier_nopatch_table_e2e.py"),
     ]
 
 
@@ -171,12 +187,13 @@ def command_groups(config: ReproductionConfig, target: str) -> tuple[tuple[str, 
     figure_config = ReproductionConfig(config.paper_dir, config.output_dir, True, config.dry_run)
     groups = (
         ("Tables", table_steps(config)),
+        ("Five percent validation", validation_steps()),
         ("Figures", figure_steps(figure_config)),
         ("Paper", [paper_step(config)]),
     )
     if target in {"all", "list"}:
         return groups
-    names = {"tables": "Tables", "figures": "Figures", "paper": "Paper"}
+    names = {"tables": "Tables", "validation": "Five percent validation", "figures": "Figures", "paper": "Paper"}
     selected = names[target]
     return tuple(group for group in groups if group[0] == selected)
 
@@ -198,6 +215,10 @@ def run_tables(config: ReproductionConfig) -> None:
     if not config.dry_run:
         config.output_dir.mkdir(parents=True, exist_ok=True)
     run_steps(table_steps(config), dry_run=config.dry_run)
+
+
+def run_validation(config: ReproductionConfig) -> None:
+    run_steps(validation_steps(), dry_run=config.dry_run)
 
 
 def copy_figures(config: ReproductionConfig) -> None:
@@ -240,7 +261,7 @@ def run_paper(config: ReproductionConfig) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Regenerate paper tables, figures, and PDF.")
-    parser.add_argument("target", nargs="?", default="all", choices=("list", "tables", "figures", "paper", "all"))
+    parser.add_argument("target", nargs="?", default="all", choices=("list", "tables", "validation", "figures", "paper", "all"))
     parser.add_argument("--list", action="store_true", dest="show_list", help="Print commands without running them.")
     parser.add_argument("--dry-run", action="store_true", help="Print selected commands without running them.")
     parser.add_argument(
@@ -278,6 +299,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.target in {"tables", "all"}:
         run_tables(config)
+    if args.target == "validation":
+        run_validation(config)
     if args.target in {"figures", "all"}:
         run_figures(config)
     if args.target in {"paper", "all"}:
