@@ -30,12 +30,12 @@ class ReproductionConfig:
     dry_run: bool
 
     @classmethod
-    def from_env(cls, *, dry_run: bool) -> "ReproductionConfig":
+    def from_args(cls, args: argparse.Namespace) -> "ReproductionConfig":
         return cls(
-            paper_dir=Path(os.environ.get("PAPER_DIR", DEFAULT_PAPER_DIR)),
-            output_dir=Path(os.environ.get("REPRO_OUT_DIR", DEFAULT_OUTPUT_DIR)),
-            run_recovery_notebook=os.environ.get("RUN_RECOVERY_NOTEBOOK", "0") == "1",
-            dry_run=dry_run,
+            paper_dir=args.paper_dir,
+            output_dir=args.output_dir,
+            run_recovery_notebook=args.run_recovery_notebook,
+            dry_run=args.dry_run,
         )
 
 
@@ -261,12 +261,30 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("target", nargs="?", default="all", choices=("list", "tables", "validation", "figures", "paper", "all"))
     parser.add_argument("--list", action="store_true", dest="show_list", help="Print commands without running them.")
     parser.add_argument("--dry-run", action="store_true", help="Print selected commands without running them.")
+    parser.add_argument(
+        "--paper-dir",
+        type=Path,
+        default=Path(os.environ.get("PAPER_DIR", DEFAULT_PAPER_DIR)),
+        help="Paper source directory. Defaults to PAPER_DIR or ../Bayesian_Tool_Use_source_20260521.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path(os.environ.get("REPRO_OUT_DIR", DEFAULT_OUTPUT_DIR)),
+        help="Directory for regenerated table outputs. Defaults to REPRO_OUT_DIR or results/paper_reproduction.",
+    )
+    parser.add_argument(
+        "--run-recovery-notebook",
+        action="store_true",
+        default=os.environ.get("RUN_RECOVERY_NOTEBOOK", "0") == "1",
+        help="Regenerate the notebook-backed recovery figure.",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    config = ReproductionConfig.from_env(dry_run=args.dry_run)
+    config = ReproductionConfig.from_args(args)
 
     if args.show_list or args.target == "list":
         print_command_groups(config)

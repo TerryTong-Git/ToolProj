@@ -102,6 +102,49 @@ def test_python_reproduction_cli_dry_run_paper_does_not_need_local_latex(tmp_pat
     assert f"cd {quote(str(paper_dir))} && latexmk -pdf" in result.stdout
 
 
+def test_python_reproduction_cli_accepts_paper_dir_flag(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "paper source"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "--dry-run",
+            "--paper-dir",
+            str(paper_dir),
+            "paper",
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert f"cd {quote(str(paper_dir))} && latexmk -pdf" in result.stdout
+
+
+def test_python_reproduction_cli_accepts_output_dir_flag(tmp_path: Path) -> None:
+    output_dir = tmp_path / "paper tables"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/reproduce_paper.py",
+            "--dry-run",
+            "--output-dir",
+            str(output_dir),
+            "tables",
+        ],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert str(output_dir / "route_accuracy_tables.md") in result.stdout
+    assert "results/paper_reproduction/route_accuracy_tables.md" not in result.stdout
+
+
 def test_paper_reproduction_readme_names_source_of_truth() -> None:
     text = (ROOT / "PAPER_REPRODUCTION.md").read_text()
 
