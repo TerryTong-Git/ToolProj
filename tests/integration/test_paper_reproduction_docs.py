@@ -58,6 +58,35 @@ def test_python_reproduction_cli_lists_same_core_commands() -> None:
     assert "latexmk -pdf" in result.stdout
 
 
+def test_python_reproduction_cli_lists_only_selected_target() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/reproduce_paper.py", "--list", "tables"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "analyze_route_accuracy_tables.py" in result.stdout
+    assert "plot_judge_discrimination.py" not in result.stdout
+    assert "latexmk -pdf" not in result.stdout
+
+
+def test_python_reproduction_cli_lists_only_validation_target() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/reproduce_paper.py", "--list", "validation"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "Five percent validation:" in result.stdout
+    assert all(test_name in result.stdout for test_name in FIVE_PERCENT_TESTS)
+    assert "analyze_route_accuracy_tables.py" not in result.stdout
+    assert "latexmk -pdf" not in result.stdout
+
+
 def test_python_reproduction_cli_dry_run_tables_uses_dedicated_output_dir() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/reproduce_paper.py", "--dry-run", "tables"],
@@ -151,4 +180,5 @@ def test_paper_reproduction_readme_names_source_of_truth() -> None:
     assert "../Bayesian_Tool_Use_source_20260521" in text
     assert "../Bayesian_Tool_Use` is not used" in text
     assert "Appendix/part_1.tex" in text
+    assert "--list validation" in text
     assert "uv run python scripts/reproduce_paper.py validation" in text

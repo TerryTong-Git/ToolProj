@@ -34,6 +34,9 @@ Use `--dry-run` to inspect the commands for any target without running them:
 uv run python scripts/reproduce_paper.py --dry-run tables
 ```
 
+Use `--list tables`, `--list validation`, `--list figures`, or `--list paper`
+to print only one command group.
+
 ## Tables
 
 ```bash
