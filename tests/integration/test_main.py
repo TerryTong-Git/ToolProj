@@ -75,8 +75,9 @@ def test_e2e_rlm_only_mode(tmp_path_factory: Any, monkeypatch: pytest.MonkeyPatc
     run(args)
 
     files = walk_results_folder(str(base))
-    assert len(files) == 1
-    path = Path(files[0])
+    result_files = [Path(file) for file in files if Path(file).name == "res.jsonl"]
+    assert len(result_files) == 1
+    path = result_files[0]
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(rows) == 2
     for row in rows:
@@ -107,8 +108,9 @@ def test_e2e_skips_code_and_control_when_disabled(tmp_path_factory: Any) -> None
     run(args)
 
     files = walk_results_folder(str(base))
-    assert len(files) == 1
-    path = Path(files[0])
+    result_files = [Path(file) for file in files if Path(file).name == "res.jsonl"]
+    assert len(result_files) == 1
+    path = result_files[0]
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(rows) == 2
     for row in rows:
