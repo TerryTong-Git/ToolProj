@@ -174,6 +174,19 @@ def test_python_reproduction_cli_accepts_output_dir_flag(tmp_path: Path) -> None
     assert "results/paper_reproduction/route_accuracy_tables.md" not in result.stdout
 
 
+def test_python_reproduction_cli_figures_hint_uses_recovery_flag() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/reproduce_paper.py", "--dry-run", "figures"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "--run-recovery-notebook" in result.stdout
+    assert "RUN_RECOVERY_NOTEBOOK=1" not in result.stdout
+
+
 def test_paper_reproduction_readme_names_source_of_truth() -> None:
     text = (ROOT / "PAPER_REPRODUCTION.md").read_text()
 

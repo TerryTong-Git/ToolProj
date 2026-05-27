@@ -243,7 +243,7 @@ def run_figures(config: ReproductionConfig) -> None:
         (ROOT_DIR / "src/exps_performance/figures").mkdir(parents=True, exist_ok=True)
     run_steps(figure_steps(config), dry_run=config.dry_run)
     if not config.run_recovery_notebook:
-        print("skip recovery notebook: set RUN_RECOVERY_NOTEBOOK=1 to regenerate recovery_vs_digits_overall.png")
+        print("skip recovery notebook: use --run-recovery-notebook to regenerate recovery_vs_digits_overall.png")
     copy_figures(config)
 
 
