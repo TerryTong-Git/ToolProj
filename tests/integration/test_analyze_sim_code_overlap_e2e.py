@@ -48,10 +48,7 @@ def test_analyze_sim_code_overlap_reproduces_five_percent_frontier_table_shard(t
     )
 
     report = report_path.read_text(encoding="utf-8")
-    assert (
-        "| Frontier 5% shard | 18 | 50.00% | 66.67% | 83.33% | "
-        "50.00% | 66.67% | 83.33% | 18 |"
-    ) in report
+    assert ("| Frontier 5% shard | 18 | 50.00% | 66.67% | 83.33% | 50.00% | 66.67% | 83.33% | 18 |") in report
 
     with csv_path.open(newline="", encoding="utf-8") as f:
         csv_rows = list(csv.DictReader(f))
