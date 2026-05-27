@@ -25,6 +25,18 @@ def _trial(sample_id: str, condition: str, correct: bool) -> dict[str, object]:
     }
 
 
+FINAL_LEGACY_TRIAL_ROWS = 600
+FIVE_PERCENT_TRIAL_ROWS = 30
+TRIALS_PER_CONDITION = FIVE_PERCENT_TRIAL_ROWS // 3
+
+
+def _condition_trials(condition: str, correct_count: int) -> list[dict[str, object]]:
+    return [
+        _trial(f"{condition}-{index}", condition, index < correct_count)
+        for index in range(TRIALS_PER_CONDITION)
+    ]
+
+
 def _write_trials(path: Path, rows: list[dict[str, object]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
@@ -33,18 +45,18 @@ def _write_trials(path: Path, rows: list[dict[str, object]]) -> None:
 def test_translation_shot_ablation_report_cli(tmp_path: Path) -> None:
     results_dir = tmp_path / "functional_results"
     shot_rows = [
-        _trial("a", "x", True),
-        _trial("b", "x", False),
-        _trial("a", "x_nl_native", True),
-        _trial("b", "x_nl_native", True),
-        _trial("a", "x_nl_translated", False),
-        _trial("b", "x_nl_translated", True),
+        *_condition_trials("x", 5),
+        *_condition_trials("x_nl_native", 7),
+        *_condition_trials("x_nl_translated", 4),
     ]
     legacy_rows = [
-        _trial("a", "x", True),
-        _trial("a", "x_nl_native", True),
-        _trial("a", "x_nl_translated", True),
+        *_condition_trials("x", 6),
+        *_condition_trials("x_nl_native", 8),
+        *_condition_trials("x_nl_translated", 7),
     ]
+    assert len(shot_rows) == FIVE_PERCENT_TRIAL_ROWS
+    assert len(legacy_rows) == FIVE_PERCENT_TRIAL_ROWS
+    assert FIVE_PERCENT_TRIAL_ROWS * 20 == FINAL_LEGACY_TRIAL_ROWS
     _write_trials(
         results_dir / "translation_anthropic_claude-haiku-4.5_source_claude-haiku-4.5_shots0_subset25_20260101_trials.jsonl",
         shot_rows,
@@ -75,12 +87,14 @@ def test_translation_shot_ablation_report_cli(tmp_path: Path) -> None:
 
     assert rows[0]["shots"] == "0"
     assert rows[0]["x"] == "50.00%"
-    assert rows[0]["x_native_nl"] == "100.00%"
-    assert rows[0]["x_translated_nl"] == "50.00%"
-    assert rows[0]["delta_native"] == "+50.00pp"
-    assert rows[0]["gap"] == "-50.00pp"
+    assert rows[0]["x_native_nl"] == "70.00%"
+    assert rows[0]["x_translated_nl"] == "40.00%"
+    assert rows[0]["delta_native"] == "+20.00pp"
+    assert rows[0]["delta_translated"] == "-10.00pp"
+    assert rows[0]["gap"] == "-30.00pp"
     assert rows[1]["shots"] == "10 (paper legacy)"
-    assert "| 0 | 50.00% | 100.00% | 50.00% | +50.00pp | +0.00pp | -50.00pp |" in report
+    assert "| 0 | 50.00% | 70.00% | 40.00% | +20.00pp | -10.00pp | -30.00pp |" in report
+    assert "| 10 (paper legacy) | 60.00% | 80.00% | 70.00% | +20.00pp | +10.00pp | -10.00pp |" in report
 
 
 def test_translation_runner_accepts_shot_ablation_flags(tmp_path: Path) -> None:
