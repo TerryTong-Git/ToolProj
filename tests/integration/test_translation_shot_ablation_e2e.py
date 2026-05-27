@@ -31,10 +31,7 @@ TRIALS_PER_CONDITION = FIVE_PERCENT_TRIAL_ROWS // 3
 
 
 def _condition_trials(condition: str, correct_count: int) -> list[dict[str, object]]:
-    return [
-        _trial(f"{condition}-{index}", condition, index < correct_count)
-        for index in range(TRIALS_PER_CONDITION)
-    ]
+    return [_trial(f"{condition}-{index}", condition, index < correct_count) for index in range(TRIALS_PER_CONDITION)]
 
 
 def _write_trials(path: Path, rows: list[dict[str, object]]) -> None:
