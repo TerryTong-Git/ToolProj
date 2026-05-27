@@ -77,7 +77,7 @@ class FakeStructuredOpenRouterClient:
         return payload
 
 
-def test_structured_openrouter_e2e_with_fake_client(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_frontier_structured_openrouter_e2e_with_fake_client(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     fake_client = FakeStructuredOpenRouterClient()
     monkeypatch.setattr(perf_main, "llm", lambda _args: fake_client)
 
