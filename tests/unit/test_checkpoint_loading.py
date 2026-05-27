@@ -2,7 +2,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.exps_performance.logger import CheckpointManager, Record, make_request_id
+from src.reasoning_benchmark.records import CheckpointManager, Record, make_request_id
 
 
 def test_load_legacy_rows_preserves_request_id_and_fills_index(tmp_path: Any) -> None:

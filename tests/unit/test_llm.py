@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from src.exps_performance import llm
+from src.reasoning_benchmark import llm_clients as llm
 
 
 def test_openrouter_env_fallback(monkeypatch):

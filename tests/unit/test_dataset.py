@@ -3,21 +3,21 @@ from pathlib import Path
 
 import pytest
 
-from src.exps_performance.dataset import CLRS, FG, GSM8K, NPHARD, make_dataset
-from src.exps_performance.logger import CheckpointManager
-from src.exps_performance.main import compute_effective_samples
-from src.exps_performance.problems.clrs import ClrsQuestion
-from src.exps_performance.problems.finegrained import FgQuestion
-from src.exps_performance.problems.gsm8k import Gsm8kQuestion
-from src.exps_performance.problems.nphard.bsp import BspQuestion
-from src.exps_performance.problems.nphard.edp import EdpQuestion
-from src.exps_performance.problems.nphard.gcp import GcpQuestion
-from src.exps_performance.problems.nphard.gcp_d import GcpdQuestion
-from src.exps_performance.problems.nphard.ksp import KspQuestion
-from src.exps_performance.problems.nphard.msp import MspQuestion
-from src.exps_performance.problems.nphard.spp import SppQuestion
-from src.exps_performance.problems.nphard.tsp import TspQuestion
-from src.exps_performance.problems.nphard.tsp_d import TspdQuestion
+from src.reasoning_benchmark.problems.clrs import ClrsQuestion
+from src.reasoning_benchmark.problems.finegrained import FgQuestion
+from src.reasoning_benchmark.problems.gsm8k import Gsm8kQuestion
+from src.reasoning_benchmark.problems.nphard.bsp import BspQuestion
+from src.reasoning_benchmark.problems.nphard.edp import EdpQuestion
+from src.reasoning_benchmark.problems.nphard.gcp import GcpQuestion
+from src.reasoning_benchmark.problems.nphard.gcp_d import GcpdQuestion
+from src.reasoning_benchmark.problems.nphard.ksp import KspQuestion
+from src.reasoning_benchmark.problems.nphard.msp import MspQuestion
+from src.reasoning_benchmark.problems.nphard.spp import SppQuestion
+from src.reasoning_benchmark.problems.nphard.tsp import TspQuestion
+from src.reasoning_benchmark.problems.nphard.tsp_d import TspdQuestion
+from src.reasoning_benchmark.records import CheckpointManager
+from src.reasoning_benchmark.runner import compute_effective_samples
+from src.reasoning_benchmark.task_sets import CLRS, FG, GSM8K, NPHARD, make_dataset
 
 problem_types = {
     "spp": SppQuestion,

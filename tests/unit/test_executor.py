@@ -1,4 +1,4 @@
-from src.exps_performance.core.executor import ProgramChatInterface
+from src.reasoning_benchmark.execution.python_executor import ProgramChatInterface
 
 
 def test_executor_retries_timeout_then_succeeds():

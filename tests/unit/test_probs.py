@@ -6,10 +6,10 @@ from typing import Any, List
 import pytest
 from pydantic import BaseModel, Field
 
-import src.exps_performance.arms as arms
-from src.exps_performance.arms import Arm2, Arm3
-from src.exps_performance.logger import Record
-from src.exps_performance.problems import CheckAndFormat, Question
+import src.reasoning_benchmark.reasoning_strategies as arms
+from src.reasoning_benchmark.problems import CheckAndFormat, Question
+from src.reasoning_benchmark.reasoning_strategies import Arm2, Arm3
+from src.reasoning_benchmark.records import Record
 
 
 class ToyAnswer(BaseModel):

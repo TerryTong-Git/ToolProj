@@ -71,7 +71,8 @@ def test_frontier_nopatch_table_rebuilds_from_compact_outcomes(tmp_path: Path) -
     subprocess.run(
         [
             sys.executable,
-            "src/exps_performance/scripts/analyze_frontier_nopatch_table.py",
+            "-m",
+            "src.reasoning_benchmark.scripts.analyze_frontier_nopatch_table",
             "--input-csv",
             str(input_csv),
             "--output-md",

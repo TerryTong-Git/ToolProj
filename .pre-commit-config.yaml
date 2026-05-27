@@ -11,7 +11,19 @@ repos:
     hooks:
       - id: mypy
         files: ^(src|tests)/
-        exclude: ^(src/exps_performance/clrs/|src/exps_logistic/notebooks/|src/exps_performance/notebooks/|src/exps_performance/analysis_noise)
+        exclude: |
+          (?x)^(
+            src/exps_performance/clrs/|
+            src/exps_logistic/notebooks/|
+            src/exps_performance/notebooks/|
+            src/exps_performance/analysis_noise|
+            src/reasoning_benchmark/clrs/|
+            src/reasoning_benchmark/analysis/|
+            src/reasoning_benchmark/scripts/(fix_arithmetic_ground_truth|plot_accuracy_vs_hardness|statistical_analysis)\.py|
+            src/reasoning_benchmark/run_translation_discrimination\.py|
+            src/translation_additivity/(information_additivity\.py|reports/)|
+            src/translation_discrimination/(analysis/|experiments/|reports/|source_label\.py)
+          )
         additional_dependencies: [pandas-stubs]
 
   - repo: local

@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from src.exps_performance.problems.finegrained import FgCheckAndFormat
+from src.reasoning_benchmark.problems.finegrained import FgCheckAndFormat
 
 
 def _fg_util() -> FgCheckAndFormat:

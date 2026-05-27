@@ -1,7 +1,7 @@
 import pytest
 
-from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4
-from src.exps_performance.dataset import make_dataset
+from src.reasoning_benchmark.reasoning_strategies import Arm1, Arm2, Arm3, Arm4
+from src.reasoning_benchmark.task_sets import make_dataset
 from tests.conftest import check
 
 

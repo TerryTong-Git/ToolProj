@@ -19,11 +19,11 @@ Some older sections below predate repo cleanup; prefer `docs/` when they disagre
 
 The active repository is centered on three experiment families:
 
-1. **Performance Benchmark** (`src/exps_performance/`) — the main runner that generates benchmark data across NL, simulated-code, executed-code, and control-simulation arms.
-2. **Source Discrimination / Control Work** (`src/exps_control_again/`) — tests whether code-translated NL traces can be distinguished from native NL traces.
-3. **Functional Experiments** (`src/exps_functional/`) — tests additivity and translation-preservation claims using the benchmark outputs as input data.
+1. **Performance Benchmark** (`src/reasoning_benchmark/`) — the main runner that generates benchmark data across NL, simulated-code, executed-code, and control-simulation arms.
+2. **Source Discrimination / Control Work** (`src/translation_discrimination/`) — tests whether code-translated NL traces can be distinguished from native NL traces.
+3. **Functional Experiments** (`src/translation_additivity/`) — tests additivity and translation-preservation claims using the benchmark outputs as input data.
 
-The benchmark outputs in `src/exps_performance/results/` act as the shared dataset for the later experiment families.
+The benchmark outputs in `src/reasoning_benchmark/results/` act as the shared dataset for the later experiment families.
 
 ## Installation
 
@@ -67,8 +67,8 @@ or see
 
 ```bash
 # Small benchmark slice
-uv run python src/exps_performance/main.py \
-  --root src/exps_performance/ \
+uv run python -m src.reasoning_benchmark.cli \
+  --root src/reasoning_benchmark/ \
   --backend openrouter \
   --model "openai/gpt-4o-mini" \
   --seed 0 \
@@ -79,21 +79,21 @@ uv run python src/exps_performance/main.py \
   --controlled_sim
 
 # Or use the production script
-bash src/exps_performance/scripts/prod_all.sh
+bash src/reasoning_benchmark/scripts/prod_all.sh
 ```
 
 ### Run Source Discrimination
 
 ```bash
 # Run translation discrimination experiment
-uv run python src/exps_control_again/run_source_discrimination.py --n_samples 200
+uv run python -m src.translation_discrimination.cli --n_samples 200
 ```
 
 ### Run Functional Experiments
 
 ```bash
-uv run python src/exps_functional/run_additivity.py --n_samples 200
-uv run python src/exps_functional/run_translation_additivity.py --n_samples 200
+uv run python -m src.translation_additivity.cli information --n_samples 200
+uv run python -m src.translation_additivity.cli native-translation --n_samples 200
 ```
 
 ### Run Tests
@@ -107,15 +107,15 @@ uv run pytest tests/
 ```
 ToolProj/
 ├── src/
-│   ├── exps_performance/             # Main benchmark runner and shared dataset
-│   ├── exps_control_again/           # Source discrimination + embedding analysis
-│   └── exps_functional/              # Additivity and translation-preservation experiments
+│   ├── reasoning_benchmark/          # Canonical benchmark runner interfaces
+│   ├── translation_discrimination/   # Canonical source-discrimination interfaces
+│   ├── translation_additivity/       # Canonical additivity interfaces
+│   └── exps_performance/             # Retained raw benchmark artifacts only
 │
 ├── docs/                             # Current project documentation
 ├── tests/
 │   ├── unit/                         # Unit and artifact-validation tests
-│   ├── integration/                  # End-to-end benchmark checks
-│   └── logistic/                     # Legacy-named analysis/parsing tests
+│   └── integration/                  # End-to-end benchmark checks
 │
 ├── figures/                          # Root-level publication figures
 ├── pyproject.toml                    # Project configuration
@@ -126,7 +126,7 @@ ToolProj/
 
 ### Performance Benchmark
 
-The `src/exps_performance/results/` directory contains validated experiment results:
+The `src/reasoning_benchmark/results/` directory contains validated experiment results:
 
 - **25 model-seed runs** across 9 models with 3 seeds each
 - **48 algorithmic problem types** spanning:

@@ -1,0 +1,7 @@
+figure,judge,metric,correct,total,accuracy,ci_low,ci_high
+judge_discrimination,Grok 4.1 Fast,native_vs_translated,30,50,0.600000,0.461812,0.723918
+judge_discrimination,Grok 4.1 Fast,code_vs_nl_control,44,50,0.880000,0.761949,0.943825
+judge_discrimination,Claude Opus 4,native_vs_translated,27,50,0.540000,0.403986,0.670306
+judge_discrimination,Claude Opus 4,code_vs_nl_control,46,50,0.920000,0.811615,0.968451
+judge_discrimination,Gemini 2.5 Pro,native_vs_translated,24,50,0.480000,0.347969,0.614885
+judge_discrimination,Gemini 2.5 Pro,code_vs_nl_control,43,50,0.860000,0.738135,0.930493

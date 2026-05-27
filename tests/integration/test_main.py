@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 
-import src.exps_performance.arms as arms
-from src.exps_performance.logger import create_big_df, walk_results_folder
-from src.exps_performance.main import Args, run
+import src.reasoning_benchmark.reasoning_strategies as arms
+from src.reasoning_benchmark.records import create_big_df, walk_results_folder
+from src.reasoning_benchmark.runner import Args, run
 
 
 @pytest.mark.slow

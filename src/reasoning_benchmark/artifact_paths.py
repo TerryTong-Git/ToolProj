@@ -1,0 +1,9 @@
+"""Repository-local artifact roots that have not moved with the package rename."""
+
+from pathlib import Path
+
+LEGACY_BENCHMARK_ARTIFACT_ROOT = Path("src/exps_performance")
+LEGACY_BENCHMARK_RESULTS_DIR = LEGACY_BENCHMARK_ARTIFACT_ROOT / "results"
+LEGACY_BENCHMARK_ANALYSIS_DIR = LEGACY_BENCHMARK_RESULTS_DIR / "analysis"
+LEGACY_BENCHMARK_FIGURES_DIR = LEGACY_BENCHMARK_ARTIFACT_ROOT / "figures"
+LEGACY_BENCHMARK_NOTEBOOKS_DIR = LEGACY_BENCHMARK_ARTIFACT_ROOT / "notebooks"

@@ -8,7 +8,7 @@ from typing import Any, Sequence, Union
 from tbparse import SummaryReader
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-from src.exps_performance.logger import (
+from src.reasoning_benchmark.records import (
     RLM_ONLY_RESULT_FIELDS,
     CheckpointManager,
     create_big_df,

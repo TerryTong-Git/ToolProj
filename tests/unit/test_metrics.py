@@ -1,5 +1,5 @@
-from src.exps_performance.logger import Record
-from src.exps_performance.metrics import accuracy
+from src.reasoning_benchmark.metrics import accuracy
+from src.reasoning_benchmark.records import Record
 
 
 def test_accuracy(mock_records: list[Record]) -> None:

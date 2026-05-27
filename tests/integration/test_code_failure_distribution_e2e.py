@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.exps_performance.scripts.analyze_code_failure_distribution import DEFAULT_MODELS
+from src.reasoning_benchmark.scripts.analyze_code_failure_distribution import DEFAULT_MODELS
 
 FINAL_ROWS_PER_MODEL = 4740
 FIVE_PERCENT_ROWS_PER_MODEL = 237
@@ -37,11 +37,11 @@ def test_code_failure_distribution_cli_regenerates_table(tmp_path: Path) -> None
     output_path = tmp_path / "analysis" / "code_failure_distribution.csv"
     _write_fixture_results(results_dir)
 
-    script = Path("src/exps_performance/scripts/analyze_code_failure_distribution.py")
     completed = subprocess.run(
         [
             sys.executable,
-            str(script),
+            "-m",
+            "src.reasoning_benchmark.scripts.analyze_code_failure_distribution",
             "--results-dir",
             str(results_dir),
             "--exclude-parse-only",

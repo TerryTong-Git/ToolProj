@@ -2,8 +2,8 @@ from typing import Any
 
 import pytest
 
-from src.exps_performance.arms import RERUN, Arm2
-from src.exps_performance.problems.finegrained import FgQuestion
+from src.reasoning_benchmark.problems.finegrained import FgQuestion
+from src.reasoning_benchmark.reasoning_strategies import RERUN, Arm2
 
 
 def _fg_question(answer: str = "2") -> FgQuestion:
@@ -29,7 +29,7 @@ def test_parser_reruns_until_valid_json(monkeypatch: pytest.MonkeyPatch, default
             '{"Answer": "2", "simulation": "ok"}',
         ]
 
-    monkeypatch.setattr("src.exps_performance.arms.run_batch", _fake_run_batch)
+    monkeypatch.setattr("src.reasoning_benchmark.reasoning_strategies.run_batch", _fake_run_batch)
 
     arm = Arm2([question], default_args, client=None)
     accuracy, edited = arm.run()
@@ -57,7 +57,7 @@ def test_parser_stops_after_rerun_budget(monkeypatch: pytest.MonkeyPatch, defaul
             return ["Answer: oops"]  # clearly not JSON
         return ["not json", "still bad", "{bad json"]  # all invalid
 
-    monkeypatch.setattr("src.exps_performance.arms.run_batch", _always_bad)
+    monkeypatch.setattr("src.reasoning_benchmark.reasoning_strategies.run_batch", _always_bad)
 
     arm = Arm2([question], default_args, client=None)
     accuracy, edited = arm.run()
@@ -95,7 +95,7 @@ def test_arm2_rerun_recovers_from_messy_json(monkeypatch: pytest.MonkeyPatch, de
             'prefix {"Answer": "2", "simulation": "ok"} suffix',
         ]
 
-    monkeypatch.setattr("src.exps_performance.arms.run_batch", _messy)
+    monkeypatch.setattr("src.reasoning_benchmark.reasoning_strategies.run_batch", _messy)
 
     arm = Arm2([question], default_args, client=None)
     accuracy, edited = arm.run()

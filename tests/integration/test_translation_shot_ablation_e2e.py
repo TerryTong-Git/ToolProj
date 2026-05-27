@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.exps_functional.run_translation_additivity import (
+from src.translation_additivity.native_translation_additivity import (
     build_arg_parser,
     build_translate_prompt,
     load_samples,
@@ -66,7 +66,8 @@ def test_translation_shot_ablation_report_cli(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
-            "src/exps_functional/scripts/analyze_translation_shot_ablation.py",
+            "-m",
+            "src.translation_additivity.reports.shot_ablation",
             "--results-dir",
             str(results_dir),
             "--legacy-trials",

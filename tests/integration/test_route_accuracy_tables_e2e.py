@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.exps_performance.scripts.analyze_route_accuracy_tables import COMPLEXITY_TASKS, MODEL_ORDER
+from src.reasoning_benchmark.scripts.analyze_route_accuracy_tables import COMPLEXITY_TASKS, MODEL_ORDER
 
 FINAL_ROWS_PER_MODEL = 4020
 FIVE_PERCENT_ROWS_PER_MODEL = 201
@@ -41,7 +41,8 @@ def test_route_accuracy_tables_cli_regenerates_outputs(tmp_path: Path) -> None:
     subprocess.run(
         [
             sys.executable,
-            "src/exps_performance/scripts/analyze_route_accuracy_tables.py",
+            "-m",
+            "src.reasoning_benchmark.scripts.analyze_route_accuracy_tables",
             "--results-root",
             str(results_root),
             "--report-path",
