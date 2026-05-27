@@ -28,13 +28,13 @@ import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional, Sequence, cast
 
 from simple_parsing import parse
 
 from src.exps_performance.arms import Arm1, Arm2, Arm3, Arm4, ArmRLMCode, ArmRLMNL, BaseArm
 from src.exps_performance.dataset import make_dataset
-from src.exps_performance.llm import StageUsageMeter, llm
+from src.exps_performance.llm import llm
 from src.exps_performance.logger import (
     CheckpointManager,
     create_dir,
@@ -43,10 +43,9 @@ from src.exps_performance.logger import (
 )
 from src.exps_performance.metrics import accuracy
 from src.exps_performance.problems import Question
-from src.exps_performance.rich_ui import progress_manager, setup_rich_logging
 from src.exps_performance.utils import seed_all_and_setup
 
-setup_rich_logging()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)  # Using __name__ is a common practice
 
 
@@ -69,6 +68,13 @@ def resolve_sample_count(arg_value: int, env_var: str) -> int:
         except ValueError:
             logger.warning(f"Could not parse {env_var}={env_val} as int; falling back to CLI/default value.")
     return arg_value
+
+
+def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False))
+        f.write("\n")
 
 
 def compute_effective_samples(
@@ -151,19 +157,63 @@ def assign_sequential_indices(
     return assigned, dropped_by_kind, restored_by_kind, debug_assigned
 
 
-def _stage_complete(stage_name: str, rec: Any) -> bool:
+def load_reference_subset(path: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with Path(path).open("r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            rows.append(json.loads(stripped))
+    return rows
+
+
+def filter_dataset_to_reference_subset(data: Sequence[Question], subset_rows: Sequence[dict[str, Any]]) -> list[Question]:
+    sim_prompt_index = {(q.kind, q.digits, q.util_pointer("code").format_one(q)): q for q in data}
+    nl_prompt_index = {(q.kind, q.digits, q.util_pointer("nl").format_one(q)): q for q in data}
+    index_key = {(q.kind, q.digits, q.record.index_in_kind): q for q in data}
+    filtered: list[Question] = []
+    missing: list[dict[str, Any]] = []
+    for row in subset_rows:
+        kind = str(row["kind"])
+        digit = int(row["digit"])
+        candidate = None
+        sim_prompt = str(row.get("sim_question", ""))
+        nl_prompt = str(row.get("nl_question", ""))
+        if sim_prompt:
+            candidate = sim_prompt_index.get((kind, digit, sim_prompt))
+        if candidate is None and nl_prompt:
+            candidate = nl_prompt_index.get((kind, digit, nl_prompt))
+        if candidate is None:
+            candidate = index_key.get((kind, digit, int(row.get("index_in_kind", -1))))
+        if candidate is None:
+            missing.append({"kind": kind, "digit": digit, "index_in_kind": int(row.get("index_in_kind", -1))})
+            continue
+        filtered.append(candidate)
+    if missing:
+        raise RuntimeError(f"Could not reconstruct requested subset rows: {missing[:10]}")
+    return filtered
+
+
+def _stage_complete(stage_name: str, rec: Any, *, require_parse_success: bool = False) -> bool:
     """
     Conservative completion checks per stage; missing required fields means the stage failed.
     """
     if stage_name == "Arm2":  # sim generation
+        if require_parse_success:
+            return bool(rec.sim_question) and rec.sim_err_msg == "ok" and not bool(rec.sim_parse_err)
         return bool(rec.sim_question) and (bool(rec.sim_answer) or bool(rec.sim_err_msg) or bool(rec.sim_parse_err) or bool(rec.sim_correct))
     if stage_name == "Arm3":  # code execution
         return bool(rec.code_question) and (bool(rec.code_answer) or bool(rec.code_err_msg) or bool(rec.code_parse_err) or bool(rec.code_gen_err))
     if stage_name == "Arm4":  # control sim
+        if require_parse_success:
+            return bool(rec.controlsim_question) and rec.controlsim_err_msg == "ok" and not bool(rec.controlsim_parse_err)
         return bool(rec.controlsim_question) and (
             bool(rec.controlsim_answer) or bool(rec.controlsim_err_msg) or bool(rec.controlsim_parse_err) or bool(rec.controlsim_correct)
         )
     if stage_name == "Arm1":  # natural language reasoning
+        if require_parse_success:
+            return bool(rec.nl_question) and rec.nl_err_msg == "ok" and not bool(rec.nl_parse_err)
         return bool(rec.nl_question) and (bool(rec.nl_answer) or bool(rec.nl_err_msg) or bool(rec.nl_parse_err) or bool(rec.nl_correct))
     if stage_name == "ArmRLMNL":
         return bool(rec.rlmnl_question) and (
@@ -185,55 +235,84 @@ def run_stage_batch(
     checkpoint: CheckpointManager,
 ) -> List[Question]:
     """
-    Run a single stage with batch-level completeness checks. Batches that fail completeness are not checkpointed.
+    Run a single stage with per-batch retries for incomplete rows. Completed rows
+    are checkpointed immediately so a few slow failures do not discard the rest
+    of the batch.
     """
     if not pending:
         return pending
     logger.info(f"Running {stage_name} for {len(pending)} questions")
-    use_eager_pipeline = bool(getattr(args, "rlm_eager_pipeline", True)) and stage_name in {"ArmRLMNL", "ArmRLMCode"}
-    chunk_size = len(pending) if use_eager_pipeline else max(1, args.checkpoint_every)
+    if stage_name in {"ArmRLMNL", "ArmRLMCode"}:
+        chunk_size = len(pending)
+    else:
+        chunk_size = max(1, int(getattr(args, "checkpoint_every", 1)), int(getattr(args, "batch_size", 1)))
+    batch_retry_attempts = max(1, int(getattr(args, "stage_batch_retry_attempts", 3)))
+    require_parse_success = bool(getattr(args, "openrouter_structured_outputs", False) and stage_name in {"Arm1", "Arm2", "Arm4"})
     updated_all: List[Question] = []
-    stage_meter = StageUsageMeter(total_examples=len(pending))
-    stage_task_id = progress_manager.add_task(f"[main] {stage_name}", total=len(pending), stats=stage_meter.stats_text())
-    setattr(args, "_rich_stage_task_id", stage_task_id)
-    setattr(args, "_stage_usage_meter", stage_meter)
-    setattr(args, "_progress_label", stage_name)
-    try:
-        for start in range(0, len(pending), chunk_size):
-            batch = pending[start : start + chunk_size]
-            if use_eager_pipeline:
-                logger.info(
-                    f"{stage_name} eager pipeline enabled: scheduling all {len(batch)} pending questions "
-                    f"with exec_workers={getattr(args, 'exec_workers', 4)}"
-                )
-            arm = ArmCls(batch, args, client)
-            if use_eager_pipeline and hasattr(arm, "run_checkpointed"):
-                _, updated = arm.run_checkpointed(checkpoint, flush_every=max(1, args.checkpoint_every))
-                batch_complete = all(_stage_complete(stage_name, q.record) for q in updated)
-                if batch_complete:
-                    updated_all.extend(updated)
-                else:
-                    logger.warning(
-                        f"[checkpoint guard] Eager {stage_name} batch starting at {start} returned incomplete items after incremental checkpointing"
-                    )
-            else:
+    for start in range(0, len(pending), chunk_size):
+        batch = pending[start : start + chunk_size]
+        remaining = list(batch)
+        completed_map: dict[str, Question] = {}
+        for batch_attempt in range(1, batch_retry_attempts + 1):
+            if not remaining:
+                break
+
+            arm = ArmCls(remaining, args, client)
+
+            def _checkpoint_partial(q: Question) -> None:
+                checkpoint.upsert(q.record, flush=True)
+
+            try:
+                _, updated = arm.run(on_question_complete=_checkpoint_partial)
+            except TypeError as exc:
+                if "on_question_complete" not in str(exc):
+                    raise
                 _, updated = arm.run()
-                batch_complete = all(_stage_complete(stage_name, q.record) for q in updated)
-                if batch_complete:
-                    checkpoint.save_batch([q.record for q in updated], flush=True)
-                    updated_all.extend(updated)
-                else:
-                    logger.warning(
-                        f"[checkpoint guard] Skipping checkpoint for {stage_name} batch starting at {start}: {len(batch)} items incomplete"
-                    )
-    finally:
-        if hasattr(args, "_rich_stage_task_id"):
-            delattr(args, "_rich_stage_task_id")
-        if hasattr(args, "_stage_usage_meter"):
-            delattr(args, "_stage_usage_meter")
-        if hasattr(args, "_progress_label"):
-            delattr(args, "_progress_label")
-        progress_manager.remove_task(stage_task_id)
+
+            completed_now = [q for q in updated if _stage_complete(stage_name, q.record, require_parse_success=require_parse_success)]
+            remaining = [q for q in updated if not _stage_complete(stage_name, q.record, require_parse_success=require_parse_success)]
+
+            if completed_now:
+                checkpoint.save_batch([q.record for q in completed_now], flush=True)
+                for q in completed_now:
+                    completed_map[q.record.request_id] = q
+
+            response_summary = getattr(arm, "response_summary", None)
+            summary = response_summary() if callable(response_summary) else {}
+            if summary:
+                summary.update(
+                    {
+                        "stage": stage_name,
+                        "stage_set_name": arm.set_name,
+                        "run_type": arm.run_type,
+                        "rows": len(batch),
+                        "rows_requested": len(updated),
+                        "rows_completed_this_attempt": len(completed_now),
+                        "rows_remaining_after_attempt": len(remaining),
+                        "batch_start": start,
+                        "batch_attempt": batch_attempt,
+                        "batch_complete": not remaining,
+                        "content_parse_failures_after_retry": int(getattr(arm, "parse_fail", 0)),
+                    }
+                )
+                append_jsonl(Path(args.exp_dir) / "llm_stage_stats.jsonl", summary)
+
+            if remaining and batch_attempt < batch_retry_attempts:
+                logger.warning(
+                    f"[checkpoint guard] {stage_name} batch starting at {start} "
+                    f"retrying {len(remaining)} incomplete rows (attempt {batch_attempt + 1}/{batch_retry_attempts})"
+                )
+
+        if remaining:
+            unresolved = [q.record.request_id for q in remaining[:10]]
+            raise RuntimeError(
+                f"{stage_name} batch starting at {start} still incomplete after "
+                f"{batch_retry_attempts} attempts; unresolved rows={len(remaining)} "
+                f"sample_request_ids={unresolved}"
+            )
+
+        ordered_completed = [completed_map[q.record.request_id] for q in batch if q.record.request_id in completed_map]
+        updated_all.extend(ordered_completed)
     return updated_all
 
 
@@ -245,6 +324,7 @@ def run(args: Any) -> None:
     client = None if only_rlm else llm(args)
     exp_dir = create_dir(args, Path(args.root))
     exp_id = Path(exp_dir).name
+    args.exp_dir = exp_dir
     checkpoint_path = os.path.join(exp_dir, "res.jsonl")
     checkpoint = CheckpointManager(checkpoint_path, only_rlm=only_rlm)
     dump_args(args, Path(exp_dir) / "args.json")
@@ -296,12 +376,7 @@ def run(args: Any) -> None:
         return bool(rec.nl_question) or bool(rec.nl_answer) or bool(rec.nl_parse_err) or bool(rec.nl_err_msg)
 
     def _fully_done(rec: Any) -> bool:
-        done = _done_sim(rec) and _done_nl(rec)
-        if getattr(args, "exec_code", False):
-            done = done and _done_code(rec)
-        if getattr(args, "controlled_sim", False):
-            done = done and _done_control(rec)
-        return done
+        return _done_sim(rec) and _done_code(rec) and _done_control(rec) and _done_nl(rec)
 
     def _done_rlmnl(rec: Any) -> bool:
         return bool(rec.rlmnl_question) or bool(rec.rlmnl_answer) or bool(rec.rlmnl_parse_err) or bool(rec.rlmnl_err_msg)
@@ -313,6 +388,10 @@ def run(args: Any) -> None:
     data, dropped_by_kind, restored_by_kind, debug_assigned = assign_sequential_indices(
         list(data), args.n, args.seed, args.model, exp_id, checkpoint, per_kind_limits=per_kind_limits
     )
+    if getattr(args, "subset_reference_jsonl", None):
+        subset_items = load_reference_subset(str(args.subset_reference_jsonl))
+        data = filter_dataset_to_reference_subset(data, subset_items)
+        logger.info(f"Filtered dataset to {len(data)} rows using subset_reference_jsonl={args.subset_reference_jsonl}")
     if dropped_by_kind:
         logger.warning(f"Dropped items exceeding n per kind: {dropped_by_kind}")
 
@@ -349,8 +428,8 @@ def run(args: Any) -> None:
                     data[i] = updated_map[q.record.request_id]
                     data[i].code = data[i].record.sim_code or data[i].code
 
+        # Arm3 (code execution)
         if getattr(args, "exec_code", False):
-            # Arm3 (code execution)
             arm3_pending = [q for q in data if not _fully_done(q.record) and not _done_code(q.record)]
             logger.info(f"Arm3 pending {len(arm3_pending)} / total {len(data)}")
             updated_arm3 = run_stage_batch(arm3_pending, Arm3, "Arm3", args, client, checkpoint)
@@ -360,8 +439,8 @@ def run(args: Any) -> None:
                     if q.record.request_id in updated_map:
                         data[i] = updated_map[q.record.request_id]
 
+        # Arm4 (control simulation)
         if getattr(args, "controlled_sim", False):
-            # Arm4 (control simulation)
             arm4_pending = [q for q in data if not _fully_done(q.record) and not _done_control(q.record)]
             logger.info(f"Arm4 pending {len(arm4_pending)} / total {len(data)}")
             updated_arm4 = run_stage_batch(arm4_pending, Arm4, "Arm4", args, client, checkpoint)
@@ -492,12 +571,19 @@ class Args:
     hf_trust_remote_code: bool = False
     openrouter_api_key: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_structured_outputs: bool = False
+    openrouter_structured_strict: bool = True
+    openrouter_retry_attempts: int = 3
+    openrouter_response_healing: bool = True
     openrouter_reasoning_enabled: bool = False
-    openrouter_reasoning_effort: Optional[str] = field(default=None, metadata={"choices": ["low", "medium", "high", "xhigh"]})
+    openrouter_reasoning_effort: Optional[str] = None
     openrouter_reasoning_max_tokens: Optional[int] = None
     openrouter_reasoning_exclude: bool = False
-    openrouter_verbosity: Optional[str] = field(default=None, metadata={"choices": ["low", "medium", "high", "max"]})
-    max_tokens: int = 4192
+    openrouter_verbosity: Optional[str] = None
+    openrouter_max_concurrency: Optional[int] = None
+    request_timeout: float = 120.0
+    stage_batch_retry_attempts: int = 3
+    max_tokens: int = 100000
     temperature: float = 0.1
     top_p: float = 0.90
     sim_code_only: bool = False
@@ -509,8 +595,9 @@ class Args:
     tb_text_chars: int = 10000
     tb_disable: bool = False
     exp_id: Optional[str] = None
+    subset_reference_jsonl: Optional[str] = None
     resume: bool = False
-    batch_size: int = 8
+    batch_size: int = 256
     vllm_dtype: str = field(default="float32", metadata={"choices": ["auto", "float16", "bfloat16", "float32"]})
     vllm_tensor_parallel: int = 8
     vllm_gpu_mem_util: float = 0.90
@@ -522,14 +609,13 @@ class Args:
     rlm_backend: str = "openrouter"
     rlm_model: Optional[str] = None
     rlm_environment: str = "local"
-    rlm_repo_path: Optional[str] = None
-    rlm_api_key: Optional[str] = None
-    rlm_base_url: Optional[str] = None
     rlm_max_depth: int = 2
     rlm_max_iterations: int = 8
     rlm_max_timeout: Optional[float] = None
     rlm_verbose: bool = False
-    rlm_eager_pipeline: bool = True
+    rlm_repo_path: Optional[str] = None
+    rlm_api_key: Optional[str] = None
+    rlm_base_url: Optional[str] = None
 
 
 def parse_args() -> Args:

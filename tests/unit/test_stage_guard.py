@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any, List
 
+import pytest
+
 from src.exps_performance.logger import CheckpointManager, Record
 from src.exps_performance.main import run_stage_batch
 from src.exps_performance.problems import Question
@@ -53,9 +55,9 @@ def test_incomplete_batch_not_checkpointed(tmp_path) -> None:  # type: ignore[no
     ckpt = CheckpointManager(str(tmp_path / "res.jsonl"))
     q = DummyQuestion(record=Record(unique_tag="t1", request_id="r1", kind="add", digit=2))
 
-    updated = run_stage_batch([q], FakeArmPartial, "Arm3", args, client=None, checkpoint=ckpt)
+    with pytest.raises(RuntimeError, match="still incomplete"):
+        run_stage_batch([q], FakeArmPartial, "Arm3", args, client=None, checkpoint=ckpt)
 
-    assert updated == []
     assert ckpt.all_records() == []
 
 
